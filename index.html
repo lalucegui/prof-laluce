@@ -493,6 +493,22 @@
   }
   .auth-error{color:var(--terracotta);font-size:12.5px;margin-top:8px;}
   .auth-hint{font-size:11.5px;color:var(--muted);text-align:left;margin-top:8px;line-height:1.4;}
+  .subject-picker-list{display:flex;flex-direction:column;gap:8px;margin:16px 0;max-height:280px;overflow-y:auto;}
+  .subject-picker-item{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--ice-tint);border:1px solid var(--line);border-radius:10px;
+    padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;color:var(--navy);text-align:left;
+  }
+  .subject-picker-item:hover{background:var(--ice);border-color:var(--navy);}
+  .subject-picker-item .chev{color:var(--muted);}
+  .subject-picker-new{display:flex;gap:8px;margin-top:6px;}
+  .subject-picker-new input{
+    flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:inherit;
+  }
+  .user-detail-screen select, .org-screen select{
+    padding:8px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit;
+    width:100%;margin-bottom:4px;
+  }
   .mobile-menu-btn{
     display:none;
     background:rgba(255,255,255,0.08);
@@ -1147,7 +1163,7 @@
       <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Abrir menu de aulas">☰</button>
       <div class="logo-badge"><img src="data:image/jpeg;base64,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" alt="Logo FAC FEA — Faculdade da Fundação Educacional de Araçatuba"></div>
       <div>
-        <h1 class="site-title">Gestão de Projetos</h1>
+        <h1 class="site-title" id="site-title-text">Gestão de Projetos</h1>
         <p class="site-subtitle">Administração de Empresas · 8º Semestre · Faculdade da Fundação Educacional de Araçatuba</p>
       </div>
     </div>
@@ -1202,6 +1218,27 @@
   </div>
 </div>
 
+<div class="auth-gate hidden" id="subject-picker-screen">
+  <div class="auth-box" style="max-width:480px;">
+    <h2>Escolha ou crie uma matéria</h2>
+    <p class="auth-subtitle">Cada matéria tem seu próprio conteúdo, aulas e alunos.</p>
+    <div id="subject-picker-list" class="subject-picker-list"></div>
+    <div class="subject-picker-new">
+      <input type="text" spellcheck="true" lang="pt-BR" id="new-subject-name" placeholder="Nome da nova matéria">
+      <button class="btn-primary" id="create-subject-btn">+ Criar matéria</button>
+    </div>
+    <button class="btn-secondary" id="subject-picker-logout-btn" style="width:100%;margin-top:14px;">Sair</button>
+  </div>
+</div>
+
+<div class="auth-gate hidden" id="subject-pending-screen">
+  <div class="auth-box">
+    <h2>Aguardando atribuição de matéria</h2>
+    <p class="auth-subtitle">Seu professor ainda não atribuiu uma matéria à sua conta. Assim que atribuir, o conteúdo vai aparecer automaticamente — não precisa fazer nada, só entrar de novo mais tarde.</p>
+    <button class="btn-secondary" id="subject-pending-logout-btn" style="width:100%;margin-top:10px;">Sair</button>
+  </div>
+</div>
+
 <div class="edit-status-bar hidden" id="edit-status-bar">
   <span>✏️ Modo de edição ativo — suas alterações ficam visíveis para todos que abrirem este link
     <strong id="save-status-indicator" style="margin-left:10px;"></strong>
@@ -1210,6 +1247,7 @@
     <button class="btn-tiny" id="download-backup-btn" title="Baixa um arquivo com todo o conteúdo atual">⬇ Baixar backup</button>
     <button class="btn-tiny" id="restore-backup-btn" title="Restaura um arquivo de backup salvo antes">⬆ Restaurar backup</button>
     <input type="file" id="restore-backup-input" accept=".json" style="display:none;">
+    <button class="btn-tiny" id="switch-subject-btn" title="Trocar para outra matéria, ou criar uma nova">🏠 Trocar de matéria</button>
     <button class="btn-tiny" id="organize-btn" title="Reorganizar numeração, blocos e visibilidade de tudo em uma tela só">🗂 Organizar curso</button>
     <button class="btn-tiny" id="admin-users-btn" title="Aprovar ou remover acesso de alunos">👥 Alunos</button>
     <button class="btn-tiny" id="reload-data-btn" title="Tenta buscar de novo a última versão salva">Recarregar dados</button>
@@ -1329,20 +1367,33 @@ async function withRetry(fn, attempts=3){
 // ---- Camada de banco de dados (Firestore), no lugar do window.storage ----
 async function dbGet(key){
   if(!firebaseReady) throw new Error('Firebase não configurado — preencha FIREBASE_CONFIG no início do arquivo.');
-  const snap = await db.collection('course_kv').doc(key).get();
+  const snap = await db.collection('app_settings').doc(key).get();
   if(snap.exists) return { value: snap.data().value };
   return null;
 }
 async function dbSet(key, value){
   if(!firebaseReady) throw new Error('Firebase não configurado — preencha FIREBASE_CONFIG no início do arquivo.');
-  await db.collection('course_kv').doc(key).set({ value: value, updatedAt: Date.now() });
+  await db.collection('app_settings').doc(key).set({ value: value, updatedAt: Date.now() });
+  return true;
+}
+async function subjectDbGet(key){
+  if(!firebaseReady) throw new Error('Firebase não configurado — preencha FIREBASE_CONFIG no início do arquivo.');
+  if(!activeSubjectId) throw new Error('Nenhuma matéria selecionada ainda.');
+  const snap = await db.collection(`subjects/${activeSubjectId}/course_kv`).doc(key).get();
+  if(snap.exists) return { value: snap.data().value };
+  return null;
+}
+async function subjectDbSet(key, value){
+  if(!firebaseReady) throw new Error('Firebase não configurado — preencha FIREBASE_CONFIG no início do arquivo.');
+  if(!activeSubjectId) throw new Error('Nenhuma matéria selecionada ainda.');
+  await db.collection(`subjects/${activeSubjectId}/course_kv`).doc(key).set({ value: value, updatedAt: Date.now() });
   return true;
 }
 
 let LAST_LOAD_ERROR = null;
 async function loadCourseFromStorage(){
   try{
-    const res = await withRetry(()=>dbGet(STORAGE_KEY));
+    const res = await withRetry(()=>subjectDbGet(STORAGE_KEY));
     if(res && res.value){
       COURSE = JSON.parse(res.value);
       LAST_LOAD_ERROR = null;
@@ -1357,7 +1408,7 @@ async function loadCourseFromStorage(){
 async function saveCourseToStorage(){
   const indicator = document.getElementById('save-status-indicator');
   try{
-    await withRetry(()=>dbSet(STORAGE_KEY, JSON.stringify(COURSE)));
+    await withRetry(()=>subjectDbSet(STORAGE_KEY, JSON.stringify(COURSE)));
     if(indicator){
       indicator.textContent = '✓ Salvo';
       indicator.style.color = '#2E7D32';
@@ -1376,6 +1427,32 @@ async function saveCourseToStorage(){
 let state = { block: 1, aula: 1 };
 let isAdmin = false;
 let realIsAdmin = false; // status verdadeiro, independente do modo "ver como aluno"
+let activeSubjectId = null;
+let allSubjects = null;
+
+async function fetchAllSubjects(){
+  const snap = await db.collection('subjects').get();
+  allSubjects = snap.docs.map(d => ({id: d.id, ...d.data()}));
+  allSubjects.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+  return allSubjects;
+}
+async function createSubject(name, seedWithDefault){
+  const ref = await db.collection('subjects').add({name, createdAt: Date.now()});
+  if(seedWithDefault){
+    await db.collection(`subjects/${ref.id}/course_kv`).doc(STORAGE_KEY).set({value: JSON.stringify(DEFAULT_COURSE), updatedAt: Date.now()});
+  }
+  return ref.id;
+}
+async function ensureAtLeastOneSubjectExists(){
+  await fetchAllSubjects();
+  if(allSubjects.length === 0){
+    const newId = await createSubject('Gestão de Projetos', true);
+    await fetchAllSubjects();
+    return newId;
+  }
+  return null;
+}
+
 let currentUser = null;
 let currentUserDoc = null;
 let inactivityMinutes = 15;
@@ -1387,7 +1464,7 @@ async function loadStorageImages(){
     const key = img.dataset.storageKey;
     if(IMAGE_CACHE[key]){ img.src = IMAGE_CACHE[key]; continue; }
     try{
-      const res = await dbGet(key);
+      const res = await subjectDbGet(key);
       if(res && res.value){
         IMAGE_CACHE[key] = res.value;
         img.src = res.value;
@@ -2338,8 +2415,15 @@ function userDetailForm(u){
       <td>${s.durationMin!=null ? s.durationMin+' min' : '—'}</td>
     </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--muted);">Nenhum acesso registrado ainda</td></tr>';
 
+  const subjectOpts = (allSubjects||[]).map(s=>`<option value="${s.id}" ${s.id===u.subjectId?'selected':''}>${esc(s.name)}</option>`).join('');
+
   return `<div class="editor-form user-detail-screen">
     <div class="editing-type-banner">Cadastro do aluno — ${esc(u.name||'')}</div>
+    <label>Matéria atribuída</label>
+    <select id="ud-subject">
+      <option value="">— nenhuma —</option>
+      ${subjectOpts}
+    </select>
     <div class="user-detail-grid">
       <div class="user-detail-photo-col">
         <img class="profile-photo-preview" style="width:96px;height:96px;visibility:${p.photoUrl?'visible':'hidden'};" src="${p.photoUrl||''}" alt="Foto">
@@ -2527,6 +2611,11 @@ function render(){
   if(editState && editState.kind==='userDetail'){
     const u = cachedUsersList && cachedUsersList.find(x=>x.id===editState.uid);
     if(!u){ editState = {kind:'usersScreen'}; cachedUsersList = null; render(); return; }
+    if(!allSubjects){
+      content.innerHTML = '<div class="editor-form"><p>Carregando…</p></div>';
+      fetchAllSubjects().then(()=>{ if(editState && editState.kind==='userDetail') render(); });
+      return;
+    }
     content.innerHTML = userDetailForm(u);
     return;
   }
@@ -2670,10 +2759,12 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       photoUrl: (u.profile && u.profile.photoUrl) || '',
     };
     const adminNotes = { notes: document.getElementById('ud-admin-notes').value };
+    const subjectId = document.getElementById('ud-subject').value || null;
     try{
-      await db.collection('users').doc(uid).update({profile, adminNotes});
+      await db.collection('users').doc(uid).update({profile, adminNotes, subjectId});
       u.profile = profile;
       u.adminNotes = adminNotes;
+      u.subjectId = subjectId;
       alert('Cadastro salvo.');
       render();
     }catch(e){
@@ -2969,7 +3060,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         } else if(newDataUrl){
           const key = 'img-admin-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
           try{
-            await withRetry(()=>dbSet(key, newDataUrl));
+            await withRetry(()=>subjectDbSet(key, newDataUrl));
           }catch(err){
             alert('Não foi possível salvar a imagem. Detalhe: ' + (err && err.message ? err.message : String(err)));
             return;
@@ -3225,6 +3316,52 @@ document.getElementById('auth-register-btn').addEventListener('click', async ()=
   }
 });
 
+// ===================== ESCOLHA DE MATÉRIA (admin) =====================
+function renderSubjectPicker(){
+  const list = document.getElementById('subject-picker-list');
+  if(!allSubjects || allSubjects.length===0){
+    list.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma matéria criada ainda.</p>';
+    return;
+  }
+  list.innerHTML = allSubjects.map(s => `
+    <button class="subject-picker-item" data-action="open-subject" data-sid="${s.id}">
+      <span>${esc(s.name)}</span><span class="chev">→</span>
+    </button>`).join('');
+  list.querySelectorAll('[data-action="open-subject"]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      await openSubject(btn.dataset.sid);
+    });
+  });
+}
+async function openSubject(subjectId){
+  activeSubjectId = subjectId;
+  const s = allSubjects.find(x=>x.id===subjectId);
+  document.getElementById('site-title-text').textContent = s ? s.name : 'Matéria';
+  showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit']);
+  await loadCourseFromStorage();
+  editState = null;
+  render();
+}
+document.getElementById('create-subject-btn').addEventListener('click', async ()=>{
+  const nameInput = document.getElementById('new-subject-name');
+  const name = nameInput.value.trim();
+  if(!name){ alert('Digite um nome para a nova matéria.'); return; }
+  const newId = await createSubject(name, false);
+  nameInput.value = '';
+  await fetchAllSubjects();
+  renderSubjectPicker();
+  await openSubject(newId);
+});
+document.getElementById('subject-picker-logout-btn').addEventListener('click', async ()=>{ await logSessionEnd(); auth.signOut(); });
+document.getElementById('subject-pending-logout-btn').addEventListener('click', async ()=>{ await logSessionEnd(); auth.signOut(); });
+document.getElementById('switch-subject-btn').addEventListener('click', async ()=>{
+  if(!isAdmin) return;
+  editState = null;
+  await fetchAllSubjects();
+  renderSubjectPicker();
+  showOnly(['subject-picker-screen']);
+});
+
 document.getElementById('user-badge-logout-btn').addEventListener('click', async ()=>{
   await logSessionEnd();
   auth.signOut();
@@ -3331,7 +3468,7 @@ document.getElementById('user-badge-viewas-btn').addEventListener('click', ()=>{
 document.getElementById('auth-pending-logout-btn').addEventListener('click', ()=> auth.signOut());
 
 function showOnly(idsToShow){
-  const all = ['auth-gate','auth-pending-screen','site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit'];
+  const all = ['auth-gate','auth-pending-screen','subject-picker-screen','subject-pending-screen','site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit'];
   all.forEach(id=>{
     const el = document.getElementById(id);
     if(!el) return;
@@ -3428,12 +3565,30 @@ if(!firebaseReady || !auth){
   const viewAsBtn = document.getElementById('user-badge-viewas-btn');
   viewAsBtn.classList.toggle('hidden', !realIsAdmin);
   updateViewAsButtonLabel();
-  showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit']);
-  await loadCourseFromStorage();
   await loadInactivitySetting();
   startInactivityWatch();
   if(!currentSessionStart) logSessionStart();
-  render();
+
+  if(isAdmin){
+    await ensureAtLeastOneSubjectExists();
+    renderSubjectPicker();
+    showOnly(['subject-picker-screen']);
+  } else {
+    if(!userDoc.subjectId){
+      showOnly(['subject-pending-screen']);
+      return;
+    }
+    activeSubjectId = userDoc.subjectId;
+    let subjectName = 'Matéria';
+    try{
+      const sDoc = await db.collection('subjects').doc(activeSubjectId).get();
+      if(sDoc.exists) subjectName = sDoc.data().name;
+    }catch(e){}
+    document.getElementById('site-title-text').textContent = subjectName;
+    showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit']);
+    await loadCourseFromStorage();
+    render();
+  }
   });
 }
 
