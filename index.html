@@ -451,6 +451,14 @@
     width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;
   }
   .user-badge-logout:hover{background:rgba(255,255,255,0.16);}
+  .user-badge-viewas{
+    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+    color:var(--ice);cursor:pointer;font-size:11px;font-weight:600;
+    padding:4px 10px;border-radius:14px;white-space:nowrap;
+  }
+  .user-badge-viewas:hover{background:rgba(255,255,255,0.2);}
+  .user-badge-viewas.active{background:var(--gold);border-color:var(--gold);color:#fff;}
+
 
   .auth-gate{
     position:fixed;inset:0;z-index:200;
@@ -1104,6 +1112,7 @@
       <div class="user-badge hidden" id="user-badge">
         <span class="user-badge-name" id="user-badge-name"></span>
         <span class="user-badge-timer" id="user-badge-timer" title="Tempo restante até desconectar por inatividade"></span>
+        <button class="user-badge-viewas hidden" id="user-badge-viewas-btn" title="Alternar entre visão de administrador e visão de aluno"></button>
         <button class="user-badge-logout" id="user-badge-logout-btn" title="Sair">⏻</button>
       </div>
     </div>
@@ -1297,6 +1306,7 @@ async function saveCourseToStorage(){
 
 let state = { block: 1, aula: 1 };
 let isAdmin = false;
+let realIsAdmin = false; // status verdadeiro, independente do modo "ver como aluno"
 let currentUser = null;
 let currentUserDoc = null;
 let inactivityMinutes = 15;
@@ -2261,7 +2271,10 @@ function usersScreenForm(){
     <div class="editing-type-banner">Painel de alunos</div>
     <div class="hint">Aprovar dá acesso imediato ao conteúdo do curso. Revogar tira o acesso sem apagar a conta (dá para aprovar de novo depois). Excluir remove a conta por completo — o aluno precisaria se cadastrar de novo.</div>
     <div class="users-list">${rows}</div>
-    <div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">Fechar</button></div>
+    <div class="editor-actions">
+      <button class="btn-secondary" data-action="reload-users-list">🔄 Recarregar lista</button>
+      <button class="btn-secondary" data-action="cancel-edit">Fechar</button>
+    </div>
   </div>`;
 }
 
@@ -2513,6 +2526,13 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     if(confirm('Remover esta aula da lista? Isso só é definitivo depois de clicar em "Salvar todas as alterações".')){
       btn.closest('.org-aula-row').remove();
     }
+    return;
+  }
+  if(action==='reload-users-list'){
+    cachedUsersList = null;
+    render();
+    await fetchAllUsers();
+    render();
     return;
   }
   if(action==='toggle-approve-user'){
@@ -2929,6 +2949,7 @@ document.getElementById('organize-btn').addEventListener('click', ()=>{
 });
 document.getElementById('admin-users-btn').addEventListener('click', ()=>{
   if(!isAdmin) return;
+  cachedUsersList = null; // sempre busca a lista atualizada ao abrir, nunca usa cache antigo
   editState = {kind:'usersScreen'};
   render();
   document.getElementById('content').scrollIntoView({behavior:'smooth'});
@@ -3052,6 +3073,27 @@ document.getElementById('auth-register-btn').addEventListener('click', async ()=
 });
 
 document.getElementById('user-badge-logout-btn').addEventListener('click', ()=> auth.signOut());
+
+function updateViewAsButtonLabel(){
+  const btn = document.getElementById('user-badge-viewas-btn');
+  if(!btn) return;
+  if(isAdmin){
+    btn.textContent = '👁 Ver como aluno';
+    btn.classList.remove('active');
+  } else {
+    btn.textContent = '👑 Voltar para admin';
+    btn.classList.add('active');
+  }
+}
+document.getElementById('user-badge-viewas-btn').addEventListener('click', ()=>{
+  if(!realIsAdmin) return;
+  isAdmin = !isAdmin;
+  document.body.classList.toggle('admin-mode', isAdmin);
+  document.getElementById('edit-status-bar').classList.toggle('hidden', !isAdmin);
+  updateViewAsButtonLabel();
+  editState = null;
+  render();
+});
 document.getElementById('auth-pending-logout-btn').addEventListener('click', ()=> auth.signOut());
 
 function showOnly(idsToShow){
@@ -3143,10 +3185,14 @@ if(!firebaseReady || !auth){
     return;
   }
   isAdmin = userDoc.role === 'admin';
+  realIsAdmin = isAdmin;
   document.body.classList.toggle('admin-mode', isAdmin);
   document.getElementById('edit-status-bar').classList.toggle('hidden', !isAdmin);
   document.getElementById('user-badge').classList.remove('hidden');
   document.getElementById('user-badge-name').textContent = (isAdmin ? '👑 ' : '') + userDoc.name;
+  const viewAsBtn = document.getElementById('user-badge-viewas-btn');
+  viewAsBtn.classList.toggle('hidden', !realIsAdmin);
+  updateViewAsButtonLabel();
   showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit']);
   await loadCourseFromStorage();
   await loadInactivitySetting();
