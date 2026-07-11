@@ -1399,7 +1399,10 @@ async function loadCourseFromStorage(){
       LAST_LOAD_ERROR = null;
       return true;
     }
-    LAST_LOAD_ERROR = 'sem-dados'; // banco respondeu, mas não havia nada salvo ainda — normal na primeiríssima vez
+    // Matéria nova, sem nada salvo ainda — começa realmente vazia, sem
+    // herdar o conteúdo de outra matéria ou o conteúdo padrão embutido.
+    COURSE = [];
+    LAST_LOAD_ERROR = 'sem-dados';
   }catch(e){
     LAST_LOAD_ERROR = 'erro: ' + (e && e.message ? e.message : String(e));
   }
@@ -2586,8 +2589,13 @@ function render(){
   }
   renderSideNav();
   b = COURSE.find(x=>x.num===state.block);
-  const a = b.aulas.find(x=>x.num===state.aula);
+  const a = b ? b.aulas.find(x=>x.num===state.aula) : null;
   const content = document.getElementById('content');
+
+  if(editState && editState.kind!=='newBlock' && COURSE.length===0){
+    content.innerHTML = '<div class="aula-header"><p>Esta matéria ainda não tem nenhum conteúdo. Use o modo de edição para adicionar o primeiro bloco.</p></div>';
+    return;
+  }
 
   if(editState && editState.kind==='newAula'){
     content.innerHTML = newAulaForm(editState.blockNum, editState.suggestedNum);
@@ -3337,6 +3345,7 @@ async function openSubject(subjectId){
   activeSubjectId = subjectId;
   const s = allSubjects.find(x=>x.id===subjectId);
   document.getElementById('site-title-text').textContent = s ? s.name : 'Matéria';
+  document.getElementById('edit-status-bar').classList.toggle('hidden', !isAdmin);
   showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit']);
   await loadCourseFromStorage();
   editState = null;
@@ -3357,6 +3366,7 @@ document.getElementById('subject-pending-logout-btn').addEventListener('click', 
 document.getElementById('switch-subject-btn').addEventListener('click', async ()=>{
   if(!isAdmin) return;
   editState = null;
+  document.getElementById('edit-status-bar').classList.add('hidden');
   await fetchAllSubjects();
   renderSubjectPicker();
   showOnly(['subject-picker-screen']);
@@ -3559,7 +3569,7 @@ if(!firebaseReady || !auth){
   isAdmin = userDoc.role === 'admin';
   realIsAdmin = isAdmin;
   document.body.classList.toggle('admin-mode', isAdmin);
-  document.getElementById('edit-status-bar').classList.toggle('hidden', !isAdmin);
+  document.getElementById('edit-status-bar').classList.add('hidden'); // só reaparece ao abrir uma matéria, dentro de openSubject()
   document.getElementById('user-badge').classList.remove('hidden');
   document.getElementById('user-badge-name').textContent = (isAdmin ? '👑 ' : '') + userDoc.name;
   const viewAsBtn = document.getElementById('user-badge-viewas-btn');
