@@ -447,8 +447,8 @@
   .user-badge-name{font-weight:600;white-space:nowrap;}
   .user-badge-timer{color:rgba(255,255,255,0.7);white-space:nowrap;font-variant-numeric:tabular-nums;}
   .user-badge-logout{
-    background:none;border:none;color:var(--ice);cursor:pointer;font-size:16px;
-    width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;
+    background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:var(--ice);cursor:pointer;font-size:11.5px;font-weight:600;
+    padding:5px 12px;display:flex;align-items:center;justify-content:center;border-radius:14px;white-space:nowrap;
   }
   .user-badge-logout:hover{background:rgba(255,255,255,0.16);}
   .user-badge-viewas{
@@ -458,6 +458,12 @@
   }
   .user-badge-viewas:hover{background:rgba(255,255,255,0.2);}
   .user-badge-viewas.active{background:var(--gold);border-color:var(--gold);color:#fff;}
+  .user-badge-profile{
+    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+    color:var(--ice);cursor:pointer;font-size:11px;font-weight:600;
+    padding:4px 10px;border-radius:14px;white-space:nowrap;
+  }
+  .user-badge-profile:hover{background:rgba(255,255,255,0.2);}
 
 
   .auth-gate{
@@ -523,6 +529,21 @@
     font-size:14px;margin-bottom:10px;font-family:inherit;
   }
   .pw-input.hidden{display:none;}
+  .profile-modal-box{width:380px;}
+  .profile-modal-box label{
+    display:block;font-size:11.5px;font-weight:700;color:var(--navy);
+    text-transform:uppercase;letter-spacing:0.3px;margin:10px 0 4px 0;
+  }
+  .profile-modal-box input[type=text]{
+    width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;
+    font-size:13.5px;font-family:inherit;
+  }
+  .profile-photo-row{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+  .profile-photo-preview{
+    width:64px;height:64px;border-radius:50%;object-fit:cover;
+    background:var(--ice-tint);border:1px solid var(--line);
+  }
+  .profile-photo-row input[type=file]{font-size:11.5px;max-width:200px;}
   .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
   .modal-error{color:var(--terracotta);font-size:12.5px;margin:10px 0 0 0;}
   .modal-error.hidden{display:none;}
@@ -539,6 +560,8 @@
     padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;
   }
   .btn-tiny:hover{background:rgba(255,255,255,0.25);}
+  .btn-approve{background:var(--navy) !important;color:#fff !important;border:1px solid var(--navy) !important;}
+  .btn-approve:hover{background:var(--navy-dark) !important;}
 
   .edit-status-bar{
     position:sticky;top:0;z-index:60;
@@ -634,6 +657,31 @@
   .user-row-info strong{color:var(--navy);font-size:13.5px;}
   .user-row-info span{font-size:12px;color:var(--muted);}
   .user-row-status{font-size:12px;color:var(--muted);white-space:nowrap;}
+  .user-row-name-btn{background:none;border:none;padding:0;cursor:pointer;text-align:left;}
+  .user-row-name-btn strong{color:var(--navy);text-decoration:underline;text-underline-offset:2px;}
+  .user-detail-screen{max-width:100%;}
+  .user-detail-grid{display:grid;grid-template-columns:auto 1fr;gap:20px;margin-top:14px;}
+  .user-detail-fields-col label{
+    display:block;font-size:11px;font-weight:700;color:var(--navy);
+    text-transform:uppercase;letter-spacing:0.3px;margin:8px 0 3px 0;
+  }
+  .user-detail-fields-col input{
+    width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit;
+  }
+  .user-detail-fields-col input:disabled{background:var(--ice-tint);color:var(--muted);}
+  .user-detail-screen > label{
+    display:block;font-size:11px;font-weight:700;color:var(--navy);
+    text-transform:uppercase;letter-spacing:0.3px;margin:14px 0 4px 0;
+  }
+  .user-detail-screen textarea{
+    width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;
+  }
+  .session-log-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px;}
+  .session-log-table th{background:var(--ice-tint);color:var(--navy);text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;}
+  .session-log-table td{padding:7px 10px;border-bottom:1px solid var(--line);}
+  @media(max-width:820px){
+    .user-detail-grid{grid-template-columns:1fr;}
+  }
   @media(max-width:820px){
     .user-row{grid-template-columns:1fr;text-align:left;}
   }
@@ -1112,8 +1160,9 @@
       <div class="user-badge hidden" id="user-badge">
         <span class="user-badge-name" id="user-badge-name"></span>
         <span class="user-badge-timer" id="user-badge-timer" title="Tempo restante até desconectar por inatividade"></span>
+        <button class="user-badge-profile" id="user-badge-profile-btn" title="Meu cadastro">👤 Meu cadastro</button>
         <button class="user-badge-viewas hidden" id="user-badge-viewas-btn" title="Alternar entre visão de administrador e visão de aluno"></button>
-        <button class="user-badge-logout" id="user-badge-logout-btn" title="Sair">⏻</button>
+        <button class="user-badge-logout" id="user-badge-logout-btn" title="Sair">Sair</button>
       </div>
     </div>
   </div>
@@ -1165,6 +1214,26 @@
     <button class="btn-tiny" id="admin-users-btn" title="Aprovar ou remover acesso de alunos">👥 Alunos</button>
     <button class="btn-tiny" id="reload-data-btn" title="Tenta buscar de novo a última versão salva">Recarregar dados</button>
   </span>
+</div>
+
+<div class="modal-backdrop hidden" id="profile-modal-backdrop">
+  <div class="modal-box profile-modal-box">
+    <h3>Meu cadastro</h3>
+    <p class="modal-hint">Esses dados ficam visíveis para o professor. Preencha o que já souber — dá para completar depois.</p>
+    <div class="profile-photo-row">
+      <img id="profile-photo-preview" class="profile-photo-preview" src="" alt="Foto">
+      <input type="file" id="profile-photo-input" accept="image/*">
+    </div>
+    <label>Nome completo</label><input type="text" spellcheck="true" lang="pt-BR" id="profile-fullname" placeholder="Nome completo">
+    <label>R.A.</label><input type="text" id="profile-ra" placeholder="Número de matrícula">
+    <label>Telefone</label><input type="text" id="profile-phone" placeholder="(18) 90000-0000">
+    <label>Endereço completo</label><input type="text" spellcheck="true" lang="pt-BR" id="profile-address" placeholder="Rua, número, bairro, cidade">
+    <div class="modal-actions">
+      <button class="btn-secondary" id="profile-cancel-btn">Cancelar</button>
+      <button class="btn-primary" id="profile-save-btn">Salvar</button>
+    </div>
+    <p class="modal-error hidden" id="profile-error"></p>
+  </div>
 </div>
 
 <div class="aula-picker hidden" id="aula-picker" role="menu"></div>
@@ -2254,16 +2323,61 @@ async function fetchAllUsers(){
   cachedUsersList.sort((a,b)=> (a.role==='admin'?-1:1) - (b.role==='admin'?-1:1) || a.name.localeCompare(b.name));
 }
 
+function fmtDateTime(ts){
+  if(!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+function userDetailForm(u){
+  const p = u.profile || {};
+  const sessions = (u.sessions || []).slice().reverse(); // mais recente primeiro
+  const sessionRows = sessions.length ? sessions.map(s=>`
+    <tr>
+      <td>${fmtDateTime(s.loginAt)}</td>
+      <td>${s.logoutAt ? fmtDateTime(s.logoutAt) : '<em>em andamento</em>'}</td>
+      <td>${s.durationMin!=null ? s.durationMin+' min' : '—'}</td>
+    </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--muted);">Nenhum acesso registrado ainda</td></tr>';
+
+  return `<div class="editor-form user-detail-screen">
+    <div class="editing-type-banner">Cadastro do aluno — ${esc(u.name||'')}</div>
+    <div class="user-detail-grid">
+      <div class="user-detail-photo-col">
+        <img class="profile-photo-preview" style="width:96px;height:96px;visibility:${p.photoUrl?'visible':'hidden'};" src="${p.photoUrl||''}" alt="Foto">
+      </div>
+      <div class="user-detail-fields-col">
+        <label>Nome completo</label><input type="text" spellcheck="true" lang="pt-BR" id="ud-fullname" value="${escAttr(p.fullName||'')}">
+        <label>E-mail (cadastro)</label><input type="text" value="${escAttr(u.email||'')}" disabled>
+        <label>R.A.</label><input type="text" id="ud-ra" value="${escAttr(p.ra||'')}">
+        <label>Telefone</label><input type="text" id="ud-phone" value="${escAttr(p.phone||'')}">
+        <label>Endereço completo</label><input type="text" spellcheck="true" lang="pt-BR" id="ud-address" value="${escAttr(p.address||'')}">
+      </div>
+    </div>
+    <label>Anotações do professor <span style="text-transform:none;font-weight:400;color:var(--muted);">(o aluno nunca vê isso)</span></label>
+    <textarea id="ud-admin-notes" style="min-height:90px;">${esc((u.adminNotes&&u.adminNotes.notes)||'')}</textarea>
+
+    <label style="margin-top:18px;">Log de acesso (últimos ${sessions.length})</label>
+    <table class="session-log-table">
+      <tr><th>Entrou em</th><th>Saiu em</th><th>Duração</th></tr>
+      ${sessionRows}
+    </table>
+
+    <div class="editor-actions">
+      <button class="btn-primary" data-action="save-user-detail" data-uid="${u.id}">Salvar cadastro</button>
+      <button class="btn-secondary" data-action="back-to-users-screen">Voltar à lista</button>
+    </div>
+  </div>`;
+}
+
 function usersScreenForm(){
   if(!cachedUsersList){
     return `<div class="editor-form"><div class="editing-type-banner">Painel de alunos</div><p>Carregando lista de alunos…</p></div>`;
   }
   const rows = cachedUsersList.map(u => `
     <div class="user-row">
-      <div class="user-row-info"><strong>${esc(u.name||'(sem nome)')}</strong><span>${esc(u.email||'')}</span></div>
+      <div class="user-row-info">${u.role!=='admin' ? `<button class="user-row-name-btn" data-action="open-user-detail" data-uid="${u.id}"><strong>${esc(u.name||'(sem nome)')}</strong></button>` : `<strong>${esc(u.name||'(sem nome)')}</strong>`}<span>${esc(u.email||'')}</span></div>
       <div class="user-row-status">${u.role==='admin' ? '👑 Administrador' : (u.approved ? '✅ Aprovado' : '⏳ Pendente de aprovação')}</div>
       ${u.role !== 'admin' ? `
-        <button class="btn-tiny" data-action="toggle-approve-user" data-uid="${u.id}">${u.approved ? 'Revogar acesso' : 'Aprovar acesso'}</button>
+        <button class="btn-tiny btn-approve" data-action="toggle-approve-user" data-uid="${u.id}">${u.approved ? 'Revogar acesso' : 'Aprovar acesso'}</button>
         <button class="btn-tiny" style="background:var(--terracotta);" data-action="delete-user-row" data-uid="${u.id}">🗑 Excluir</button>
       ` : '<span></span><span></span>'}
     </div>`).join('');
@@ -2410,6 +2524,12 @@ function render(){
     }
     return;
   }
+  if(editState && editState.kind==='userDetail'){
+    const u = cachedUsersList && cachedUsersList.find(x=>x.id===editState.uid);
+    if(!u){ editState = {kind:'usersScreen'}; cachedUsersList = null; render(); return; }
+    content.innerHTML = userDetailForm(u);
+    return;
+  }
 
   if(!a){
     content.innerHTML = '<div class="aula-header"><p>Nenhuma aula disponível. Use o modo de edição para adicionar uma.</p></div>';
@@ -2525,6 +2645,39 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='org-delete-aula-row'){
     if(confirm('Remover esta aula da lista? Isso só é definitivo depois de clicar em "Salvar todas as alterações".')){
       btn.closest('.org-aula-row').remove();
+    }
+    return;
+  }
+  if(action==='open-user-detail'){
+    editState = {kind:'userDetail', uid: btn.dataset.uid};
+    render();
+    return;
+  }
+  if(action==='back-to-users-screen'){
+    editState = {kind:'usersScreen'};
+    render();
+    return;
+  }
+  if(action==='save-user-detail'){
+    const uid = btn.dataset.uid;
+    const u = cachedUsersList.find(x=>x.id===uid);
+    if(!u) return;
+    const profile = {
+      fullName: document.getElementById('ud-fullname').value.trim(),
+      ra: document.getElementById('ud-ra').value.trim(),
+      phone: document.getElementById('ud-phone').value.trim(),
+      address: document.getElementById('ud-address').value.trim(),
+      photoUrl: (u.profile && u.profile.photoUrl) || '',
+    };
+    const adminNotes = { notes: document.getElementById('ud-admin-notes').value };
+    try{
+      await db.collection('users').doc(uid).update({profile, adminNotes});
+      u.profile = profile;
+      u.adminNotes = adminNotes;
+      alert('Cadastro salvo.');
+      render();
+    }catch(e){
+      alert('Não foi possível salvar: ' + (e && e.message ? e.message : String(e)));
     }
     return;
   }
@@ -3063,7 +3216,7 @@ document.getElementById('auth-register-btn').addEventListener('click', async ()=
   try{
     const cred = await auth.createUserWithEmailAndPassword(email, password);
     await db.collection('users').doc(cred.user.uid).set({
-      name, email, role:'student', approved:false, createdAt: Date.now()
+      name, email, role:'student', approved:false, createdAt: Date.now(), profile:{}, sessions:[]
     });
     // onAuthStateChanged cuida de mostrar a tela de "aguardando aprovação" a seguir
   }catch(e){
@@ -3072,7 +3225,88 @@ document.getElementById('auth-register-btn').addEventListener('click', async ()=
   }
 });
 
-document.getElementById('user-badge-logout-btn').addEventListener('click', ()=> auth.signOut());
+document.getElementById('user-badge-logout-btn').addEventListener('click', async ()=>{
+  await logSessionEnd();
+  auth.signOut();
+});
+
+// ===================== MEU CADASTRO (perfil compartilhado) =====================
+function openProfileModal(){
+  const p = (currentUserDoc && currentUserDoc.profile) || {};
+  document.getElementById('profile-fullname').value = p.fullName || '';
+  document.getElementById('profile-ra').value = p.ra || '';
+  document.getElementById('profile-phone').value = p.phone || '';
+  document.getElementById('profile-address').value = p.address || '';
+  const preview = document.getElementById('profile-photo-preview');
+  preview.src = p.photoUrl || '';
+  preview.style.visibility = p.photoUrl ? 'visible' : 'hidden';
+  document.getElementById('profile-error').classList.add('hidden');
+  document.getElementById('profile-modal-backdrop').classList.remove('hidden');
+}
+function closeProfileModal(){ document.getElementById('profile-modal-backdrop').classList.add('hidden'); }
+
+document.getElementById('user-badge-profile-btn').addEventListener('click', openProfileModal);
+document.getElementById('profile-cancel-btn').addEventListener('click', closeProfileModal);
+
+document.getElementById('profile-photo-input').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const dataUrl = await resizeImageFile(file, 240, 0.8);
+  const preview = document.getElementById('profile-photo-preview');
+  preview.src = dataUrl;
+  preview.style.visibility = 'visible';
+  preview.dataset.newPhoto = dataUrl;
+});
+
+document.getElementById('profile-save-btn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('profile-error');
+  errEl.classList.add('hidden');
+  const preview = document.getElementById('profile-photo-preview');
+  const profile = {
+    fullName: document.getElementById('profile-fullname').value.trim(),
+    ra: document.getElementById('profile-ra').value.trim(),
+    phone: document.getElementById('profile-phone').value.trim(),
+    address: document.getElementById('profile-address').value.trim(),
+    photoUrl: preview.dataset.newPhoto || (currentUserDoc.profile && currentUserDoc.profile.photoUrl) || '',
+  };
+  try{
+    await db.collection('users').doc(currentUser.uid).update({profile});
+    currentUserDoc.profile = profile;
+    closeProfileModal();
+  }catch(e){
+    errEl.textContent = 'Não foi possível salvar: ' + (e && e.message ? e.message : String(e));
+    errEl.classList.remove('hidden');
+  }
+});
+
+// ===================== LOG LEVE DE ACESSO (login/logout) =====================
+let currentSessionStart = null;
+async function logSessionStart(){
+  currentSessionStart = Date.now();
+  try{
+    const snap = await db.collection('users').doc(currentUser.uid).get();
+    const sessions = (snap.data().sessions || []).slice(-19); // mantém no máximo 20 registros
+    sessions.push({loginAt: currentSessionStart, logoutAt: null, durationMin: null});
+    await db.collection('users').doc(currentUser.uid).update({sessions});
+  }catch(e){ /* log é "melhor esforço" — nunca bloqueia o uso do site */ }
+}
+async function logSessionEnd(){
+  if(!currentUser || !currentSessionStart) return;
+  try{
+    const snap = await db.collection('users').doc(currentUser.uid).get();
+    const sessions = snap.data().sessions || [];
+    if(sessions.length){
+      const last = sessions[sessions.length-1];
+      last.logoutAt = Date.now();
+      last.durationMin = Math.round((last.logoutAt - last.loginAt) / 60000);
+      await db.collection('users').doc(currentUser.uid).update({sessions});
+    }
+  }catch(e){ /* melhor esforço */ }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'hidden') logSessionEnd();
+});
+window.addEventListener('beforeunload', ()=>{ logSessionEnd(); });
 
 function updateViewAsButtonLabel(){
   const btn = document.getElementById('user-badge-viewas-btn');
@@ -3161,6 +3395,7 @@ if(!firebaseReady || !auth){
     stopInactivityWatch();
     if(!user){
       currentUserDoc = null;
+      currentSessionStart = null;
       isAdmin = false;
       document.body.classList.remove('admin-mode');
     showOnly(['auth-gate']);
@@ -3197,6 +3432,7 @@ if(!firebaseReady || !auth){
   await loadCourseFromStorage();
   await loadInactivitySetting();
   startInactivityWatch();
+  if(!currentSessionStart) logSessionStart();
   render();
   });
 }
