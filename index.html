@@ -726,6 +726,16 @@
   .editor-form .table-grid td{padding:3px;}
   .editor-form .table-grid input{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:5px;font-size:12.5px;}
   .editor-form .row-actions{display:flex;gap:6px;margin-top:8px;}
+  .ld-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+  .ld-row .ld-label{flex:1 1 40%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;}
+  .ld-row .ld-desc{flex:1 1 60%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;}
+  .chip-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+  .chip-row .chip-label{flex:1;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;}
+  .grid-card-row{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--ice-tint);}
+  .grid-card-row-header{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+  .grid-card-row-header .gc-title{flex:1;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-weight:600;font-family:inherit;}
+  .gc-bullets{width:100%;min-height:70px;padding:8px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;}
+  .cmp-items{width:100%;min-height:100px;padding:8px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;margin-bottom:8px;}
   .rich-toolbar{
     display:flex;flex-wrap:wrap;gap:4px;align-items:center;
     background:#fff;border:1px solid var(--line);border-radius:8px 8px 0 0;
@@ -998,6 +1008,32 @@
   .figure-loading-wrap{position:relative;min-height:160px;background:var(--ice-tint);display:flex;align-items:center;justify-content:center;}
   .figure-img-loading{width:100%;display:block;}
   .figure-img-loading:not([src]){display:none;}
+
+  /* ===== Encaixe de imagem no texto (modelo v2) ===== */
+  [data-drag-figure-idx]{cursor:grab;}
+  [data-drag-figure-idx]:active{cursor:grabbing;}
+  [data-drop-target-id]{transition:background .12s ease;}
+  .prose.has-docked-figure{overflow:visible;}
+  .docked-figure-wrap{cursor:grab;}
+  .docked-figure-wrap img{border-radius:8px;display:block;}
+  .figure-caption.docked{font-size:11.5px;color:var(--muted);line-height:1.4;}
+  .figure-caption.docked strong{color:var(--navy);}
+  .dock-indicator{
+    position:absolute;
+    border:2px dashed var(--gold);
+    background:rgba(247,156,49,0.12);
+    border-radius:8px;
+    pointer-events:none;
+    z-index:400;
+    transition:top .05s ease, left .05s ease;
+  }
+  .dock-indicator.hidden{display:none;}
+  /* Em telas estreitas, nenhuma imagem encaixada arrisca quebrar o layout:
+     ela sempre volta a ocupar a largura toda, empilhada, como uma seção normal. */
+  @media(max-width:820px){
+    .docked-figure-wrap{float:none !important; width:100% !important; margin:0 0 14px 0 !important;}
+    .figure-caption.docked{float:none !important; width:100% !important; margin:0 0 14px 0 !important;}
+  }
   .figure-spinner{position:absolute;font-size:12.5px;color:var(--muted);}
   .figure-img-loading[src] ~ .figure-spinner{display:none;}
   .figure-pending-inner{
@@ -1258,6 +1294,7 @@
     <button class="btn-tiny" id="switch-subject-btn" title="Trocar para outra matéria, ou criar uma nova">🏠 Trocar de matéria</button>
     <button class="btn-tiny" id="organize-btn" title="Reorganizar numeração, blocos e visibilidade de tudo em uma tela só">🗂 Organizar curso</button>
     <button class="btn-tiny" id="admin-users-btn" title="Aprovar ou remover acesso de alunos">👥 Alunos</button>
+    <button class="btn-tiny" id="download-pdf-btn" title="Baixar esta aula formatada em PDF">⬇ Baixar aula em PDF</button>
     <button class="btn-tiny" id="reload-data-btn" title="Tenta buscar de novo a última versão salva">Recarregar dados</button>
   </span>
 </div>
@@ -1711,9 +1748,31 @@ function noteHtml(note){
   </div>`;
 }
 
-function sectionHtml(sec, idx){
+function dockedFigureHtml(fig){
+  if(!fig) return '';
+  const side = (fig.dockPosition||'top-left').includes('right') ? 'right' : 'left';
+  const customSize = (fig.width || fig.height);
+  const sizeStyle = customSize
+    ? `${fig.width?`width:${fig.width}px;`:''}${fig.height?`height:${fig.height}px;`:''}`
+    : `width:50%;`;
+  const style = `float:${side};${sizeStyle}margin:${side==='left'?'4px 18px 12px 0':'4px 0 12px 18px'};max-width:100%;`;
+  let imgTag;
+  if(fig.storageKey){
+    imgTag = `<img data-storage-key="${esc(fig.storageKey)}" class="figure-img-loading" alt="${esc(fig.alt||'')}" style="${style}">`;
+  } else if(fig.src){
+    imgTag = `<img src="${fig.src}" alt="${esc(fig.alt||'')}" style="${style}">`;
+  } else {
+    return '';
+  }
+  const capt = (fig.caption||fig.source) ? `<div class="figure-caption docked" style="float:${side};${customSize?(fig.width?`width:${fig.width}px;`:''):'width:50%;'}margin:${side==='left'?'0 18px 12px 0':'0 0 12px 18px'};"><strong>${esc(fig.caption||'')}</strong>${fig.source?` — ${esc(fig.source)}`:''}</div>` : '';
+  return `<div class="docked-figure-wrap" data-docked-figure-id="${esc(fig.id)}" contenteditable="false">${imgTag}${capt}</div>`;
+}
+
+function sectionHtml(sec, idx, dockedFigure, contentModel){
   const kicker = sec.kicker ? `<div class="section-kicker">${esc(sec.kicker)}</div>` : '';
   const title = sec.title ? `<h3 class="section-title">${esc(sec.title)}</h3>` : '';
+  const draggableAttr = (contentModel==='v2' && sec.type==='figure') ? ` draggable="true" data-drag-figure-idx="${idx}"` : '';
+  const dropTargetAttr = (contentModel==='v2' && sec.type==='prose') ? ` data-drop-target-id="${esc(sec.id)}"` : '';
   const editbar = `<div class="section-editbar">
     <button class="edit-chip" data-action="edit-section" data-idx="${idx}" title="Editar">✎</button>
     <button class="edit-chip" data-action="duplicate-section" data-idx="${idx}" title="Duplicar (a cópia aparece logo abaixo)">⧉</button>
@@ -1760,10 +1819,10 @@ function sectionHtml(sec, idx){
       </a>`;
       break;
     case 'prose':
-      body = `<div class="prose rich-content">${(sec.paragraphs||[]).map(p=>{
+      body = `<div class="prose rich-content${dockedFigure?' has-docked-figure':''}">${dockedFigure?dockedFigureHtml(dockedFigure):''}${(sec.paragraphs||[]).map(p=>{
         const isList = /^<(ul|ol)[ >]/i.test(p.trim());
         return isList ? richOut(p) : `<p>${richOut(p)}</p>`;
-      }).join('')}</div>`;
+      }).join('')}<div style="clear:both;"></div></div>`;
       break;
     case 'points':
       body = `<ul class="bullets rich-content">${(sec.bullets||[]).map(b=>`<li>${richOut(b)}</li>`).join('')}</ul>${noteHtml(sec.note)}`;
@@ -1807,7 +1866,7 @@ function sectionHtml(sec, idx){
       </div>`;
       break;
   }
-  return `<section class="section">${editbar}${kicker}${title}${body}</section>`;
+  return `<section class="section" data-section-id="${esc(sec.id||'')}"${draggableAttr}${dropTargetAttr}>${editbar}${kicker}${title}${body}</section>`;
 }
 
 function renderAulaPicker(){
@@ -2261,6 +2320,68 @@ function tableGridHtml(headers, rows){
   return html;
 }
 
+// ===== Helpers reutilizáveis para os tipos "avançados" (linha do tempo, eixos,
+// cadeia hierárquica, chips, grade de cards, comparação) — cada um usa o mesmo
+// padrão de "linhas com adicionar/remover" já usado na tabela. =====
+
+// Timeline / Axes / Hierarchy: todos são uma lista de {rótulo, descrição}.
+// "kind" identifica qual dos três é, e "labelField" o nome do campo de rótulo
+// (label, title ou label) — usado só para saber que chave gravar ao coletar.
+function labelDescListHtml(items, kind, labelPlaceholder){
+  return items.map((it,i)=>`
+    <div class="ld-row" data-kind="${kind}" data-i="${i}">
+      <input type="text" spellcheck="true" lang="pt-BR" class="ld-label" placeholder="${escAttr(labelPlaceholder)}" value="${escAttr(it._label||'')}">
+      <input type="text" spellcheck="true" lang="pt-BR" class="ld-desc" placeholder="Descrição (opcional)" value="${escAttr(it._desc||'')}">
+      <button type="button" class="edit-chip danger" data-action="del-ld-row" data-kind="${kind}" data-i="${i}" title="Remover">−</button>
+    </div>`).join('');
+}
+function collectLabelDescListFromDom(wrapId){
+  const wrap = document.getElementById(wrapId);
+  return [...wrap.querySelectorAll('.ld-row')].map(row=>({
+    _label: row.querySelector('.ld-label').value.trim(),
+    _desc: row.querySelector('.ld-desc').value.trim(),
+  }));
+}
+
+// Chips: lista simples de rótulos curtos, sem descrição.
+function chipsListHtml(chips){
+  return chips.map((c,i)=>`
+    <div class="chip-row" data-i="${i}">
+      <input type="text" spellcheck="true" lang="pt-BR" class="chip-label" placeholder="Palavra ou termo curto" value="${escAttr(c.label||'')}">
+      <button type="button" class="edit-chip danger" data-action="del-chip-row" data-i="${i}" title="Remover">−</button>
+    </div>`).join('');
+}
+function collectChipsFromDom(){
+  const wrap = document.getElementById('ef-chips-wrap');
+  return [...wrap.querySelectorAll('.chip-row')].map(row=>({
+    label: row.querySelector('.chip-label').value.trim(),
+  })).filter(c=>c.label);
+}
+
+// Grade de cards: cada card tem um título e uma lista de tópicos (um por linha).
+function gridCardsHtml(cards){
+  return cards.map((c,i)=>`
+    <div class="grid-card-row" data-i="${i}">
+      <div class="grid-card-row-header">
+        <input type="text" spellcheck="true" lang="pt-BR" class="gc-title" placeholder="Título do card" value="${escAttr(c.title||'')}">
+        <button type="button" class="edit-chip danger" data-action="del-grid-card" data-i="${i}" title="Remover card">−</button>
+      </div>
+      <textarea class="gc-bullets" placeholder="Um tópico por linha">${esc((c.bullets||[]).join('\n'))}</textarea>
+    </div>`).join('');
+}
+function collectGridCardsFromDom(){
+  const wrap = document.getElementById('ef-grid-wrap');
+  return [...wrap.querySelectorAll('.grid-card-row')].map(row=>({
+    title: row.querySelector('.gc-title').value.trim(),
+    bullets: row.querySelector('.gc-bullets').value.split('\n').map(s=>s.trim()).filter(Boolean),
+  }));
+}
+
+// Comparação: duas colunas independentes, cada uma com título + lista (uma por linha).
+function compareColHtml(items, side){
+  return `<textarea class="cmp-items" data-side="${side}" placeholder="Um item por linha">${esc(items.join('\n'))}</textarea>`;
+}
+
 function collectTableFromDom(){
   const wrap = document.getElementById('ef-table-wrap');
   const ths = [...wrap.querySelectorAll('.ef-th')].sort((a,b)=>a.dataset.ci-b.dataset.ci);
@@ -2341,6 +2462,72 @@ function sectionEditorForm(sec, idx){
     fields = `
       <label>Título do questionário</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-quiz-title" value="${escAttr(sec.title||'')}">
       <div class="hint">Esta seção ainda está em construção — por enquanto, só reserva o lugar dela na aula. As perguntas e respostas de verdade virão numa atualização futura.</div>`;
+  } else if(type==='timeline'){
+    const items = (sec.steps||[]).map(s=>({_label:s.label, _desc:s.desc}));
+    fields = `
+      <label>Etiqueta (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-kicker" value="${escAttr(sec.kicker||'')}">
+      <label>Título (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
+      <label>Etapas da linha do tempo, em ordem</label>
+      <div id="ef-ld-wrap">${labelDescListHtml(items.length?items:[{_label:'',_desc:''}], 'timeline', 'Nome da etapa')}</div>
+      <button type="button" class="btn-secondary" data-action="add-ld-row" data-kind="timeline" style="margin-top:6px;">+ Adicionar etapa</button>
+      <label style="margin-top:14px;">Legenda abaixo da linha do tempo (opcional)</label>
+      <input type="text" spellcheck="true" lang="pt-BR" id="ef-tl-caption" value="${escAttr(sec.caption||'')}">`;
+  } else if(type==='axes'){
+    const items = (sec.axes||[]).map(a=>({_label:a.title, _desc:a.desc}));
+    fields = `
+      <label>Etiqueta (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-kicker" value="${escAttr(sec.kicker||'')}">
+      <label>Título (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
+      <label>Eixos / cards</label>
+      <div id="ef-ld-wrap">${labelDescListHtml(items.length?items:[{_label:'',_desc:''}], 'axes', 'Nome do eixo')}</div>
+      <button type="button" class="btn-secondary" data-action="add-ld-row" data-kind="axes" style="margin-top:6px;">+ Adicionar eixo</button>
+      <label style="margin-top:14px;">Exemplo aplicado (opcional)</label>
+      <input type="text" spellcheck="true" lang="pt-BR" id="ef-axes-example" value="${escAttr(sec.example||'')}">`;
+  } else if(type==='hierarchy'){
+    const items = (sec.chain||[]).map(c=>({_label:c.label, _desc:c.desc}));
+    fields = `
+      <label>Etiqueta (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-kicker" value="${escAttr(sec.kicker||'')}">
+      <label>Título (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
+      <label>Elos da cadeia, em ordem (aparece uma seta → entre cada um)</label>
+      <div id="ef-ld-wrap">${labelDescListHtml(items.length?items:[{_label:'',_desc:''}], 'hierarchy', 'Nome do elo')}</div>
+      <button type="button" class="btn-secondary" data-action="add-ld-row" data-kind="hierarchy" style="margin-top:6px;">+ Adicionar elo</button>
+      <label style="margin-top:14px;">Nota final (opcional)</label>
+      <input type="text" spellcheck="true" lang="pt-BR" id="ef-chain-note" value="${escAttr(sec.note||'')}">`;
+  } else if(type==='chips'){
+    fields = `
+      <label>Etiqueta (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-kicker" value="${escAttr(sec.kicker||'')}">
+      <label>Título (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
+      <label>Termos / palavras-chave</label>
+      <div id="ef-chips-wrap">${chipsListHtml((sec.chips&&sec.chips.length)?sec.chips:[{label:''}])}</div>
+      <button type="button" class="btn-secondary" data-action="add-chip-row" style="margin-top:6px;">+ Adicionar termo</button>
+      <label style="margin-top:14px;">Nota final (opcional)</label>
+      <input type="text" spellcheck="true" lang="pt-BR" id="ef-chips-footer" value="${escAttr(sec.footerNote||'')}">`;
+  } else if(type==='grid'){
+    fields = `
+      <label>Etiqueta (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-kicker" value="${escAttr(sec.kicker||'')}">
+      <label>Título (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
+      <label>Cards da grade</label>
+      <div id="ef-grid-wrap">${gridCardsHtml((sec.cards&&sec.cards.length)?sec.cards:[{title:'',bullets:['']}])}</div>
+      <button type="button" class="btn-secondary" data-action="add-grid-card" style="margin-top:6px;">+ Adicionar card</button>`;
+  } else if(type==='compare'){
+    fields = `
+      <label>Etiqueta (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-kicker" value="${escAttr(sec.kicker||'')}">
+      <label>Título (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
+      <div style="display:flex;gap:16px;">
+        <div style="flex:1;">
+          <label>Título — coluna esquerda</label>
+          <input type="text" spellcheck="true" lang="pt-BR" id="ef-cmp-left-title" value="${escAttr(sec.leftTitle||'')}">
+          <label>Itens — coluna esquerda (um por linha)</label>
+          ${compareColHtml(sec.leftItems||[''], 'left')}
+        </div>
+        <div style="flex:1;">
+          <label>Título — coluna direita</label>
+          <input type="text" spellcheck="true" lang="pt-BR" id="ef-cmp-right-title" value="${escAttr(sec.rightTitle||'')}">
+          <label>Itens — coluna direita (um por linha)</label>
+          ${compareColHtml(sec.rightItems||[''], 'right')}
+        </div>
+      </div>
+      <label style="margin-top:14px;">Nota final (opcional)</label>
+      <input type="text" spellcheck="true" lang="pt-BR" id="ef-cmp-footer" value="${escAttr(sec.footerNote||'')}">`;
   } else {
     fields = `
       <label>Dados desta seção — JSON avançado</label>
@@ -2570,21 +2757,25 @@ function newSectionForm(){
   </div>`;
 }
 
+function genSectionId(){
+  return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
 function blankSection(type){
+  const id = genSectionId();
   switch(type){
-    case 'prose': return {type, paragraphs:['']};
-    case 'points': return {type, bullets:['']};
-    case 'table': return {type, headers:['Coluna 1','Coluna 2'], rows:[['','']]};
-    case 'figure': return {type, src:'', caption:'', source:''};
-    case 'video': return {type, url:'', videoTitle:'', meta:''};
-    case 'grid': return {type, cards:[{title:'', bullets:['']}]};
-    case 'compare': return {type, leftTitle:'', leftItems:[''], rightTitle:'', rightItems:['']};
-    case 'timeline': return {type, steps:[{label:'', desc:''}]};
-    case 'axes': return {type, axes:[{title:'', desc:''}]};
-    case 'hierarchy': return {type, chain:[{label:'', desc:''}]};
-    case 'chips': return {type, chips:[{label:''}]};
-    case 'quiz': return {type, title:'', questions:[]};
-    default: return {type};
+    case 'prose': return {type, id, paragraphs:['']};
+    case 'points': return {type, id, bullets:['']};
+    case 'table': return {type, id, headers:['Coluna 1','Coluna 2'], rows:[['','']]};
+    case 'figure': return {type, id, src:'', caption:'', source:''};
+    case 'video': return {type, id, url:'', videoTitle:'', meta:''};
+    case 'grid': return {type, id, cards:[{title:'', bullets:['']}]};
+    case 'compare': return {type, id, leftTitle:'', leftItems:[''], rightTitle:'', rightItems:['']};
+    case 'timeline': return {type, id, steps:[{label:'', desc:''}]};
+    case 'axes': return {type, id, axes:[{title:'', desc:''}]};
+    case 'hierarchy': return {type, id, chain:[{label:'', desc:''}]};
+    case 'chips': return {type, id, chips:[{label:''}]};
+    case 'quiz': return {type, id, title:'', questions:[]};
+    default: return {type, id};
   }
 }
 
@@ -2679,11 +2870,29 @@ function render(){
         <p>Sem conteúdo conceitual por padrão — use "+ Adicionar seção" abaixo se quiser incluir algo aqui.</p>
       </div>`;
     }
+    // Modelo v2 (aulas novas): imagens podem estar "encaixadas" a um parágrafo de
+    // texto específico (ver campo dockedTo/dockPosition na seção de imagem).
+    // Aqui montamos um mapa de qual figura pertence a qual seção-anfitriã, para
+    // renderizá-las juntas (com o texto contornando a imagem), e pulamos a
+    // figura na lista principal para não aparecer duas vezes.
+    const dockedFigureByHostId = {};
+    const dockedFigureIds = new Set();
+    if(a.contentModel==='v2'){
+      (a.sections||[]).forEach(sec=>{
+        if(sec.type==='figure' && sec.dockedTo){
+          dockedFigureByHostId[sec.dockedTo] = sec;
+          dockedFigureIds.add(sec.id);
+        }
+      });
+    }
     inner += (a.sections||[]).map((sec,idx)=>{
+      if(dockedFigureIds.has(sec.id) && !(editState && editState.kind==='section' && editState.idx===idx)){
+        return ''; // essa figura é renderizada junto com o texto que a "hospeda", não sozinha
+      }
       if(editState && editState.kind==='section' && editState.idx===idx){
         return sectionEditorForm(sec, idx);
       }
-      return sectionHtml(sec, idx);
+      return sectionHtml(sec, idx, dockedFigureByHostId[sec.id], a.contentModel);
     }).join('');
 
     if(editState && editState.kind==='newSection'){
@@ -2708,6 +2917,89 @@ function render(){
 }
 
 // ===== Admin: action handlers (event delegation) =====
+// ===================== ENCAIXE DE IMAGEM NO TEXTO (modelo v2) =====================
+// Arrastar uma seção de imagem sobre um parágrafo de texto "encaixa" ela num dos
+// 4 cantos (o texto contorna a imagem). Arrastar de volta para fora desencaixa.
+let draggingFigureIdx = null;
+let dockIndicatorEl = null;
+
+function ensureDockIndicator(){
+  if(dockIndicatorEl) return dockIndicatorEl;
+  dockIndicatorEl = document.createElement('div');
+  dockIndicatorEl.className = 'dock-indicator';
+  document.body.appendChild(dockIndicatorEl);
+  return dockIndicatorEl;
+}
+function hideDockIndicator(){
+  if(dockIndicatorEl) dockIndicatorEl.classList.add('hidden');
+}
+function showDockIndicatorAt(targetEl, corner){
+  const ind = ensureDockIndicator();
+  const rect = targetEl.getBoundingClientRect();
+  const w = rect.width * 0.42, h = Math.min(160, rect.height * 0.5);
+  let top, left;
+  if(corner.includes('top')) top = rect.top + window.scrollY + 10;
+  else top = rect.bottom + window.scrollY - h - 10;
+  if(corner.includes('left')) left = rect.left + window.scrollX + 10;
+  else left = rect.right + window.scrollX - w - 10;
+  ind.style.top = top+'px';
+  ind.style.left = left+'px';
+  ind.style.width = w+'px';
+  ind.style.height = h+'px';
+  ind.classList.remove('hidden');
+}
+function cornerFromEvent(e, rect){
+  const relX = e.clientX - rect.left;
+  const relY = e.clientY - rect.top;
+  const vert = relY < rect.height/2 ? 'top' : 'bottom';
+  const horiz = relX < rect.width/2 ? 'left' : 'right';
+  return vert+'-'+horiz;
+}
+
+document.getElementById('content').addEventListener('dragstart', (e)=>{
+  const dragEl = e.target.closest('[data-drag-figure-idx]');
+  if(!dragEl) return;
+  draggingFigureIdx = +dragEl.dataset.dragFigureIdx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(draggingFigureIdx));
+});
+document.getElementById('content').addEventListener('dragover', (e)=>{
+  const target = e.target.closest('[data-drop-target-id]');
+  if(!target || draggingFigureIdx===null){ return; }
+  e.preventDefault();
+  const rect = target.getBoundingClientRect();
+  const corner = cornerFromEvent(e, rect);
+  target.dataset.pendingCorner = corner;
+  showDockIndicatorAt(target, corner);
+});
+document.getElementById('content').addEventListener('dragleave', (e)=>{
+  const target = e.target.closest('[data-drop-target-id]');
+  if(target && !target.contains(e.relatedTarget)) hideDockIndicator();
+});
+document.getElementById('content').addEventListener('drop', async (e)=>{
+  const target = e.target.closest('[data-drop-target-id]');
+  hideDockIndicator();
+  if(draggingFigureIdx===null) return;
+  e.preventDefault();
+  const b = COURSE.find(x=>x.num===state.block);
+  const a = b.aulas.find(x=>x.num===state.aula);
+  const fig = a.sections[draggingFigureIdx];
+  if(!fig || fig.type!=='figure'){ draggingFigureIdx=null; return; }
+  if(target){
+    const corner = target.dataset.pendingCorner || 'top-left';
+    fig.dockedTo = target.dataset.dropTargetId;
+    fig.dockPosition = corner;
+  } else {
+    // soltou fora de qualquer texto: desencaixa, volta a ser independente
+    delete fig.dockedTo;
+    delete fig.dockPosition;
+  }
+  draggingFigureIdx = null;
+  await saveCourseToStorage();
+  render();
+});
+document.addEventListener('dragend', ()=>{ draggingFigureIdx = null; hideDockIndicator(); });
+
 document.getElementById('content').addEventListener('click', async (e)=>{
   const btn = e.target.closest('[data-action]');
   if(!btn) return;
@@ -2741,6 +3033,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       hidden: document.getElementById('ef-new-a-hidden').checked,
       sections: [],
       isPractice: false,
+      contentModel: 'v2', // aulas novas usam o modelo de página contínua com imagens "encaixáveis"
     };
     targetBlock.aulas.push(newAula);
     targetBlock.aulas.sort((x,y)=>x.num-y.num);
@@ -3004,6 +3297,46 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     }
     return;
   }
+  if(action==='add-ld-row'){
+    const kind = btn.dataset.kind;
+    const cur = collectLabelDescListFromDom('ef-ld-wrap');
+    cur.push({_label:'', _desc:''});
+    const placeholder = kind==='timeline' ? 'Nome da etapa' : kind==='axes' ? 'Nome do eixo' : 'Nome do elo';
+    document.getElementById('ef-ld-wrap').innerHTML = labelDescListHtml(cur, kind, placeholder);
+    return;
+  }
+  if(action==='del-ld-row'){
+    const kind = btn.dataset.kind;
+    const cur = collectLabelDescListFromDom('ef-ld-wrap');
+    cur.splice(+btn.dataset.i, 1);
+    const placeholder = kind==='timeline' ? 'Nome da etapa' : kind==='axes' ? 'Nome do eixo' : 'Nome do elo';
+    document.getElementById('ef-ld-wrap').innerHTML = labelDescListHtml(cur.length?cur:[{_label:'',_desc:''}], kind, placeholder);
+    return;
+  }
+  if(action==='add-chip-row'){
+    const cur = collectChipsFromDom();
+    cur.push({label:''});
+    document.getElementById('ef-chips-wrap').innerHTML = chipsListHtml(cur);
+    return;
+  }
+  if(action==='del-chip-row'){
+    const cur = collectChipsFromDom();
+    cur.splice(+btn.dataset.i, 1);
+    document.getElementById('ef-chips-wrap').innerHTML = chipsListHtml(cur.length?cur:[{label:''}]);
+    return;
+  }
+  if(action==='add-grid-card'){
+    const cur = collectGridCardsFromDom();
+    cur.push({title:'', bullets:['']});
+    document.getElementById('ef-grid-wrap').innerHTML = gridCardsHtml(cur);
+    return;
+  }
+  if(action==='del-grid-card'){
+    const cur = collectGridCardsFromDom();
+    cur.splice(+btn.dataset.i, 1);
+    document.getElementById('ef-grid-wrap').innerHTML = gridCardsHtml(cur.length?cur:[{title:'',bullets:['']}]);
+    return;
+  }
 
   if(action==='save-aula-header'){
     const newNum = parseInt(document.getElementById('ef-a-num').value, 10);
@@ -3128,6 +3461,47 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         const existingQuiz = a.sections[idx];
         newSec = { type, title: document.getElementById('ef-quiz-title').value.trim(),
           questions: (existingQuiz && existingQuiz.questions) || [] };
+      } else if(type==='timeline'){
+        const items = collectLabelDescListFromDom('ef-ld-wrap');
+        newSec = { type,
+          kicker: document.getElementById('ef-kicker').value.trim()||undefined,
+          title: document.getElementById('ef-title').value.trim()||undefined,
+          steps: items.filter(it=>it._label).map(it=>({label:it._label, desc:it._desc})),
+          caption: document.getElementById('ef-tl-caption').value.trim()||undefined };
+      } else if(type==='axes'){
+        const items = collectLabelDescListFromDom('ef-ld-wrap');
+        newSec = { type,
+          kicker: document.getElementById('ef-kicker').value.trim()||undefined,
+          title: document.getElementById('ef-title').value.trim()||undefined,
+          axes: items.filter(it=>it._label).map(it=>({title:it._label, desc:it._desc})),
+          example: document.getElementById('ef-axes-example').value.trim()||undefined };
+      } else if(type==='hierarchy'){
+        const items = collectLabelDescListFromDom('ef-ld-wrap');
+        newSec = { type,
+          kicker: document.getElementById('ef-kicker').value.trim()||undefined,
+          title: document.getElementById('ef-title').value.trim()||undefined,
+          chain: items.filter(it=>it._label).map(it=>({label:it._label, desc:it._desc})),
+          note: document.getElementById('ef-chain-note').value.trim()||undefined };
+      } else if(type==='chips'){
+        newSec = { type,
+          kicker: document.getElementById('ef-kicker').value.trim()||undefined,
+          title: document.getElementById('ef-title').value.trim()||undefined,
+          chips: collectChipsFromDom(),
+          footerNote: document.getElementById('ef-chips-footer').value.trim()||undefined };
+      } else if(type==='grid'){
+        newSec = { type,
+          kicker: document.getElementById('ef-kicker').value.trim()||undefined,
+          title: document.getElementById('ef-title').value.trim()||undefined,
+          cards: collectGridCardsFromDom().filter(c=>c.title || c.bullets.length) };
+      } else if(type==='compare'){
+        const leftItems = document.querySelector('.cmp-items[data-side="left"]').value.split('\n').map(s=>s.trim()).filter(Boolean);
+        const rightItems = document.querySelector('.cmp-items[data-side="right"]').value.split('\n').map(s=>s.trim()).filter(Boolean);
+        newSec = { type,
+          kicker: document.getElementById('ef-kicker').value.trim()||undefined,
+          title: document.getElementById('ef-title').value.trim()||undefined,
+          leftTitle: document.getElementById('ef-cmp-left-title').value.trim(),
+          leftItems, rightTitle: document.getElementById('ef-cmp-right-title').value.trim(),
+          rightItems, footerNote: document.getElementById('ef-cmp-footer').value.trim()||undefined };
       } else {
         newSec = JSON.parse(document.getElementById('ef-json').value);
       }
@@ -3135,6 +3509,8 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       alert('Não consegui salvar: verifique o formato do JSON (a edição foi cancelada, nada foi perdido).');
       return;
     }
+    const existingForId = a.sections[idx];
+    newSec.id = (existingForId && existingForId.id) || newSec.id || genSectionId();
     if(idx >= a.sections.length){ a.sections.push(newSec); } else { a.sections[idx] = newSec; }
     editState = null;
     await saveCourseToStorage();
@@ -3232,6 +3608,185 @@ document.getElementById('organize-btn').addEventListener('click', ()=>{
   render();
   document.getElementById('content').scrollIntoView({behavior:'smooth'});
 });
+// ===================== BAIXAR AULA EM PDF =====================
+function sectionToPrintHtml(sec){
+  const kicker = sec.kicker ? `<div class="pdf-kicker">${esc(sec.kicker)}</div>` : '';
+  const title = sec.title ? `<h3 class="pdf-sec-title">${esc(sec.title)}</h3>` : '';
+  let body = '';
+  switch(sec.type){
+    case 'prose':
+      body = (sec.paragraphs||[]).map(p=>{
+        const isList = /^<(ul|ol)[ >]/i.test(p.trim());
+        return isList ? richOut(p) : `<p>${richOut(p)}</p>`;
+      }).join('');
+      break;
+    case 'points': {
+      const bullets = `<ul class="pdf-bullets">${(sec.bullets||[]).map(b=>`<li>${richOut(b)}</li>`).join('')}</ul>`;
+      let noteBox = '';
+      if(sec.note){
+        const paras = normalizeNoteBody(sec.note.body).map(p=>`<p>${richOut(p)}</p>`).join('');
+        noteBox = `<div class="pdf-note"><div class="pdf-note-heading">${esc(sec.note.heading||'')}</div>${paras}</div>`;
+      }
+      body = bullets + noteBox;
+      break;
+    }
+    case 'table': {
+      const headers = (sec.headers||[]).map(h=>`<th>${esc(h)}</th>`).join('');
+      const rows = (sec.rows||[]).map(r=>'<tr>'+r.map(c=>`<td>${esc(c)}</td>`).join('')+'</tr>').join('');
+      body = `<table class="pdf-table"><tr>${headers}</tr>${rows}</table>`;
+      break;
+    }
+    case 'figure': {
+      let src = '';
+      if(sec.storageKey && IMAGE_CACHE[sec.storageKey]) src = IMAGE_CACHE[sec.storageKey];
+      else if(sec.src) src = sec.src;
+      if(src){
+        body = `<div class="pdf-figure"><img src="${src}" style="max-width:100%;border-radius:6px;"><div class="pdf-figure-caption"><strong>${esc(sec.caption||'')}</strong>${sec.source?` — ${esc(sec.source)}`:''}</div></div>`;
+      }
+      break;
+    }
+    case 'video':
+      body = `<p><em>Vídeo: ${esc(sec.videoTitle||sec.url||'')}</em> — assista pelo site (não é possível incorporar vídeo no PDF).</p>`;
+      break;
+    case 'grid':
+      body = `<div class="pdf-grid">${(sec.cards||[]).map(c=>`<div class="pdf-grid-card"><h4>${esc(c.title)}</h4><ul>${(c.bullets||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>`).join('')}</div>`;
+      break;
+    case 'compare':
+      body = `<table class="pdf-table"><tr><th>${esc(sec.leftTitle||'')}</th><th>${esc(sec.rightTitle||'')}</th></tr>
+        <tr><td><ul>${(sec.leftItems||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul></td>
+        <td><ul>${(sec.rightItems||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul></td></tr></table>`;
+      break;
+    case 'timeline':
+      body = `<ol class="pdf-bullets">${(sec.steps||[]).map(s=>`<li><strong>${esc(s.label)}</strong>${s.desc?' — '+esc(s.desc):''}</li>`).join('')}</ol>`;
+      break;
+    case 'axes':
+      body = `<div class="pdf-grid">${(sec.axes||[]).map(a=>`<div class="pdf-grid-card"><h4>${esc(a.title)}</h4><p>${esc(a.desc||'')}</p></div>`).join('')}</div>`;
+      break;
+    case 'hierarchy':
+      body = `<p>${(sec.chain||[]).map(c=>esc(c.label)).join(' → ')}</p>` +
+        (sec.chain||[]).filter(c=>c.desc).map(c=>`<p><strong>${esc(c.label)}:</strong> ${esc(c.desc)}</p>`).join('');
+      break;
+    case 'chips':
+      body = `<p>${(sec.chips||[]).map(c=>esc(c.label)).join(' · ')}</p>`;
+      break;
+    default:
+      body = '';
+  }
+  return `<div class="pdf-section">${kicker}${title}${body}</div>`;
+}
+
+function buildAulaPrintHtml(b, a){
+  const facLogoSrc = document.querySelector('.combined-footer .logo-badge img').src;
+  const authorIconLinks = [...document.querySelectorAll('.footer-icons a')].map(el=>{
+    const img = el.querySelector('img');
+    return `<a href="${el.href}"><img src="${img.src}" alt="${esc(img.alt)}"></a>`;
+  }).join('');
+  const authorName = document.querySelector('.footer-author .l1').textContent;
+  const authorFormation = document.querySelector('.footer-author .l2').textContent + '<br>' + document.querySelector('.footer-author .l3').textContent;
+  const instName = document.querySelector('.footer-inst .l1').textContent;
+  const instCourse = document.querySelector('.footer-inst .l2').textContent;
+  const pageUrl = window.location.href.split('#')[0] + '#bloco-' + b.num + '-aula-' + a.num;
+  const now = new Date();
+  const nowStr = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  const sectionsHtml = (a.sections||[]).map(sectionToPrintHtml).join('');
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(a.title)}</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Georgia', 'Times New Roman', serif; color: #2B2B2B; margin:0; }
+  .header-bar { background: #3D3E77; color: #fff; padding: 28px 50px 22px 50px; }
+  .header-bar .logo-row { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+  .header-bar .logo-badge { width:34px;height:34px;background:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center; }
+  .header-bar .logo-badge img { width:80%;height:80%;object-fit:contain; }
+  .header-bar .inst-name { font-family: 'Helvetica', sans-serif; font-size:11px; opacity:0.85; letter-spacing:0.3px; }
+  .header-bar .eyebrow { font-family: 'Helvetica', sans-serif; font-size:11px; color:#F79C31; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+  .header-bar h1 { font-size:22px; margin:0 0 6px 0; }
+  .header-bar .subtitle { font-size:13px; opacity:0.85; font-style:italic; }
+  .content { padding: 30px 50px 20px 50px; }
+  .sources { font-size:11px; color:#777; font-style:italic; margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:14px; }
+  .intro { font-size:14px; line-height:1.7; margin-bottom:24px; }
+  .pdf-section { margin-bottom:20px; }
+  .pdf-kicker { font-size:10.5px; color:#F79C31; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; font-family:'Helvetica',sans-serif; margin-bottom:3px; }
+  .pdf-sec-title { font-size:16px; color:#3D3E77; margin:0 0 8px 0; }
+  .pdf-section p { font-size:13px; line-height:1.7; margin:0 0 10px 0; text-align:justify; }
+  .pdf-table { width:100%; border-collapse:collapse; font-size:12px; margin:10px 0; }
+  .pdf-table th { background:#3D3E77; color:#fff; padding:8px 10px; text-align:left; font-family:'Helvetica',sans-serif; font-size:11px; }
+  .pdf-table td { padding:7px 10px; border-bottom:1px solid #e0e0e0; vertical-align:top; }
+  .pdf-bullets { font-size:13px; line-height:1.7; padding-left:20px; }
+  .pdf-note { background:#FBF1EC; border-left:3px solid #F79C31; padding:10px 14px; margin-top:10px; font-size:12px; }
+  .pdf-note-heading { font-weight:bold; color:#3D3E77; margin-bottom:4px; font-size:11px; font-family:'Helvetica',sans-serif; }
+  .pdf-figure{margin-top:10px;}
+  .pdf-figure-caption{font-size:11px;color:#777;margin-top:4px;}
+  .pdf-grid{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;}
+  .pdf-grid-card{flex:1 1 200px;background:#F7F7F9;border-radius:8px;padding:12px 14px;font-size:12.5px;}
+  .pdf-grid-card h4{margin:0 0 6px 0;color:#3D3E77;font-family:'Helvetica',sans-serif;font-size:13px;}
+  .author-footer {
+    margin: 26px 50px 0 50px; padding-top:18px; border-top:1px solid #ddd;
+    font-family:'Helvetica',sans-serif;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:20px;
+  }
+  .author-footer .inst-block { display:flex; align-items:center; gap:12px; }
+  .author-footer .inst-block .logo-badge { width:30px;height:30px;background:#fff;border:1px solid #eee;border-radius:7px;display:flex;align-items:center;justify-content:center; }
+  .author-footer .inst-block .logo-badge img { width:80%;height:80%;object-fit:contain; }
+  .author-footer .inst-text { font-size:10px; color:#888; line-height:1.4; }
+  .author-footer .inst-text strong { color:#3D3E77; }
+  .author-footer .author-block { text-align:right; }
+  .author-footer .author-name { font-size:11.5px; font-weight:bold; color:#3D3E77; }
+  .author-footer .author-formation { font-size:9.5px; color:#888; line-height:1.4; margin-top:2px; }
+  .author-footer .author-icons { margin-top:6px; display:flex; gap:8px; justify-content:flex-end; }
+  .author-footer .author-icons a { display:inline-block; }
+  .author-footer .author-icons img { height:13px; display:block; }
+  .gen-info {
+    margin: 14px 50px 24px 50px; padding:12px 16px; background:#F7F7F9; border-radius:6px;
+    font-family:'Helvetica',sans-serif; font-size:9.5px; color:#999; line-height:1.6;
+  }
+  .gen-info a { color:#3D3E77; }
+</style></head>
+<body>
+  <div class="header-bar">
+    <div class="logo-row">
+      <div class="logo-badge"><img src="${facLogoSrc}"></div>
+      <div class="inst-name">${esc(instName)}</div>
+    </div>
+    <div class="eyebrow">Bloco ${toRoman(b.num)} · Aula ${a.num} · ${esc(instCourse)}</div>
+    <h1>${esc(a.title)}</h1>
+    <div class="subtitle">${esc(a.subtitle||'')}</div>
+  </div>
+  <div class="content">
+    ${a.sources?`<div class="sources">Fontes: ${esc(a.sources)}</div>`:''}
+    ${a.intro?`<div class="intro">${esc(a.intro)}</div>`:''}
+    ${sectionsHtml}
+  </div>
+  <div class="author-footer">
+    <div class="inst-block">
+      <div class="logo-badge"><img src="${facLogoSrc}"></div>
+      <div class="inst-text"><strong>${esc(instName)}</strong><br>${esc(instCourse)}</div>
+    </div>
+    <div class="author-block">
+      <div class="author-name">${esc(authorName)}</div>
+      <div class="author-formation">${authorFormation}</div>
+      <div class="author-icons">${authorIconLinks}</div>
+    </div>
+  </div>
+  <div class="gen-info">Conteúdo extraído de <a href="${pageUrl}">${pageUrl}</a> · PDF gerado em ${nowStr}</div>
+</body></html>`;
+}
+
+document.getElementById('download-pdf-btn').addEventListener('click', ()=>{
+  if(!isAdmin) return;
+  const b = COURSE.find(x=>x.num===state.block);
+  const a = b.aulas.find(x=>x.num===state.aula);
+  if(!a){ alert('Nenhuma aula aberta para baixar.'); return; }
+  const html = buildAulaPrintHtml(b, a);
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.onload = ()=> win.print();
+  setTimeout(()=>{ try{ win.print(); }catch(e){} }, 600);
+});
+
 document.getElementById('admin-users-btn').addEventListener('click', ()=>{
   if(!isAdmin) return;
   cachedUsersList = null; // sempre busca a lista atualizada ao abrir, nunca usa cache antigo
