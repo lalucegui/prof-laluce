@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v1.15.0                  -->
+<!-- VERSAO DESTE ARQUIVO: v1.16.0                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -827,6 +827,31 @@
   #student-note-status{font-size:12px;font-weight:700;}
   .ai-import-box{margin-top:18px;background:var(--ice-tint);border-radius:12px;padding:14px 16px;}
   .ai-import-title{font-size:13.5px;font-weight:800;color:var(--navy);}
+  .turma-assign-select{font-size:11.5px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--charcoal);max-width:230px;margin-top:4px;}
+  .turma-badge{font-size:11px;color:var(--navy);font-weight:700;}
+  .turma-filter-row{display:flex;align-items:center;gap:8px;margin-top:12px;}
+  .turma-filter-row select{font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;}
+  .turmas-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+  .turma-row{display:flex;align-items:center;gap:10px;background:var(--ice-tint);border-radius:10px;padding:10px 14px;flex-wrap:wrap;}
+  .turma-row-name{flex:1;min-width:180px;display:flex;flex-direction:column;}
+  .turma-row-name strong{font-size:13.5px;color:var(--navy);}
+  .turma-row-name span{font-size:11px;color:var(--muted);}
+  /* Numeração hierárquica: 1 / 1.1 / 1.1.1 — contadores encadeados. Vale no
+     editor e na página publicada (a classe fica gravada junto com a lista). */
+  .num-hier, .num-hier ul, .num-hier ol{list-style-type:none !important;counter-reset:nivel;}
+  .num-hier li{counter-increment:nivel;position:relative;}
+  .num-hier li::before{content:counters(nivel, ".") ". ";font-weight:700;color:var(--navy);}
+  .my-notes-btn{
+    margin:6px 12px 2px 12px;padding:8px 10px;font-size:12.5px;font-weight:700;
+    background:#FFFDF2;border:1.5px dashed #D9C97A;border-radius:8px;color:#7A6716;
+    cursor:pointer;text-align:left;font-family:inherit;
+  }
+  .my-notes-btn:hover{background:#FFF7DB;}
+  .side-nav.collapsed .my-notes-btn{display:none;}
+  .my-note-card{background:#FFFDF2;border:1.5px dashed #D9C97A;border-radius:10px;padding:12px 14px;margin-top:12px;}
+  .my-note-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .my-note-head strong{font-size:13.5px;color:#7A6716;}
+  .my-note-text{margin-top:8px;font-size:13.5px;line-height:1.6;color:var(--charcoal);white-space:pre-wrap;}
   .users-list{margin-top:16px;display:flex;flex-direction:column;gap:8px;}
   .user-row{
     display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:12px;
@@ -1583,6 +1608,7 @@
       <input type="search" id="nav-search-input" placeholder="🔍 Buscar no curso..." autocomplete="off">
     </div>
     <div class="nav-search-results hidden" id="nav-search-results"></div>
+    <button class="my-notes-btn hidden" id="my-notes-btn" data-action="open-my-notes">📝 Minhas anotações</button>
     <nav class="nav-list" id="nav-list"></nav>
   </aside>
   <div class="nav-backdrop" id="nav-backdrop"></div>
@@ -1621,7 +1647,7 @@
   </div>
 </footer>
 <div class="ai-credit hidden" id="ai-credit">Conteúdo autoral do professor · estruturação e formatação do site com apoio de IA (Claude, Anthropic)</div>
-<div class="version-tag hidden" id="version-tag">v1.15.0</div>
+<div class="version-tag hidden" id="version-tag">v1.16.0</div>
 
 
 <script>
@@ -1825,6 +1851,18 @@ async function ensureAtLeastOneSubjectExists(){
 
 let currentUser = null;
 let currentUserDoc = null;
+// ===== Turmas (grupos de alunos, ex.: "ADM 8º Sem — 2026/2") =====
+let allTurmas = null;          // cache: [{id, name}]
+let usersTurmaFilter = 'all';  // filtro da lista de alunos: 'all' | 'none' | id da turma
+async function fetchTurmas(){
+  const snap = await db.collection('turmas').get();
+  allTurmas = snap.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=>(a.name||'').localeCompare(b.name||'', 'pt-BR'));
+  return allTurmas;
+}
+function turmaNameById(id){
+  const t = (allTurmas||[]).find(x=>x.id===id);
+  return t ? t.name : null;
+}
 // ===== Progresso do aluno (aulas vistas + onde parou) =====
 let STUDENT_PROGRESS = null; // {seen:{"3":timestamp,...}, lastBlock:n, lastAula:n} da matéria ativa
 let progressSaveTimer = null;
@@ -2022,6 +2060,27 @@ function renderSearchResults(query){
 }
 document.addEventListener('input', (e)=>{
   if(e.target && e.target.id === 'nav-search-input') renderSearchResults(e.target.value);
+});
+// Atribuição de turma (select na linha do aluno e na ficha) + filtro por turma
+document.addEventListener('change', async (e)=>{
+  if(e.target && e.target.classList && e.target.classList.contains('turma-assign-select')){
+    const uid = e.target.dataset.uid;
+    const novo = e.target.value || null;
+    try{
+      await db.collection('users').doc(uid).update({turmaId: novo});
+      const u = (cachedUsersList||[]).find(x=>x.id===uid);
+      if(u) u.turmaId = novo;
+    }catch(err){
+      alert('Não foi possível salvar a turma: ' + (err && err.message ? err.message : String(err)));
+      render(); // volta o select ao valor real
+    }
+    return;
+  }
+  if(e.target && e.target.id === 'users-turma-filter'){
+    usersTurmaFilter = e.target.value;
+    render();
+    return;
+  }
 });
 document.addEventListener('click', (e)=>{
   const hit = e.target.closest('.nav-search-hit');
@@ -2770,7 +2829,12 @@ document.addEventListener('click', (e)=>{
         node = node.parentNode;
       }
     }
-    if(li) li.style.listStyleType = markerCssValue(type);
+    if(li){
+      li.style.listStyleType = markerCssValue(type);
+      // Numeração hierárquica (1 / 1.1 / 1.1.1): para o marcador numérico, os
+      // subníveis herdam o número do pai via contadores encadeados no CSS.
+      li.classList.toggle('num-hier', type==='decimal');
+    }
     panel.classList.add('hidden');
     return;
   }
@@ -3311,6 +3375,23 @@ const AI_FORMAT_PROMPT = `Você vai gerar o conteúdo de UMA aula universitária
 
 Regras: use quantas seções precisar, nos tipos acima, na ordem pedagógica (abertura -> desenvolvimento -> atividade -> fechamento). Fundamente o conteúdo na bibliografia que eu indicar e cite autor/página no campo sources e ao longo do texto. Não invente citações. A seguir, o meu pedido:`;
 
+// Valida o JSON de aula colado (do importador ou da visão "Programação").
+// Retorna o objeto pronto, ou null depois de explicar o problema ao professor.
+function parseAulaJsonOrAlert(raw){
+  if(!raw || !raw.trim()){ alert('Cole primeiro o JSON da aula na caixa.'); return null; }
+  const cleaned = raw.trim().replace(/^```(json)?/i,'').replace(/```$/,'').trim();
+  let dados;
+  try{ dados = JSON.parse(cleaned); }
+  catch(e){ alert('Não consegui ler o JSON — parece incompleto ou fora do formato.\n\nDica: peça à IA "responda apenas com o JSON, sem explicações antes ou depois" e cole a resposta inteira.\n\nDetalhe técnico: ' + e.message); return null; }
+  if(!dados || typeof dados.title !== 'string' || !dados.title.trim()){ alert('O JSON veio sem "title" (título da aula).'); return null; }
+  if(!Array.isArray(dados.sections) || !dados.sections.length){ alert('O JSON veio sem "sections" (as seções da aula).'); return null; }
+  const tiposValidos = ['prose','table','figure','video','activity','grid','compare','timeline','axes','hierarchy','chips','points'];
+  const desconhecidos = dados.sections.filter(s=>!s || !tiposValidos.includes(s.type));
+  if(desconhecidos.length){ alert('O JSON tem ' + desconhecidos.length + ' seção(ões) de tipo desconhecido. Tipos aceitos: ' + tiposValidos.join(', ') + '.'); return null; }
+  return dados;
+}
+
+
 function newAulaForm(blockNum, suggestedNum){
   const blockOpts = COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===blockNum?'selected':''}>Bloco ${toRoman(bb.num)} — ${esc(bb.title)}</option>`).join('');
   return `<div class="editor-form" data-kind="newAula">
@@ -3450,10 +3531,11 @@ function userDetailForm(u){
     </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--muted);">Nenhum acesso registrado ainda</td></tr>';
 
   const assignedIds = u.subjectIds || (u.subjectId ? [u.subjectId] : []);
-  const subjectCheckboxes = (allSubjects||[]).map(s=>`
+  // Arquivadas ficam fora da lista (mas se o aluno já estava nela, mostra desabilitada, para não sumir matrícula sem aviso)
+  const subjectCheckboxes = (allSubjects||[]).filter(s=>!s.archived || assignedIds.includes(s.id)).map(s=>`
     <label class="subject-check-row">
       <input type="checkbox" class="ud-subject-cb" value="${s.id}" ${assignedIds.includes(s.id)?'checked':''}>
-      <span>${esc(s.name)}</span>
+      <span>${esc(s.name)}${s.archived?' <em style="color:var(--muted);font-size:11px;">(arquivada)</em>':''}</span>
     </label>`).join('');
 
   return `<div class="editor-form user-detail-screen">
@@ -3472,6 +3554,12 @@ function userDetailForm(u){
         <label>Endereço completo</label><input type="text" spellcheck="true" lang="pt-BR" id="ud-address" value="${escAttr(p.address||'')}">
       </div>
     </div>
+    <label>Turma</label>
+    <select class="turma-assign-select" data-uid="${u.id}" style="max-width:340px;">
+      <option value="">— Sem turma —</option>
+      ${(allTurmas||[]).map(t=>`<option value="${t.id}" ${u.turmaId===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}
+    </select>
+    <div class="hint">A troca salva na hora, sem precisar de botão. Para criar/renomear turmas, use a aba "🎓 Turmas" do painel.</div>
     <label>Anotações do professor <span style="text-transform:none;font-weight:400;color:var(--muted);">(o aluno nunca vê isso)</span></label>
     <textarea id="ud-admin-notes" style="min-height:90px;">${esc((u.adminNotes&&u.adminNotes.notes)||'')}</textarea>
 
@@ -3508,11 +3596,19 @@ function usersScreenForm(){
   }
   const visibleUsers = cachedUsersList.filter(u=>{
     if(u.role==='admin') return usersViewMode==='active';
-    return usersViewMode==='archived' ? !!u.archived : !u.archived;
+    const modoOk = usersViewMode==='archived' ? !!u.archived : !u.archived;
+    if(!modoOk) return false;
+    // Filtro por turma (só na visão de ativos)
+    if(usersViewMode==='active' && usersTurmaFilter!=='all'){
+      if(usersTurmaFilter==='none') return !u.turmaId;
+      return u.turmaId === usersTurmaFilter;
+    }
+    return true;
   });
+  const turmaOptions = (sel)=>`<option value="">— Sem turma —</option>` + (allTurmas||[]).map(t=>`<option value="${t.id}" ${sel===t.id?'selected':''}>${esc(t.name)}</option>`).join('');
   const rows = visibleUsers.map(u => `
     <div class="user-row">
-      <div class="user-row-info">${u.role!=='admin' ? `<button class="user-row-name-btn" data-action="open-user-detail" data-uid="${u.id}"><strong>${esc(u.name||'(sem nome)')}</strong></button>` : `<strong>${esc(u.name||'(sem nome)')}</strong>`}<span>${esc(u.email||'')}</span></div>
+      <div class="user-row-info">${u.role!=='admin' ? `<button class="user-row-name-btn" data-action="open-user-detail" data-uid="${u.id}"><strong>${esc(u.name||'(sem nome)')}</strong></button>` : `<strong>${esc(u.name||'(sem nome)')}</strong>`}<span>${esc(u.email||'')}</span>${(u.role!=='admin' && usersViewMode==='active') ? `<select class="turma-assign-select" data-uid="${u.id}" title="Turma deste aluno — a troca salva na hora">${turmaOptions(u.turmaId)}</select>` : (u.turmaId && turmaNameById(u.turmaId) ? `<span class="turma-badge">🎓 ${esc(turmaNameById(u.turmaId))}</span>` : '')}</div>
       <div class="user-row-status">${u.role==='admin' ? '👑 Administrador' : (u.approved ? '✅ Aprovado' : '⏳ Pendente de aprovação')}</div>
       ${u.role !== 'admin' ? (usersViewMode==='active' ? `
         <button class="btn-tiny btn-approve" data-action="toggle-approve-user" data-uid="${u.id}">${u.approved ? 'Revogar acesso' : 'Aprovar acesso'}</button>
@@ -3528,12 +3624,46 @@ function usersScreenForm(){
       <button class="users-tab ${usersViewMode==='active'?'active':''}" data-action="set-users-view" data-view="active">Ativos</button>
       <button class="users-tab ${usersViewMode==='archived'?'active':''}" data-action="set-users-view" data-view="archived">📦 Arquivados</button>
       <button class="users-tab" data-action="open-class-stats">📊 Estatísticas</button>
+      <button class="users-tab" data-action="open-turmas-screen">🎓 Turmas</button>
     </div>
+    ${usersViewMode==='active' ? `<div class="turma-filter-row">
+      <label style="margin:0;font-size:11px;">Filtrar por turma:</label>
+      <select id="users-turma-filter">
+        <option value="all" ${usersTurmaFilter==='all'?'selected':''}>Todas</option>
+        <option value="none" ${usersTurmaFilter==='none'?'selected':''}>Sem turma</option>
+        ${(allTurmas||[]).map(t=>`<option value="${t.id}" ${usersTurmaFilter===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}
+      </select>
+    </div>` : ''}
     <div class="hint">${usersViewMode==='active' ? 'Aprovar dá acesso imediato ao conteúdo do curso. Revogar tira o acesso sem apagar a conta. Arquivar tira o aluno da lista ativa, mas guarda tudo (perfil, log, anotações) — pode restaurar quando quiser.' : 'Contas arquivadas ficam fora da lista principal, mas nada foi apagado ainda. Restaurar devolve para a lista de ativos. Excluir definitivamente apaga tudo — sem volta.'}</div>
     <div class="users-list">${rows}</div>
     <div class="editor-actions">
       <button class="btn-secondary" data-action="reload-users-list">🔄 Recarregar lista</button>
       <button class="btn-secondary" data-action="cancel-edit">Fechar</button>
+    </div>
+  </div>`;
+}
+
+function turmasScreenForm(){
+  const alunosAtivos = (cachedUsersList||[]).filter(u=>u.role!=='admin' && !u.archived);
+  const contagem = (tid)=>alunosAtivos.filter(u=>u.turmaId===tid).length;
+  const semTurma = alunosAtivos.filter(u=>!u.turmaId).length;
+  const rows = (allTurmas||[]).map(t=>`
+    <div class="turma-row">
+      <div class="turma-row-name"><strong>${esc(t.name)}</strong><span>${contagem(t.id)} aluno(s)</span></div>
+      <button class="btn-tiny btn-approve" data-action="rename-turma" data-tid="${t.id}">✎ Renomear</button>
+      <button class="btn-tiny" style="background:var(--terracotta);" data-action="delete-turma" data-tid="${t.id}">🗑️ Excluir</button>
+    </div>`).join('') || '<p style="color:var(--muted);font-size:13px;">Nenhuma turma criada ainda. Crie a primeira abaixo — ex.: "ADM 8º Semestre — 2026/2".</p>';
+  return `<div class="editor-form">
+    <div class="editing-type-banner">🎓 Turmas</div>
+    <div class="hint">Turmas organizam seus alunos por grupo/semestre (ex.: "ADM 8º Sem — 2026/2"). Atribua a turma de cada aluno direto na lista do painel — a troca salva na hora. Excluir uma turma só é possível quando nenhum aluno está nela. ${semTurma?`Hoje há <strong>${semTurma}</strong> aluno(s) sem turma.`:''}</div>
+    <div class="turmas-list">${rows}</div>
+    <label style="margin-top:18px;">Criar nova turma</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <input type="text" id="ef-new-turma-name" placeholder='Ex.: ADM 8º Semestre — 2026/2' style="flex:1;min-width:220px;">
+      <button class="btn-primary" data-action="create-turma">+ Criar turma</button>
+    </div>
+    <div class="editor-actions">
+      <button class="btn-secondary" data-action="back-to-users">← Voltar para o painel de alunos</button>
     </div>
   </div>`;
 }
@@ -3706,6 +3836,72 @@ function render(){
     if(!cachedUsersList){
       fetchAllUsers().then(()=>{ if(editState && editState.kind==='usersScreen') render(); });
     }
+    if(allTurmas===null){
+      fetchTurmas().then(()=>{ if(editState && editState.kind==='usersScreen') render(); }).catch(()=>{ allTurmas = []; });
+    }
+    return;
+  }
+  if(editState && editState.kind==='aulaCode'){
+    if(!a){ editState = null; render(); return; }
+    // A programação da aula ATUAL, já preenchida — pronta para copiar, ajustar
+    // na IA e colar de volta. Aplicar substitui o conteúdo desta mesma aula.
+    const codigo = JSON.stringify({
+      title: a.title, subtitle: a.subtitle||'', sources: a.sources||'',
+      intro: a.intro||'', roteiro: a.roteiro||'', sections: a.sections||[]
+    }, null, 2);
+    content.innerHTML = `<div class="editor-form">
+      <div class="editing-type-banner">&lt;/&gt; Programação da aula ${a.num} — ${esc(a.title)}</div>
+      <div class="hint">Este é o código (JSON) exatamente como a aula está salva. Fluxo com IA: 1) copie o prompt de formatação; 2) cole na IA junto com este código e o ajuste que quiser ("deixe a seção 2 mais didática", "acrescente uma atividade prática de 40min"...); 3) cole a resposta aqui e Aplicar. <strong>Atenção:</strong> os campos <code>id</code> e <code>storageKey</code> das seções mantêm imagens e encaixes funcionando — peça à IA para preservá-los.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn-secondary" data-action="copy-ai-prompt">📋 Copiar prompt de formatação</button>
+        <button class="btn-secondary" data-action="copy-aula-code">📄 Copiar este código</button>
+      </div>
+      <label style="margin-top:12px;">Código da aula (edite direto, ou cole a versão ajustada pela IA)</label>
+      <textarea id="ef-aula-code" style="min-height:340px;font-family:monospace;font-size:11.5px;white-space:pre;">${esc(codigo)}</textarea>
+      <div class="editor-actions">
+        <button class="btn-primary" data-action="apply-aula-code">💾 Aplicar programação a esta aula</button>
+        <button class="btn-secondary" data-action="cancel-edit">👁 Visual (voltar sem aplicar)</button>
+      </div>
+    </div>`;
+    return;
+  }
+  if(editState && editState.kind==='myNotes'){
+    const notas = (currentUserDoc && currentUserDoc.aulaNotes && currentUserDoc.aulaNotes[activeSubjectId]) || {};
+    const aulasComNota = [];
+    COURSE.forEach(bb=>{
+      if(bb.hidden) return;
+      bb.aulas.forEach(aa=>{
+        if(aa.hidden) return;
+        const txt = notas[String(aa.num)];
+        if(txt && txt.trim()) aulasComNota.push({blockNum: bb.num, num: aa.num, title: aa.title, texto: txt});
+      });
+    });
+    const cards = aulasComNota.map(n=>`
+      <div class="my-note-card">
+        <div class="my-note-head">
+          <strong>Aula ${n.num} — ${esc(n.title)}</strong>
+          <button class="btn-tiny btn-approve" data-action="goto-note-aula" data-block="${n.blockNum}" data-aula="${n.num}">Ir para a aula →</button>
+        </div>
+        <div class="my-note-text">${esc(n.texto)}</div>
+      </div>`).join('');
+    content.innerHTML = `<div class="editor-form">
+      <div class="editing-type-banner">📝 Minhas anotações</div>
+      <div class="hint">Tudo que você anotou nesta matéria, reunido num lugar só — ótimo para revisar antes da prova. Para editar uma anotação, vá até a aula (botão ao lado de cada uma).</div>
+      ${cards || '<p style="color:var(--muted);font-size:13.5px;margin-top:14px;">Você ainda não anotou nada. No fim de cada aula há um bloco "📝 Minhas anotações desta aula" — o que você escrever lá aparece aqui.</p>'}
+      <div class="editor-actions">
+        <button class="btn-secondary" data-action="cancel-edit">← Voltar para a aula</button>
+      </div>
+    </div>`;
+    return;
+  }
+  if(editState && editState.kind==='turmasScreen'){
+    if(!cachedUsersList){ editState = {kind:'usersScreen'}; render(); return; }
+    if(allTurmas===null){
+      content.innerHTML = '<div class="editor-form"><p>Carregando turmas…</p></div>';
+      fetchTurmas().then(()=>{ if(editState && editState.kind==='turmasScreen') render(); }).catch(()=>{ allTurmas = []; render(); });
+      return;
+    }
+    content.innerHTML = turmasScreenForm();
     return;
   }
   if(editState && editState.kind==='classStats'){
@@ -3725,6 +3921,9 @@ function render(){
       u.occurrencesList = null;
       fetchOccurrences(u.id).then(list=>{ u.occurrencesList = list; if(editState && editState.kind==='userDetail') render(); });
     }
+    if(allTurmas===null){
+      fetchTurmas().then(()=>{ if(editState && editState.kind==='userDetail') render(); }).catch(()=>{ allTurmas = []; });
+    }
     content.innerHTML = userDetailForm(u);
     return;
   }
@@ -3739,7 +3938,7 @@ function render(){
     inner = aulaHeaderEditorForm(a);
   } else {
     inner = `<div class="aula-header">
-      <div class="aula-editbar"><button class="edit-chip" data-action="edit-aula-header" title="Editar informações da aula">✎</button></div>
+      <div class="aula-editbar"><button class="edit-chip" data-action="edit-aula-header" title="Editar informações da aula">✎</button><button class="edit-chip" data-action="open-aula-code" title="Ver/editar esta aula como programação (JSON) — para ajustes com ajuda de IA">&lt;/&gt;</button></div>
       <div class="aula-eyebrow">Bloco ${toRoman(b.num)} · Aula ${a.num}</div>
       <h2 class="aula-title">${esc(a.title)}</h2>
       ${a.subtitle?`<p class="aula-subtitle">${esc(a.subtitle)}</p>`:''}
@@ -3802,7 +4001,9 @@ function render(){
   }
 
   // ===== Anotações do aluno (privadas, por aula) =====
-  if(!isAdmin && currentUser){
+  // realIsAdmin: o caderno é do ALUNO de verdade — nem no modo "ver como aluno"
+  // ele aparece para o professor (mostraria as anotações da conta do professor, sem sentido).
+  if(!realIsAdmin && currentUser){
     const minhaNota = (currentUserDoc && currentUserDoc.aulaNotes && currentUserDoc.aulaNotes[activeSubjectId] && currentUserDoc.aulaNotes[activeSubjectId][String(a.num)]) || '';
     inner += `<div class="student-notes">
       <div class="student-notes-head">📝 Minhas anotações desta aula <span>(só você vê — nem o professor tem acesso pela plataforma)</span></div>
@@ -4065,7 +4266,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   const btn = e.target.closest('[data-action]');
   if(!btn) return;
   const action = btn.dataset.action;
-  if(!isAdmin && action!=='cancel-edit'){
+  // Ações que pertencem ao ALUNO (nunca editam o curso) passam pelo portão.
+  const studentActions = ['cancel-edit', 'save-student-note', 'open-my-notes', 'goto-note-aula'];
+  if(!isAdmin && !studentActions.includes(action)){
     // Camada extra de segurança: nenhuma ação de edição executa sem autenticação,
     // mesmo que algum botão administrativo tenha ficado visível por engano.
     return;
@@ -4084,18 +4287,8 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='import-aula-json'){
-    const raw = document.getElementById('ef-import-json').value.trim();
-    if(!raw){ alert('Cole primeiro, na caixa acima, o JSON que a IA devolveu.'); return; }
-    // Tolerância a cercas de markdown que algumas IAs insistem em colocar
-    const cleaned = raw.replace(/^```(json)?/i,'').replace(/```$/,'').trim();
-    let dados;
-    try{ dados = JSON.parse(cleaned); }
-    catch(e){ alert('Não consegui ler o JSON — parece incompleto ou fora do formato.\n\nDica: peça à IA "responda apenas com o JSON, sem explicações antes ou depois" e cole a resposta inteira.\n\nDetalhe técnico: ' + e.message); return; }
-    if(!dados || typeof dados.title !== 'string' || !dados.title.trim()){ alert('O JSON veio sem "title" (título da aula). Peça à IA para seguir exatamente o formato do prompt.'); return; }
-    if(!Array.isArray(dados.sections) || !dados.sections.length){ alert('O JSON veio sem "sections" (as seções da aula). Peça à IA para seguir exatamente o formato do prompt.'); return; }
-    const tiposValidos = ['prose','table','figure','video','activity','grid','compare','timeline','axes','hierarchy','chips','points'];
-    const desconhecidos = dados.sections.filter(s=>!s || !tiposValidos.includes(s.type));
-    if(desconhecidos.length){ alert('O JSON tem ' + desconhecidos.length + ' seção(ões) de tipo desconhecido. Tipos aceitos: ' + tiposValidos.join(', ') + '.'); return; }
+    const dados = parseAulaJsonOrAlert(document.getElementById('ef-import-json').value);
+    if(!dados) return;
     // Numero, bloco e visibilidade vem do formulario acima
     const blockNum = +document.getElementById('ef-new-a-block').value;
     const targetBlock = COURSE.find(x=>x.num===blockNum);
@@ -4323,6 +4516,73 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     render();
     return;
   }
+  if(action==='open-my-notes'){
+    editState = {kind:'myNotes'};
+    render();
+    document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  if(action==='goto-note-aula'){
+    state.block = +btn.dataset.block;
+    state.aula = +btn.dataset.aula;
+    editState = null;
+    render();
+    document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  if(action==='open-turmas-screen'){
+    editState = {kind:'turmasScreen'};
+    render();
+    return;
+  }
+  if(action==='create-turma'){
+    const nome = document.getElementById('ef-new-turma-name').value.trim();
+    if(!nome){ alert('Digite um nome para a turma — ex.: "ADM 8º Semestre — 2026/2".'); return; }
+    if((allTurmas||[]).some(t=>(t.name||'').toLowerCase()===nome.toLowerCase())){ alert('Já existe uma turma com esse nome.'); return; }
+    try{
+      const ref = await db.collection('turmas').add({name: nome, createdAt: Date.now()});
+      allTurmas.push({id: ref.id, name: nome, createdAt: Date.now()});
+      allTurmas.sort((a,b)=>(a.name||'').localeCompare(b.name||'', 'pt-BR'));
+      render();
+    }catch(e){
+      alert('Não foi possível criar a turma: ' + (e && e.message ? e.message : String(e)) + '\n\nSe falar em "permission", as regras do Firestore ainda não têm a parte de turmas — me peça as regras atualizadas.');
+    }
+    return;
+  }
+  if(action==='rename-turma'){
+    const tid = btn.dataset.tid;
+    const t = (allTurmas||[]).find(x=>x.id===tid);
+    if(!t) return;
+    const novo = prompt('Novo nome da turma:', t.name);
+    if(novo===null) return;
+    const nome = novo.trim();
+    if(!nome){ alert('O nome não pode ficar vazio.'); return; }
+    try{
+      await db.collection('turmas').doc(tid).update({name: nome});
+      t.name = nome;
+      allTurmas.sort((a,b)=>(a.name||'').localeCompare(b.name||'', 'pt-BR'));
+      render();
+    }catch(e){ alert('Não foi possível renomear: ' + (e && e.message ? e.message : String(e))); }
+    return;
+  }
+  if(action==='delete-turma'){
+    const tid = btn.dataset.tid;
+    const t = (allTurmas||[]).find(x=>x.id===tid);
+    if(!t) return;
+    const nessaTurma = (cachedUsersList||[]).filter(u=>u.role!=='admin' && u.turmaId===tid);
+    if(nessaTurma.length){
+      alert(`Não dá para excluir "${t.name}" ainda: ${nessaTurma.length} aluno(s) está(ão) nela.\n\nPrimeiro mova esses alunos para outra turma (ou para "Sem turma") na lista do painel, depois exclua.`);
+      return;
+    }
+    if(!confirm(`Excluir a turma "${t.name}"? (Nenhum aluno está nela — nada mais será apagado.)`)) return;
+    try{
+      await db.collection('turmas').doc(tid).delete();
+      allTurmas = allTurmas.filter(x=>x.id!==tid);
+      if(usersTurmaFilter===tid) usersTurmaFilter = 'all';
+      render();
+    }catch(e){ alert('Não foi possível excluir: ' + (e && e.message ? e.message : String(e))); }
+    return;
+  }
   if(action==='back-to-users'){
     editState = {kind:'usersScreen'};
     render();
@@ -4496,6 +4756,33 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
   if(action==='edit-aula-header'){ editState={kind:'aulaHeader'}; render(); return; }
+  if(action==='open-aula-code'){ editState={kind:'aulaCode'}; render(); document.getElementById('content').scrollIntoView({behavior:'smooth'}); return; }
+  if(action==='copy-aula-code'){
+    const ta = document.getElementById('ef-aula-code');
+    navigator.clipboard.writeText(ta.value).then(()=>{
+      btn.textContent = '✓ Código copiado!';
+      setTimeout(()=>{ btn.textContent = '📄 Copiar este código'; }, 2500);
+    }).catch(()=>{ ta.select(); alert('Não consegui copiar sozinho — o código está selecionado, use Ctrl+C.'); });
+    return;
+  }
+  if(action==='apply-aula-code'){
+    const dados = parseAulaJsonOrAlert(document.getElementById('ef-aula-code').value);
+    if(!dados) return;
+    if(!confirm(`Aplicar esta programação à aula ${a.num}?\n\nO conteúdo atual da aula será SUBSTITUÍDO pelo código colado (título, introdução, roteiro e todas as seções). O número da aula e a visibilidade não mudam.`)) return;
+    a.title = dados.title.trim();
+    a.subtitle = (dados.subtitle||'').trim();
+    a.sources = (dados.sources||'').trim();
+    a.intro = (dados.intro||'').trim();
+    a.roteiro = (dados.roteiro||'').trim();
+    a.sections = dados.sections.map(s=>({ ...s, id: s.id || genSectionId() }));
+    a.updatedAt = Date.now();
+    if(!a.contentModel) a.contentModel = 'v2';
+    editState = null;
+    const ok = await saveCourseToStorage();
+    if(!ok){ await loadCourseFromStorage(); }
+    render();
+    return;
+  }
   if(action==='edit-section'){ editState={kind:'section', idx:+btn.dataset.idx}; render(); return; }
 
   if(action==='delete-section'){
@@ -5105,6 +5392,9 @@ function buildAulaPrintHtml(b, a){
   .pdf-wm-banner{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:8.5px;color:#8a8fb0;padding:2px 0;border-top:0.5px solid #d5d8ea;background:#fff;}
   .pdf-wm-diag{position:fixed;top:45%;left:0;right:0;text-align:center;font-size:34px;font-weight:800;color:rgba(61,62,119,0.07);transform:rotate(-24deg);pointer-events:none;z-index:0;}
   .pdf-activity{background:#F0F7F0 !important;border:1.5px solid #7FA882;border-radius:10px;padding:12px 14px;margin:10px 0;}
+  .num-hier, .num-hier ul, .num-hier ol{list-style-type:none !important;counter-reset:nivel;}
+  .num-hier li{counter-increment:nivel;}
+  .num-hier li::before{content:counters(nivel, ".") ". ";font-weight:bold;color:#3D3E77;}
   .pdf-activity-head{font-size:10px;font-weight:800;letter-spacing:0.8px;color:#2F5D33;}
   .pdf-activity-title{font-size:14px;font-weight:800;color:#234A27;margin:6px 0 2px 0;}
   .pdf-act-row{font-size:11.5px;line-height:1.5;margin-top:6px;white-space:pre-wrap;}
@@ -5321,15 +5611,76 @@ function renderSubjectPicker(){
     list.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma matéria criada ainda.</p>';
     return;
   }
-  list.innerHTML = allSubjects.map(s => `
-    <button class="subject-picker-item" data-action="open-subject" data-sid="${s.id}">
-      <span>${esc(s.name)}</span><span class="chev">→</span>
-    </button>`).join('');
+  const ativas = allSubjects.filter(s=>!s.archived);
+  const arquivadas = allSubjects.filter(s=>s.archived);
+  let html = ativas.map(s => `
+    <div class="subject-picker-row">
+      <button class="subject-picker-item" data-action="open-subject" data-sid="${s.id}">
+        <span>${esc(s.name)}</span><span class="chev">→</span>
+      </button>
+      <button class="btn-tiny" style="background:#6b6b6b;flex:0 0 auto;" data-sid="${s.id}" data-subject-op="archive" title="Arquivar esta matéria (some das listas, mas nada é apagado — pode restaurar quando quiser)">📦</button>
+    </div>`).join('') || '<p style="font-size:13px;color:var(--muted);">Nenhuma matéria ativa.</p>';
+  if(arquivadas.length){
+    html += `<div class="archived-subjects-title">📦 Matérias arquivadas (${arquivadas.length})</div>` + arquivadas.map(s => `
+    <div class="subject-picker-row archived">
+      <div class="subject-picker-item disabled"><span>${esc(s.name)}</span></div>
+      <button class="btn-tiny btn-approve" style="flex:0 0 auto;" data-sid="${s.id}" data-subject-op="unarchive">♻️ Restaurar</button>
+      <button class="btn-tiny" style="background:var(--terracotta);flex:0 0 auto;" data-sid="${s.id}" data-subject-op="delete-forever">🗑️ Excluir definitivamente</button>
+    </div>`).join('');
+  }
+  list.innerHTML = html;
   list.querySelectorAll('[data-action="open-subject"]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       await openSubject(btn.dataset.sid);
     });
   });
+  list.querySelectorAll('[data-subject-op]').forEach(btn=>{
+    btn.addEventListener('click', ()=>handleSubjectOp(btn.dataset.subjectOp, btn.dataset.sid));
+  });
+}
+async function handleSubjectOp(op, sid){
+  if(!isAdmin) return;
+  const s = allSubjects.find(x=>x.id===sid);
+  if(!s) return;
+  if(op==='archive'){
+    if(!confirm(`Arquivar a matéria "${s.name}"?\n\nEla some das listas (inclusive da dos alunos), mas NADA é apagado — todo o conteúdo, imagens e modelo ficam guardados. Você pode restaurar quando quiser.`)) return;
+    try{
+      await db.collection('subjects').doc(sid).update({archived: true});
+      s.archived = true;
+      renderSubjectPicker();
+    }catch(e){ alert('Não foi possível arquivar: ' + (e && e.message ? e.message : String(e))); }
+    return;
+  }
+  if(op==='unarchive'){
+    try{
+      await db.collection('subjects').doc(sid).update({archived: false});
+      s.archived = false;
+      renderSubjectPicker();
+    }catch(e){ alert('Não foi possível restaurar: ' + (e && e.message ? e.message : String(e))); }
+    return;
+  }
+  if(op==='delete-forever'){
+    // Dupla confirmação: aviso claro + digitar o nome exato da matéria
+    if(!confirm(`EXCLUIR DEFINITIVAMENTE a matéria "${s.name}"?\n\nISTO APAGA PARA SEMPRE: todas as aulas, seções, imagens e o modelo de aula desta matéria. Não há como desfazer.\n\n(Os cadastros e logs dos alunos NÃO são apagados.)`)) return;
+    const digitado = prompt(`Para confirmar, digite o nome exato da matéria:\n\n${s.name}`);
+    if(digitado === null) return;
+    if(digitado.trim() !== s.name){ alert('O nome digitado não confere — exclusão cancelada por segurança.'); return; }
+    try{
+      // Apaga primeiro todo o conteúdo (documentos da subcoleção, em lotes de 400)
+      const sub = await db.collection(`subjects/${sid}/course_kv`).get();
+      const docs = sub.docs;
+      for(let i=0; i<docs.length; i+=400){
+        const batch = db.batch();
+        docs.slice(i, i+400).forEach(d=>batch.delete(d.ref));
+        await batch.commit();
+      }
+      await db.collection('subjects').doc(sid).delete();
+      allSubjects = allSubjects.filter(x=>x.id!==sid);
+      alert('Matéria excluída definitivamente.');
+      renderSubjectPicker();
+    }catch(e){ alert('Não foi possível excluir tudo: ' + (e && e.message ? e.message : String(e)) + '\n\nTente de novo — a exclusão pode ser retomada do ponto em que parou.'); }
+    return;
+  }
 }
 async function openSubject(subjectId){
   activeSubjectId = subjectId;
@@ -5343,6 +5694,7 @@ async function openSubject(subjectId){
   await loadCourseFromStorage();
   editState = null;
   render();
+  document.getElementById('my-notes-btn').classList.add('hidden'); // botão do aluno, não do professor
   AULA_TEMPLATE_CACHE = undefined; // matéria pode ter mudado — rebusca o modelo quando precisar
   if(isAdmin){ checkLocalDraft(); updateCapacityIndicator(); }
 }
@@ -5363,6 +5715,7 @@ async function openStudentSubject(subjectId){
   if(subtitleEl) subtitleEl.textContent = subjectDescription;
   showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit','version-tag']);
   document.getElementById('download-pdf-btn').classList.remove('hidden'); // aluno também baixa PDF — sai com marca d'água pessoal
+  document.getElementById('my-notes-btn').classList.remove('hidden');
   await loadCourseFromStorage();
   // Progresso: carrega o que este aluno já viu nesta matéria, e retoma de
   // onde parou (a menos que ele tenha entrado por um link direto de aula, #bloco-X-aula-Y)
@@ -5719,7 +6072,13 @@ if(!firebaseReady || !auth){
     renderSubjectPicker();
     showOnly(['subject-picker-screen']);
   } else {
-    const assignedIds = userDoc.subjectIds || (userDoc.subjectId ? [userDoc.subjectId] : []);
+    let assignedIds = userDoc.subjectIds || (userDoc.subjectId ? [userDoc.subjectId] : []);
+    // Matérias arquivadas somem da vida do aluno (sem apagar a matrícula —
+    // se a matéria for restaurada, ele volta a vê-la automaticamente)
+    try{
+      await fetchAllSubjects();
+      assignedIds = assignedIds.filter(id=>{ const s = allSubjects.find(x=>x.id===id); return s && !s.archived; });
+    }catch(e){}
     studentSubjectIds = assignedIds;
     if(!assignedIds.length){
       showOnly(['subject-pending-screen']);
