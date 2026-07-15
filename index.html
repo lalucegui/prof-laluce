@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v1.16.0                  -->
+<!-- VERSAO DESTE ARQUIVO: v1.17.0                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -816,6 +816,8 @@
   .act-row{display:flex;gap:10px;margin-top:10px;font-size:14px;line-height:1.55;color:var(--charcoal);}
   .act-row > div{white-space:pre-wrap;flex:1;}
   .act-tag{flex:0 0 118px;font-size:11px;font-weight:800;color:#2F5D33;text-transform:uppercase;letter-spacing:0.4px;padding-top:2px;}
+  .activity-done-row{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px dashed #7FA882;cursor:pointer;font-size:13.5px;font-weight:700;color:#2F5D33;}
+  .activity-done-row input{width:17px;height:17px;accent-color:#2F5D33;cursor:pointer;}
   .nav-aula-practice-badge{font-size:10px;margin-left:4px;}
   .nav-aula-seen{color:#2E7D32;font-weight:800;font-size:11px;margin-left:4px;}
   .student-notes{margin-top:26px;background:#FFFDF2;border:1.5px dashed #D9C97A;border-radius:12px;padding:16px 18px;}
@@ -1647,7 +1649,7 @@
   </div>
 </footer>
 <div class="ai-credit hidden" id="ai-credit">Conteúdo autoral do professor · estruturação e formatação do site com apoio de IA (Claude, Anthropic)</div>
-<div class="version-tag hidden" id="version-tag">v1.16.0</div>
+<div class="version-tag hidden" id="version-tag">v1.17.0</div>
 
 
 <script>
@@ -1864,24 +1866,65 @@ function turmaNameById(id){
   return t ? t.name : null;
 }
 // ===== Progresso do aluno (aulas vistas + onde parou) =====
-let STUDENT_PROGRESS = null; // {seen:{"3":timestamp,...}, lastBlock:n, lastAula:n} da matéria ativa
+let STUDENT_PROGRESS = null; // {seen:{"3":ts}, actDone:{"3":{secId:ts}}, lastBlock:n, lastAula:n}
 let progressSaveTimer = null;
-function recordStudentProgress(blockNum, aulaNum){
-  if(realIsAdmin || !currentUser || !activeSubjectId) return;
-  if(!STUDENT_PROGRESS) STUDENT_PROGRESS = {seen:{}, lastBlock:null, lastAula:null};
-  const key = String(aulaNum);
-  const changed = !STUDENT_PROGRESS.seen[key] || STUDENT_PROGRESS.lastAula !== aulaNum;
-  STUDENT_PROGRESS.seen[key] = STUDENT_PROGRESS.seen[key] || Date.now();
-  STUDENT_PROGRESS.lastBlock = blockNum;
-  STUDENT_PROGRESS.lastAula = aulaNum;
-  if(!changed) return;
-  // Agrupa gravações próximas numa só (navegação rápida entre aulas = 1 escrita)
+let scrolledBottomAulas = new Set(); // aulas em que o aluno chegou ao fim da página, nesta sessão
+function saveStudentProgressDebounced(){
   clearTimeout(progressSaveTimer);
   progressSaveTimer = setTimeout(()=>{
     db.collection('users').doc(currentUser.uid)
       .update({ ['progress.'+activeSubjectId]: STUDENT_PROGRESS })
       .catch(()=>{ /* progresso é melhor-esforço — nunca atrapalha a navegação */ });
-  }, 1500);
+  }, 1200);
+}
+function recordStudentProgress(blockNum, aulaNum){
+  // Registra POSIÇÃO (para "continuar de onde parou"). O ✓ de "vista" é outra
+  // história: só sai quando a aula foi rolada até o fim E as atividades feitas.
+  if(realIsAdmin || !currentUser || !activeSubjectId) return;
+  if(!STUDENT_PROGRESS) STUDENT_PROGRESS = {seen:{}, actDone:{}, lastBlock:null, lastAula:null};
+  if(STUDENT_PROGRESS.lastAula === aulaNum && STUDENT_PROGRESS.lastBlock === blockNum) return;
+  STUDENT_PROGRESS.lastBlock = blockNum;
+  STUDENT_PROGRESS.lastAula = aulaNum;
+  saveStudentProgressDebounced();
+}
+function allActivitiesDone(aula){
+  const atividades = (aula.sections||[]).filter(s=>s.type==='activity');
+  if(!atividades.length) return true;
+  const feitas = (STUDENT_PROGRESS && STUDENT_PROGRESS.actDone && STUDENT_PROGRESS.actDone[String(aula.num)]) || {};
+  return atividades.every(s=>!!feitas[s.id]);
+}
+function checkAulaCompletion(){
+  // O ✓ de "aula vista" exige as duas coisas: rolou até o fim + atividades marcadas
+  if(realIsAdmin || !currentUser || !STUDENT_PROGRESS || editState) return;
+  const b = COURSE.find(x=>x.num===state.block);
+  const a = b && b.aulas.find(x=>x.num===state.aula);
+  if(!a) return;
+  const key = String(a.num);
+  if(STUDENT_PROGRESS.seen[key]) return; // já conquistou o ✓
+  if(!scrolledBottomAulas.has(a.num)) return;
+  if(!allActivitiesDone(a)) return;
+  STUDENT_PROGRESS.seen[key] = Date.now();
+  saveStudentProgressDebounced();
+  renderSideNav(); // o ✓ aparece na hora no menu, sem recarregar a página
+}
+// Detecta o "cheguei ao fim da aula" (com tolerância de 80px). Aulas curtas,
+// sem barra de rolagem, contam como lidas depois de 3s na tela.
+window.addEventListener('scroll', ()=>{
+  if(realIsAdmin || !currentUser) return;
+  if((window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 80)){
+    scrolledBottomAulas.add(state.aula);
+    checkAulaCompletion();
+  }
+}, {passive:true});
+let shortAulaTimer = null;
+function scheduleShortAulaCheck(){
+  clearTimeout(shortAulaTimer);
+  shortAulaTimer = setTimeout(()=>{
+    if(document.documentElement.scrollHeight <= window.innerHeight + 80){
+      scrolledBottomAulas.add(state.aula);
+      checkAulaCompletion();
+    }
+  }, 3000);
 }
 let inactivityMinutes = 15;
 const IMAGE_CACHE = {};
@@ -2074,6 +2117,17 @@ document.addEventListener('change', async (e)=>{
       alert('Não foi possível salvar a turma: ' + (err && err.message ? err.message : String(err)));
       render(); // volta o select ao valor real
     }
+    return;
+  }
+  if(e.target && e.target.classList && e.target.classList.contains('act-done-cb')){
+    if(realIsAdmin || !currentUser || !STUDENT_PROGRESS) return;
+    const key = String(state.aula);
+    if(!STUDENT_PROGRESS.actDone) STUDENT_PROGRESS.actDone = {};
+    if(!STUDENT_PROGRESS.actDone[key]) STUDENT_PROGRESS.actDone[key] = {};
+    if(e.target.checked) STUDENT_PROGRESS.actDone[key][e.target.dataset.secid] = Date.now();
+    else delete STUDENT_PROGRESS.actDone[key][e.target.dataset.secid];
+    saveStudentProgressDebounced();
+    checkAulaCompletion();
     return;
   }
   if(e.target && e.target.id === 'users-turma-filter'){
@@ -2418,6 +2472,12 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
         sec.results ? `<div class="act-row"><span class="act-tag">✅ O que entregar</span><div>${esc(sec.results)}</div></div>` : '',
         sec.obs ? `<div class="act-row"><span class="act-tag">💡 Observações</span><div>${esc(sec.obs)}</div></div>` : '',
       ].join('');
+      const feita = (!realIsAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.actDone && STUDENT_PROGRESS.actDone[String(state.aula)] && STUDENT_PROGRESS.actDone[String(state.aula)][sec.id]);
+      const checkAluno = (!realIsAdmin && currentUser) ? `
+        <label class="activity-done-row">
+          <input type="checkbox" class="act-done-cb" data-secid="${sec.id}" ${feita?'checked':''}>
+          <span>Concluí esta atividade${feita?' ✓':''}</span>
+        </label>` : '';
       body = `<div class="activity-card">
         <div class="activity-head">
           <span class="activity-badge">🛠 ATIVIDADE PRÁTICA</span>
@@ -2425,6 +2485,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
         </div>
         ${sec.title?`<div class="activity-title">${esc(sec.title)}</div>`:''}
         ${linhas}
+        ${checkAluno}
       </div>`;
       break;
     }
@@ -3803,7 +3864,7 @@ function render(){
   const a = b ? b.aulas.find(x=>x.num===state.aula) : null;
   const content = document.getElementById('content');
 
-  if(a && b){ trackVisitForSession(b.num, a.num); recordStudentProgress(b.num, a.num); }
+  if(a && b){ trackVisitForSession(b.num, a.num); recordStudentProgress(b.num, a.num); if(!realIsAdmin) scheduleShortAulaCheck(); }
 
   if(editState && editState.kind!=='newBlock' && COURSE.length===0){
     content.innerHTML = '<div class="aula-header"><p>Esta matéria ainda não tem nenhum conteúdo. Use o modo de edição para adicionar o primeiro bloco.</p></div>';
@@ -4260,6 +4321,15 @@ document.addEventListener('drop', async (e)=>{
 });
 document.addEventListener('dragend', ()=>{
   if(draggingNavAulaNum!==null){ draggingNavAulaNum = null; hidePlacementLine(); }
+});
+
+// O botão do caderno fica no MENU LATERAL — fora do #content onde vive o
+// despachante principal. Por isso ele precisa do próprio ouvinte de clique.
+document.getElementById('my-notes-btn').addEventListener('click', ()=>{
+  if(realIsAdmin) return;
+  editState = {kind:'myNotes'};
+  render();
+  document.getElementById('content').scrollIntoView({behavior:'smooth'});
 });
 
 document.getElementById('content').addEventListener('click', async (e)=>{
@@ -5341,7 +5411,12 @@ function buildAulaPrintHtml(b, a){
     const quando = new Date().toLocaleDateString('pt-BR');
     const wmTexto = `Material de uso pessoal de ${nome}${ra} · baixado em ${quando} · proibida a reprodução`;
     wmBanner = `<div class="pdf-wm-banner">${esc(wmTexto)}</div>`;
-    wmDiagonal = `<div class="pdf-wm-diag">${esc(nome + ra)}</div>`;
+    // Três faixas diagonais fixas (25% / 50% / 75% da altura), repetidas em TODAS
+    // as páginas impressas, atravessando o texto — recortar borda não as remove.
+    const marcaCentral = esc(nome + ra + ' · ' + quando);
+    wmDiagonal = `<div class="pdf-wm-diag" style="top:22%;">${marcaCentral}</div>
+      <div class="pdf-wm-diag" style="top:48%;">${marcaCentral}</div>
+      <div class="pdf-wm-diag" style="top:74%;">${marcaCentral}</div>`;
   }
   const facLogoSrc = document.querySelector('.combined-footer .logo-badge img').src;
   const authorIconLinks = [...document.querySelectorAll('.footer-icons a')].map(el=>{
@@ -5390,7 +5465,8 @@ function buildAulaPrintHtml(b, a){
   .pdf-bullets { font-size:13px; line-height:1.7; padding-left:22px; list-style-position:inside; }
   .pdf-bullets ul, .pdf-bullets ol { margin:4px 0 0 0; padding-left:20px; list-style-position:inside; }
   .pdf-wm-banner{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:8.5px;color:#8a8fb0;padding:2px 0;border-top:0.5px solid #d5d8ea;background:#fff;}
-  .pdf-wm-diag{position:fixed;top:45%;left:0;right:0;text-align:center;font-size:34px;font-weight:800;color:rgba(61,62,119,0.07);transform:rotate(-24deg);pointer-events:none;z-index:0;}
+  .pdf-wm-diag{position:fixed;left:-10%;right:-10%;text-align:center;font-size:30px;font-weight:800;color:rgba(61,62,119,0.10);transform:rotate(-22deg);pointer-events:none;z-index:0;white-space:nowrap;letter-spacing:2px;}
+  .pdf-page-content, .pdf-section, .pdf-header{position:relative;z-index:1;}
   .pdf-activity{background:#F0F7F0 !important;border:1.5px solid #7FA882;border-radius:10px;padding:12px 14px;margin:10px 0;}
   .num-hier, .num-hier ul, .num-hier ol{list-style-type:none !important;counter-reset:nivel;}
   .num-hier li{counter-increment:nivel;}
@@ -5466,7 +5542,7 @@ ${wmDiagonal}${wmBanner}
 }
 
 document.getElementById('download-pdf-btn').addEventListener('click', ()=>{
-  if(!isAdmin) return;
+  // Aluno também baixa — o PDF dele sai com marca d'água pessoal (buildAulaPrintHtml).
   const b = COURSE.find(x=>x.num===state.block);
   const a = b.aulas.find(x=>x.num===state.aula);
   if(!a){ alert('Nenhuma aula aberta para baixar.'); return; }
@@ -5719,7 +5795,10 @@ async function openStudentSubject(subjectId){
   await loadCourseFromStorage();
   // Progresso: carrega o que este aluno já viu nesta matéria, e retoma de
   // onde parou (a menos que ele tenha entrado por um link direto de aula, #bloco-X-aula-Y)
-  STUDENT_PROGRESS = (currentUserDoc && currentUserDoc.progress && currentUserDoc.progress[subjectId]) || {seen:{}, lastBlock:null, lastAula:null};
+  STUDENT_PROGRESS = (currentUserDoc && currentUserDoc.progress && currentUserDoc.progress[subjectId]) || {seen:{}, actDone:{}, lastBlock:null, lastAula:null};
+  if(!STUDENT_PROGRESS.actDone) STUDENT_PROGRESS.actDone = {};
+  if(!STUDENT_PROGRESS.seen) STUDENT_PROGRESS.seen = {};
+  scrolledBottomAulas = new Set();
   const hashJump = /bloco-(\d+)-aula-(\d+)/.test(window.location.hash);
   if(!hashJump && STUDENT_PROGRESS.lastAula){
     const bOk = COURSE.find(bb=>bb.num===STUDENT_PROGRESS.lastBlock && !bb.hidden && bb.aulas.some(aa=>aa.num===STUDENT_PROGRESS.lastAula && !aa.hidden));
