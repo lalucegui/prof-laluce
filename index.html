@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v2.1.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v2.2.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -569,6 +569,29 @@
     background:var(--ice-tint);border:1px solid var(--line);border-radius:10px;
     padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;color:var(--navy);text-align:left;
   }
+  .subject-picker-row{
+    display:flex;align-items:stretch;gap:8px;margin-bottom:10px;width:100%;
+  }
+  .subject-picker-row .subject-picker-item{flex:1;margin:0;display:flex;align-items:center;gap:10px;min-width:0;}
+  .subject-picker-row .subject-picker-item > span:first-child{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .subject-op-btn{flex:0 0 auto;align-self:center;}
+  .subject-owner-tag{
+    flex:0 0 auto;font-size:11px;font-weight:700;color:var(--navy);
+    background:var(--ice-tint);border-radius:14px;padding:3px 10px;white-space:nowrap;
+  }
+  .subject-owner-tag.owner-master{background:#FFF3D6;color:#8A6D1D;}
+  .subject-picker-item.disabled{opacity:0.65;cursor:default;background:var(--ice-tint);}
+  .picker-section-title{
+    font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;
+    letter-spacing:0.6px;margin:18px 0 8px 0;text-align:left;
+  }
+  .picker-gestao-btn{
+    display:block;width:100%;background:var(--navy);color:#fff;border:none;border-radius:12px;
+    padding:13px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+    margin-bottom:6px;
+  }
+  .picker-gestao-btn:hover{background:var(--navy-dark);}
+  .picker-gestao-btn:disabled{opacity:0.5;cursor:default;}
   .subject-picker-item:hover{background:var(--ice);border-color:var(--navy);}
   .subject-picker-item .chev{color:var(--muted);}
   .subject-picker-new{display:flex;gap:8px;margin-top:6px;}
@@ -1074,7 +1097,7 @@
   body.presentation-mode .site-header,
   body.presentation-mode .combined-footer,
   body.presentation-mode .ai-credit,
-  body.presentation-mode .aula-nav-footer-wrap,
+  body.presentation-mode .aula-nav-footer,
   body.presentation-mode .edit-chip,
   body.presentation-mode .aula-editbar,
   body.presentation-mode .add-section-row,
@@ -1104,6 +1127,28 @@
   }
   .pres-toolbar button:hover{background:rgba(255,255,255,0.25);}
   .pres-toolbar button.pres-active{background:#E5484D;box-shadow:0 0 0 2px rgba(229,72,77,0.4);}
+  .pres-draw-wrap{position:relative;}
+  .pres-draw-panel{
+    position:absolute;bottom:52px;right:0;background:rgba(28,32,52,0.97);
+    border-radius:12px;padding:12px;min-width:210px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.4);
+  }
+  .pres-draw-panel.hidden{display:none;}
+  .pres-panel-label{font-size:10.5px;font-weight:800;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.6px;margin:6px 0 5px 0;}
+  .pres-panel-label:first-child{margin-top:0;}
+  .pres-swatch-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .pres-swatch{
+    width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,0.35);
+    cursor:pointer;padding:0;
+  }
+  .pres-swatch:hover{transform:scale(1.15);border-color:#fff;}
+  .pres-swatch-hl{border-radius:6px;opacity:0.65;}
+  .pres-panel-btn{
+    display:block;width:100%;margin-top:8px;background:rgba(255,255,255,0.12);
+    border:none;border-radius:8px;color:#fff;font-size:12.5px;font-weight:600;
+    padding:8px 10px;cursor:pointer;text-align:left;font-family:inherit;
+  }
+  .pres-panel-btn:hover{background:rgba(255,255,255,0.25);}
   #pres-laser-dot{
     position:fixed;width:16px;height:16px;border-radius:50%;z-index:9999;
     background:radial-gradient(circle, rgba(255,60,60,0.95) 0%, rgba(255,60,60,0.55) 45%, rgba(255,60,60,0) 70%);
@@ -1735,12 +1780,37 @@
   <button type="button" data-pres="font-down" title="Diminuir fonte (-)">A−</button>
   <button type="button" data-pres="font-up" title="Aumentar fonte (+)">A+</button>
   <button type="button" data-pres="laser" id="pres-laser-btn" title="Apontador laser (L)">🔴</button>
-  <button type="button" data-pres="draw" id="pres-draw-btn" title="Rabiscar na tela (D)">✏️</button>
-  <button type="button" data-pres="clear" title="Limpar rabiscos (C)">🧹</button>
+  <div class="pres-draw-wrap">
+    <button type="button" data-pres="draw-menu" id="pres-draw-btn" title="Caneta, marca-texto e borracha (D)">✏️</button>
+    <div class="pres-draw-panel hidden" id="pres-draw-panel">
+      <div class="pres-panel-label">Lápis</div>
+      <div class="pres-swatch-row">
+        <button type="button" class="pres-swatch" data-tool="pen" data-color="#E5484D" style="background:#E5484D;"></button>
+        <button type="button" class="pres-swatch" data-tool="pen" data-color="#2563EB" style="background:#2563EB;"></button>
+        <button type="button" class="pres-swatch" data-tool="pen" data-color="#16A34A" style="background:#16A34A;"></button>
+        <button type="button" class="pres-swatch" data-tool="pen" data-color="#F97316" style="background:#F97316;"></button>
+        <button type="button" class="pres-swatch" data-tool="pen" data-color="#9333EA" style="background:#9333EA;"></button>
+        <button type="button" class="pres-swatch" data-tool="pen" data-color="#EAB308" style="background:#EAB308;"></button>
+        <button type="button" class="pres-swatch" data-tool="pen" data-color="#111827" style="background:#111827;"></button>
+        <button type="button" class="pres-swatch" data-tool="pen" data-color="#FFFFFF" style="background:#FFFFFF;border-color:#999;"></button>
+      </div>
+      <div class="pres-panel-label">Grifar</div>
+      <div class="pres-swatch-row">
+        <button type="button" class="pres-swatch pres-swatch-hl" data-tool="highlight" data-color="#EAB308" style="background:#EAB308;"></button>
+        <button type="button" class="pres-swatch pres-swatch-hl" data-tool="highlight" data-color="#16A34A" style="background:#16A34A;"></button>
+        <button type="button" class="pres-swatch pres-swatch-hl" data-tool="highlight" data-color="#E5484D" style="background:#E5484D;"></button>
+        <button type="button" class="pres-swatch pres-swatch-hl" data-tool="highlight" data-color="#2563EB" style="background:#2563EB;"></button>
+        <button type="button" class="pres-swatch pres-swatch-hl" data-tool="highlight" data-color="#6B7280" style="background:#6B7280;"></button>
+      </div>
+      <button type="button" class="pres-panel-btn" data-tool="eraser">🩹 Borracha (apagar um trecho)</button>
+      <button type="button" class="pres-panel-btn" data-tool="off">✋ Cursor normal (parar de desenhar)</button>
+    </div>
+  </div>
+  <button type="button" data-pres="clear" title="Limpar todos os rabiscos (C)">🧹</button>
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v2.1.0</div>
+<div class="version-tag hidden" id="version-tag">v2.2.0</div>
 
 
 <script>
@@ -1936,8 +2006,9 @@ async function createSubject(name, seedWithDefault, description){
   // Toda matéria nova nasce com DONO (quem a criou) e herda a identidade
   // visual (branding) do professor, para o rodapé mostrar os dados certos.
   const ownerUid = currentUser ? currentUser.uid : null;
+  const ownerName = (currentUserDoc && currentUserDoc.name) || '';
   const branding = (currentUserDoc && currentUserDoc.branding) || null;
-  const ref = await db.collection('subjects').add({name, description: description||'', createdAt: Date.now(), ownerUid, ...(branding?{branding}:{})});
+  const ref = await db.collection('subjects').add({name, description: description||'', createdAt: Date.now(), ownerUid, ownerName, ...(branding?{branding}:{})});
   if(seedWithDefault){
     await db.collection(`subjects/${ref.id}/course_kv`).doc(STORAGE_KEY).set({value: JSON.stringify(DEFAULT_COURSE), updatedAt: Date.now()});
   }
@@ -3524,6 +3595,52 @@ function aulaHeaderEditorForm(a){
 // ===================== IMPORTAR AULA GERADA POR IA =====================
 // O professor copia este prompt, cola na IA junto com o pedido de conteúdo
 // (tema, bibliografia, duração...), e cola de volta o JSON que ela devolver.
+// Cabeçalho opcional do export completo: ensina a IA a ler o curso e a
+// devolver as alterações no padrão que o sistema aceita (uma aula por vez).
+const COURSE_EXPORT_INSTRUCTIONS = `=====================================================================
+INSTRUÇÕES PARA A IA — LEIA ANTES DO JSON ABAIXO
+=====================================================================
+Após a linha "===== INÍCIO DO CURSO (JSON) =====" está o conteúdo completo
+de uma matéria universitária, no formato do sistema de aulas do professor.
+
+ESTRUTURA DO ARQUIVO
+- Array de BLOCOS: { "num", "title", "hidden", "aulas": [...] }
+- Cada AULA: { "num", "title", "subtitle", "sources", "intro", "roteiro",
+  "hidden", "updatedAt", "contentModel", "isPractice", "sections": [...] }
+- Tipos válidos de seção: prose, table, figure, video, activity, grid,
+  compare, timeline, axes, hierarchy, chips, points.
+
+REGRAS INEGOCIÁVEIS
+1. "hidden": true significa que o bloco/aula está OCULTO dos alunos (em
+   construção ou material reservado). PRESERVE esse campo exatamente.
+2. "roteiro" é o CAMPO DO PROFESSOR: um roteiro particular de condução da
+   aula que só ele vê (nunca o aluno). Toda aula que você criar ou editar
+   DEVE trazer esse campo bem escrito, dirigido ao professor, contendo:
+   tempos por etapa (a aula tem 1h40), o que escrever na lousa, perguntas
+   para provocar a turma, transições entre as seções e um fechamento que
+   conecte com a aula seguinte. Ex.: "0-10min Abertura: retomar X e
+   perguntar à turma... | Lousa: desenhar o diagrama de... | 10-60min
+   Desenvolvimento: projetar seções 1-3... | 60-90min Atividade... |
+   Fechamento: ligar com a próxima aula sobre...". Se a aula já tiver
+   roteiro, melhore-o mantendo o estilo do professor.
+3. Os campos "id" (das seções) e "storageKey" (das imagens) fazem o sistema
+   funcionar: NUNCA remova, altere ou reinvente esses valores.
+4. Fundamente todo conteúdo na bibliografia indicada em "sources" (Keelling,
+   Kerzner, Maximiano e complementares). NUNCA invente citações ou páginas.
+5. Não resuma nem encurte aulas que não foram pedidas na tarefa.
+
+COMO DEVOLVER O TRABALHO
+NÃO devolva o curso inteiro de uma vez. Devolva UMA AULA POR VEZ, cada uma
+como um único JSON válido (sem markdown, sem comentários, sem texto antes ou
+depois), neste formato:
+{ "title": "...", "subtitle": "...", "sources": "...", "intro": "...",
+  "roteiro": "...", "sections": [ ... ] }
+O professor aplicará cada aula individualmente no sistema, conferindo uma a uma.
+Se a tarefa envolver várias aulas, entregue a primeira e pergunte se pode
+seguir para a próxima.
+===== INÍCIO DO CURSO (JSON) =====
+`;
+
 const AI_FORMAT_PROMPT = `Você vai gerar o conteúdo de UMA aula universitária. Responda APENAS com um JSON válido (sem crase tripla, sem markdown, sem comentários), exatamente neste formato:
 
 {
@@ -3531,7 +3648,7 @@ const AI_FORMAT_PROMPT = `Você vai gerar o conteúdo de UMA aula universitária
   "subtitle": "Subtítulo curto (opcional, pode ser \"\")",
   "sources": "Autores e páginas usados, ex.: Maximiano (2007), p. 4-13 · Kerzner (2006), cap. 2",
   "intro": "Um parágrafo de abertura que desperte interesse pelo tema.",
-  "roteiro": "Roteiro do professor com tempos, ex.: 0-10min Abertura: ... | 10-60min Desenvolvimento: ... | 60-90min Atividade: ... | Fechamento: ...",
+  "roteiro": "CAMPO DO PROFESSOR (o aluno nunca vê): roteiro de condução dirigido a ele, com tempos por etapa (aula de 1h40), o que escrever na lousa, perguntas para a turma e fechamento conectando com a próxima aula. Ex.: 0-10min Abertura: retomar X, perguntar Y... | Lousa: diagrama de... | 10-60min Desenvolvimento: ... | 60-90min Atividade: ... | Fechamento: ...",
   "sections": [
     {"type":"prose","kicker":"ETIQUETA CURTA","title":"Título da seção","paragraphs":["Parágrafo 1...","Parágrafo 2... (pode conter <b>negrito</b>, <i>itálico</i> e listas <ul><li>item</li></ul>)"]},
     {"type":"table","kicker":"","title":"Título da tabela","headers":["Coluna 1","Coluna 2"],"rows":[["a","b"],["c","d"]]},
@@ -3788,9 +3905,10 @@ function usersScreenForm(){
     return `<div class="editor-form"><div class="editing-type-banner">Painel de alunos</div><p>Carregando lista de alunos…</p></div>`;
   }
   const visibleUsers = cachedUsersList.filter(u=>{
-    if(roleIsStaff(u.role)) return usersViewMode==='active';
+    if(roleIsMaster(u.role)) return usersViewMode==='active'; // o master (você) não se arquiva
     const modoOk = usersViewMode==='archived' ? !!u.archived : !u.archived;
     if(!modoOk) return false;
+    if(roleIsStaff(u.role)) return true; // professor não entra no filtro de turma
     // Filtro por turma (só na visão de ativos)
     if(usersViewMode==='active' && usersTurmaFilter!=='all'){
       if(usersTurmaFilter==='none') return !u.turmaId;
@@ -3803,7 +3921,7 @@ function usersScreenForm(){
     <div class="user-row">
       <div class="user-row-info">${!roleIsStaff(u.role) ? `<button class="user-row-name-btn" data-action="open-user-detail" data-uid="${u.id}"><strong>${esc(u.name||'(sem nome)')}</strong></button>` : `<strong>${esc(u.name||'(sem nome)')}</strong>`}<span>${esc(u.email||'')}</span>${(!roleIsStaff(u.role) && usersViewMode==='active') ? `<select class="turma-assign-select" data-uid="${u.id}" title="Turma deste aluno — a troca salva na hora">${turmaOptions(u.turmaId)}</select>` : (u.turmaId && turmaNameById(u.turmaId) ? `<span class="turma-badge">🎓 ${esc(turmaNameById(u.turmaId))}</span>` : '')}</div>
       <div class="user-row-status">${roleIsMaster(u.role) ? '👑 Master' : (u.role==='professor' ? '🧑‍🏫 Professor' : (u.approved ? '✅ Aprovado' : '⏳ Pendente de aprovação'))}</div>
-      ${u.role !== 'admin' ? (usersViewMode==='active' ? `
+      ${!roleIsMaster(u.role) ? (usersViewMode==='active' ? `
         <button class="btn-tiny btn-approve" data-action="toggle-approve-user" data-uid="${u.id}">${u.approved ? 'Revogar acesso' : 'Aprovar acesso'}</button>
         <button class="btn-tiny" style="background:#6b6b6b;" data-action="archive-user-row" data-uid="${u.id}">📦 Arquivar</button>
       ` : `
@@ -3933,6 +4051,13 @@ function orgScreenForm(){
     <div class="hint">Vale para todo mundo (você e os alunos). Muda só depois de clicar em "Salvar todas as alterações".</div>
     <div class="hint">Mude números, títulos, blocos e visibilidade à vontade. Nada é salvo até você clicar em "Salvar todas as alterações" no final. Excluir aqui também é definitivo (use um backup se quiser voltar atrás).</div>
     <div class="org-blocks-list">${blockRows}</div>
+    <label style="margin-top:22px;">Exportar o curso</label>
+    <div class="hint">Baixa um arquivo .txt com o código (JSON) de TODAS as aulas desta matéria — pronto para colar numa IA junto com o prompt de formatação e pedir ajustes, revisões ou aulas novas com o contexto do curso inteiro. As imagens não vão no arquivo (ficam referenciadas pelos campos storageKey, que a IA deve preservar).</div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+      <input type="checkbox" id="org-export-with-instructions" checked style="width:auto;">
+      <span style="text-transform:none;font-weight:600;color:var(--charcoal);letter-spacing:normal;">🤖 Inserir instruções para a IA no início do arquivo <span style="font-weight:400;color:var(--muted);">(explica à IA o formato do sistema, o que preservar e como devolver as aulas — recomendado)</span></span>
+    </label>
+    <button type="button" class="btn-secondary" data-action="export-course-txt" style="margin-top:8px;">📄 Exportar curso completo (JSON em .txt)</button>
     <div class="editor-actions">
       <button class="btn-primary" data-action="save-org-screen">Salvar todas as alterações</button>
       <button class="btn-secondary" data-action="cancel-edit">Cancelar (descarta tudo que mudou aqui)</button>
@@ -4566,6 +4691,7 @@ let presFontScale = 1.15;
 let presLaserOn = false;
 let presDrawOn = false;
 let presDrawing = false;
+let presTool = { mode: 'pen', color: '#E5484D' }; // pen | highlight | eraser
 function applyPresFontScale(){
   document.documentElement.style.setProperty('--pres-scale', presFontScale);
 }
@@ -4627,6 +4753,7 @@ function exitPresentationMode(){
   presCanvas().classList.add('hidden');
   document.body.classList.remove('presentation-mode');
   document.getElementById('pres-toolbar').classList.add('hidden');
+  document.getElementById('pres-draw-panel').classList.add('hidden');
   try{
     if(document.fullscreenElement && document.exitFullscreen){
       document.exitFullscreen().catch(()=>{});
@@ -4660,8 +4787,19 @@ document.getElementById('pres-toolbar').addEventListener('click', (e)=>{
   else if(cmd==='font-up'){ presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale(); }
   else if(cmd==='font-down'){ presFontScale = Math.max(0.9, presFontScale - 0.1); applyPresFontScale(); }
   else if(cmd==='laser') presSetLaser(!presLaserOn);
-  else if(cmd==='draw') presSetDraw(!presDrawOn);
+  else if(cmd==='draw-menu') document.getElementById('pres-draw-panel').classList.toggle('hidden');
   else if(cmd==='clear') presClearCanvas();
+});
+document.getElementById('pres-draw-panel').addEventListener('click', (e)=>{
+  const b = e.target.closest('[data-tool]');
+  if(!b) return;
+  e.stopPropagation();
+  const tool = b.dataset.tool;
+  document.getElementById('pres-draw-panel').classList.add('hidden');
+  if(tool==='off'){ presSetDraw(false); return; }
+  presTool.mode = tool;
+  if(b.dataset.color) presTool.color = b.dataset.color;
+  presSetDraw(true);
 });
 document.getElementById('presentation-btn').addEventListener('click', enterPresentationMode);
 // Laser: o ponto segue o mouse
@@ -4678,10 +4816,23 @@ document.addEventListener('mousemove', (e)=>{
     if(!presentationMode || !presDrawOn) return;
     presDrawing = true;
     const ctx = c.getContext('2d');
-    ctx.strokeStyle = '#E5484D';
-    ctx.lineWidth = 3.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    if(presTool.mode === 'eraser'){
+      ctx.globalCompositeOperation = 'destination-out'; // apaga só onde passa
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 26;
+    } else if(presTool.mode === 'highlight'){
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.35; // translúcido, como marca-texto de verdade
+      ctx.lineWidth = 16;
+      ctx.strokeStyle = presTool.color;
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = presTool.color;
+    }
     ctx.beginPath();
     ctx.moveTo(e.clientX, e.clientY);
   });
@@ -4691,7 +4842,14 @@ document.addEventListener('mousemove', (e)=>{
     ctx.lineTo(e.clientX, e.clientY);
     ctx.stroke();
   });
-  ['mouseup','mouseleave'].forEach(ev=>c.addEventListener(ev, ()=>{ presDrawing = false; }));
+  ['mouseup','mouseleave'].forEach(ev=>c.addEventListener(ev, ()=>{
+    if(presDrawing){
+      const ctx = c.getContext('2d');
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    presDrawing = false;
+  }));
 })();
 document.addEventListener('keydown', (e)=>{
   const t = e.target;
@@ -5049,8 +5207,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       if(allSubjects===null){ try{ await fetchAllSubjects(); }catch(e){} }
       const dele = (allSubjects||[]).filter(s=>s.ownerUid===uid);
       for(const s of dele){
-        await db.collection('subjects').doc(s.id).update({branding});
+        await db.collection('subjects').doc(s.id).update({branding, ownerName: u.name || ''});
         s.branding = branding;
+        s.ownerName = u.name || '';
       }
       alert(`Identidade salva e aplicada em ${dele.length} matéria(s).`);
     }catch(e){ alert('Não foi possível salvar: ' + (e && e.message ? e.message : String(e))); }
@@ -5166,7 +5325,19 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const uid = btn.dataset.uid;
     const u = cachedUsersList.find(x=>x.id===uid);
     if(!u) return;
-    if(!confirm(`EXCLUIR DEFINITIVAMENTE "${u.name}" (${u.email})? Isso apaga a ficha, o cadastro, o log de acesso e as anotações — tudo, sem volta. Se ele tentar entrar de novo, vai precisar se cadastrar do zero. (Isso NÃO apaga o login dele do Firebase Authentication — isso só pode ser feito no console do Firebase, por segurança.)`)) return;
+    // Professor com matérias/turmas: elas NÃO são apagadas — passam ao seu controle (master vê tudo)
+    let avisoProf = '';
+    if(u.role === 'professor'){
+      if(!allSubjects){
+        avisoProf = '\n\nATENÇÃO: se este professor tiver matérias, elas NÃO serão apagadas — continuam existindo e você (master) segue administrando todas.';
+      } else {
+        const materiasDele = allSubjects.filter(s=>s.ownerUid===uid).map(s=>s.name);
+        avisoProf = materiasDele.length
+          ? `\n\nATENÇÃO: este professor é dono de ${materiasDele.length} matéria(s) (${materiasDele.join(', ')}). Elas NÃO serão apagadas — continuam existindo e você (master) segue vendo e administrando todas.`
+          : '\n\n(Este professor não possui matérias.)';
+      }
+    }
+    if(!confirm(`EXCLUIR DEFINITIVAMENTE "${u.name}" (${u.email})? Isso apaga a ficha, o cadastro, o log de acesso e as anotações — tudo, sem volta. Se ele tentar entrar de novo, vai precisar se cadastrar do zero. (Isso NÃO apaga o login dele do Firebase Authentication — isso só pode ser feito no console do Firebase, por segurança.)${avisoProf}`)) return;
     try{
       await db.collection('users').doc(uid).delete();
       cachedUsersList = cachedUsersList.filter(x=>x.id!==uid);
@@ -5177,6 +5348,24 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
 
+  if(action==='export-course-txt'){
+    const materia = (allSubjects && allSubjects.find(x=>x.id===activeSubjectId)) || {};
+    const nomeMateria = (materia.name || 'curso').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    const comInstrucoes = document.getElementById('org-export-with-instructions');
+    const prefixo = (comInstrucoes && comInstrucoes.checked) ? COURSE_EXPORT_INSTRUCTIONS + '\n' : '';
+    const dataStr = prefixo + JSON.stringify(COURSE, null, 2);
+    const blob = new Blob([dataStr], {type: 'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a2 = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
+    a2.href = url;
+    a2.download = `curso-${nomeMateria}_${stamp}.txt`;
+    document.body.appendChild(a2);
+    a2.click();
+    document.body.removeChild(a2);
+    URL.revokeObjectURL(url);
+    return;
+  }
   if(action==='save-org-screen'){
     const newSubjectName = document.getElementById('org-subject-name').value.trim();
     const newSubjectDescription = document.getElementById('org-subject-description').value.trim();
@@ -6079,6 +6268,9 @@ document.querySelectorAll('[data-auth-tab]').forEach(tab=>{
     const isLogin = tab.dataset.authTab === 'login';
     document.getElementById('auth-login-form').classList.toggle('hidden', !isLogin);
     document.getElementById('auth-register-form').classList.toggle('hidden', isLogin);
+    // Mensagens de rodadas anteriores não devem sobreviver à troca de tela
+    document.getElementById('auth-login-error').classList.add('hidden');
+    document.getElementById('auth-forgot-ok').classList.add('hidden');
   });
 });
 
@@ -6100,6 +6292,7 @@ document.getElementById('auth-login-btn').addEventListener('click', async ()=>{
   const password = document.getElementById('auth-login-password').value;
   const errEl = document.getElementById('auth-login-error');
   errEl.classList.add('hidden');
+  document.getElementById('auth-forgot-ok').classList.add('hidden');
   if(!email || !password){ errEl.textContent='Preencha e-mail e senha.'; errEl.classList.remove('hidden'); return; }
   try{
     await auth.signInWithEmailAndPassword(email, password);
@@ -6175,22 +6368,44 @@ function renderSubjectPicker(){
   const minhas = allSubjects.filter(s=> isMaster || (s.ownerUid && currentUser && s.ownerUid===currentUser.uid));
   const ativas = minhas.filter(s=>!s.archived);
   const arquivadas = minhas.filter(s=>s.archived);
-  let html = ativas.map(s => `
+  // Etiqueta do dono (só o master precisa se organizar por professor)
+  const donoTag = (s)=>{
+    if(!isMaster) return '';
+    const minha = !s.ownerUid || (currentUser && s.ownerUid===currentUser.uid);
+    return `<span class="subject-owner-tag ${minha?'owner-master':''}">${minha ? '👑 Sua' : '🧑‍🏫 ' + esc(s.ownerName || 'Professor')}</span>`;
+  };
+  let html = `<button class="picker-gestao-btn" id="picker-gestao-btn">🗂️ Gestão — alunos, turmas, estatísticas${isMaster?' e professores':''}</button>
+    <div class="picker-section-title">Matérias ativas</div>`;
+  html += ativas.map(s => `
     <div class="subject-picker-row">
       <button class="subject-picker-item" data-action="open-subject" data-sid="${s.id}">
-        <span>${esc(s.name)}</span><span class="chev">→</span>
+        <span>${esc(s.name)}</span>${donoTag(s)}<span class="chev">→</span>
       </button>
-      <button class="btn-tiny" style="background:#6b6b6b;flex:0 0 auto;" data-sid="${s.id}" data-subject-op="archive" title="Arquivar esta matéria (some das listas, mas nada é apagado — pode restaurar quando quiser)">📦</button>
+      <button class="btn-tiny subject-op-btn" style="background:#6b6b6b;" data-sid="${s.id}" data-subject-op="archive" title="Arquivar esta matéria (some das listas, mas nada é apagado — pode restaurar quando quiser)">📦</button>
     </div>`).join('') || '<p style="font-size:13px;color:var(--muted);">Nenhuma matéria ativa.</p>';
   if(arquivadas.length){
-    html += `<div class="archived-subjects-title">📦 Matérias arquivadas (${arquivadas.length})</div>` + arquivadas.map(s => `
+    html += `<div class="picker-section-title">📦 Matérias arquivadas (${arquivadas.length})</div>` + arquivadas.map(s => `
     <div class="subject-picker-row archived">
-      <div class="subject-picker-item disabled"><span>${esc(s.name)}</span></div>
-      <button class="btn-tiny btn-approve" style="flex:0 0 auto;" data-sid="${s.id}" data-subject-op="unarchive">♻️ Restaurar</button>
-      <button class="btn-tiny" style="background:var(--terracotta);flex:0 0 auto;" data-sid="${s.id}" data-subject-op="delete-forever">🗑️ Excluir definitivamente</button>
+      <div class="subject-picker-item disabled"><span>${esc(s.name)}</span>${donoTag(s)}</div>
+      <button class="btn-tiny btn-approve subject-op-btn" data-sid="${s.id}" data-subject-op="unarchive">♻️ Restaurar</button>
+      <button class="btn-tiny subject-op-btn" style="background:var(--terracotta);" data-sid="${s.id}" data-subject-op="delete-forever">🗑️ Excluir</button>
     </div>`).join('');
   }
   list.innerHTML = html;
+  // Gestão direto do painel: abre a primeira matéria ativa já na tela de gestão
+  const gBtn = document.getElementById('picker-gestao-btn');
+  if(gBtn){
+    if(ativas.length){
+      gBtn.addEventListener('click', async ()=>{
+        await openSubject(ativas[0].id);
+        editState = {kind:'usersScreen'};
+        render();
+      });
+    } else {
+      gBtn.disabled = true;
+      gBtn.title = 'Crie uma matéria primeiro';
+    }
+  }
   list.querySelectorAll('[data-action="open-subject"]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       await openSubject(btn.dataset.sid);
@@ -6338,7 +6553,7 @@ document.getElementById('switch-subject-btn').addEventListener('click', async ()
   document.getElementById('edit-status-bar').classList.add('hidden');
   document.getElementById('download-pdf-btn').classList.add('hidden');
   document.getElementById('subject-picker-new').classList.remove('hidden');
-  document.getElementById('subject-picker-screen').querySelector('h2').textContent = 'Escolha ou crie uma matéria';
+  document.getElementById('subject-picker-screen').querySelector('h2').textContent = isMaster ? '🗂️ Painel de Gestão' : '🗂️ Painel do Professor';
   await fetchAllSubjects();
   renderSubjectPicker();
   showOnly(['subject-picker-screen']);
@@ -6607,6 +6822,8 @@ if(!firebaseReady || !auth){
       isAdmin = false;
       document.body.classList.remove('admin-mode');
     showOnly(['auth-gate']);
+    const okEl = document.getElementById('auth-forgot-ok'); if(okEl) okEl.classList.add('hidden');
+    const errEl0 = document.getElementById('auth-login-error'); if(errEl0) errEl0.classList.add('hidden');
     return;
   }
   let userDoc = null;
