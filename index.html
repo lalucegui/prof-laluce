@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v2.2.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v2.3.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -855,6 +855,45 @@
   .act-tag{flex:0 0 118px;font-size:11px;font-weight:800;color:#2F5D33;text-transform:uppercase;letter-spacing:0.4px;padding-top:2px;}
   .activity-done-row{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px dashed #7FA882;cursor:pointer;font-size:13.5px;font-weight:700;color:#2F5D33;}
   .activity-done-row input{width:17px;height:17px;accent-color:#2F5D33;cursor:pointer;}
+  /* ===== Bloco "Atividade" (respondivel, com nota) - v3, aulas novas ===== */
+  .atividade-card{background:#FBF3E7;border:1.5px solid #D8A857;border-radius:12px;padding:16px 18px;}
+  .atividade-badge{font-size:11px;font-weight:800;letter-spacing:0.8px;color:#8A5A0F;background:#F2DFB8;padding:4px 10px;border-radius:20px;}
+  .atividade-optional-tag{font-size:11px;font-weight:700;color:var(--muted);margin-left:8px;}
+  .atividade-title{font-size:17px;font-weight:800;color:#5C3D0A;margin:10px 0 4px 0;}
+  .atividade-statement{font-size:14px;line-height:1.55;color:var(--charcoal);white-space:pre-wrap;margin-bottom:6px;}
+  .atividade-prazo{font-size:12.5px;font-weight:700;color:#8A5A0F;margin:4px 0 10px 0;}
+  .atividade-status{font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:20px;background:#EEE;color:#555;}
+  .atividade-status-rascunho{background:#FFF3D0;color:#8A6A0F;}
+  .atividade-status-enviado{background:#E3E8FB;color:#333F8A;}
+  .atividade-status-corrigido{background:#DCEBDD;color:#2F5D33;}
+  .atividade-items{display:flex;flex-direction:column;gap:16px;margin-top:12px;}
+  .atv-item{border-top:1px dashed #D8A857;padding-top:12px;}
+  .atv-item:first-child{border-top:none;padding-top:0;}
+  .atv-item-prompt{font-weight:700;font-size:14px;color:#5C3D0A;margin-bottom:8px;}
+  .atv-check-row, .atv-radio-row{display:flex;align-items:center;gap:8px;font-size:13.5px;margin:4px 0;}
+  .atv-vf-row{display:flex;align-items:center;gap:14px;font-size:13.5px;margin:6px 0;}
+  .atv-vf-statement{flex:1;}
+  .atv-assoc-row{display:flex;align-items:center;gap:10px;font-size:13.5px;margin:6px 0;}
+  .atv-assoc-left{flex:0 0 45%;}
+  .atv-table{width:100%;border-collapse:collapse;margin-bottom:8px;}
+  .atv-table th, .atv-table td{border:1px solid #E4D2AC;padding:4px;}
+  .atv-table input{width:100%;border:none;font-size:13px;padding:4px;background:transparent;}
+  .atividade-save-status{font-size:11.5px;color:var(--muted);margin-top:10px;text-align:right;min-height:14px;}
+  .atividade-grading{margin-top:16px;padding-top:14px;border-top:1.5px solid #D8A857;}
+  .atividade-grade-score{font-size:15px;font-weight:800;color:#5C3D0A;margin-bottom:8px;}
+  .atividade-grade-comment-label{font-size:11.5px;font-weight:800;color:#8A5A0F;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;}
+  .atv-item-editor-row{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:#FAFAFA;}
+  .atv-item-editor-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .atv-item-num{font-weight:800;color:var(--muted);}
+  .atv-item-type-select{flex:1;}
+  .atv-item-prompt-field{width:100%;min-height:50px;margin-top:6px;}
+  .atv-grade-item{border-top:1px dashed var(--line);padding-top:10px;margin-top:10px;}
+  .atv-grade-item:first-child{border-top:none;padding-top:0;margin-top:0;}
+  .atv-grade-answer{font-size:13.5px;margin-top:4px;color:var(--charcoal);}
+  .atv-grading-panel{background:#F7F7FB;border-radius:10px;padding:14px;margin:6px 0 14px 0;}
+  .atv-manage-prazo{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:10px 0 16px 0;}
+  .atv-manage-prazo label{margin:0;font-size:11px;}
+  .atv-student-row{margin-bottom:2px;}
   .nav-aula-practice-badge{font-size:10px;margin-left:4px;}
   .nav-aula-seen{color:#2E7D32;font-weight:800;font-size:11px;margin-left:4px;}
   .student-notes{margin-top:26px;background:#FFFDF2;border:1.5px dashed #D9C97A;border-radius:12px;padding:16px 18px;}
@@ -1810,7 +1849,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v2.2.0</div>
+<div class="version-tag hidden" id="version-tag">v2.3.0</div>
 
 
 <script>
@@ -2281,6 +2320,9 @@ function renderSearchResults(query){
 }
 document.addEventListener('input', (e)=>{
   if(e.target && e.target.id === 'nav-search-input') renderSearchResults(e.target.value);
+  if(e.target && e.target.classList && e.target.classList.contains('atv-ans-field')){
+    saveAtividadeAnswerDebounced(e.target.dataset.secid, state.aula);
+  }
 });
 // Atribuição de turma (select na linha do aluno e na ficha) + filtro por turma
 document.addEventListener('change', async (e)=>{
@@ -2311,6 +2353,10 @@ document.addEventListener('change', async (e)=>{
   if(e.target && e.target.id === 'users-turma-filter'){
     usersTurmaFilter = e.target.value;
     render();
+    return;
+  }
+  if(e.target && e.target.classList && e.target.classList.contains('atv-ans-field')){
+    saveAtividadeAnswerDebounced(e.target.dataset.secid, state.aula);
     return;
   }
 });
@@ -2734,15 +2780,319 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
         <div class="chip" style="background:${sec.chipsColor||'#F4F5FB'};"><span class="dot"></span>${esc(c.label)}</div>
       `).join('')}</div>${sec.footerNote?`<div class="footer-note">${esc(sec.footerNote)}</div>`:''}`;
       break;
-    case 'quiz':
-      body = `<div class="quiz-placeholder">
-        <div class="quiz-placeholder-icon">🚧</div>
-        <div class="quiz-placeholder-text"><strong>${esc(sec.title||'Questionário')}</strong><br>Em construção — em breve o aluno vai poder responder aqui.</div>
-      </div>`;
+    case 'atividade': {
+      if(isAdmin){
+        body = `<div class="atividade-card atividade-preview">
+          <div class="atividade-head"><span class="atividade-badge">📝 ATIVIDADE</span>${sec.required===false?'<span class="atividade-optional-tag">opcional</span>':''}</div>
+          ${sec.title?`<div class="atividade-title">${esc(sec.title)}</div>`:''}
+          ${sec.statement?`<div class="atividade-statement">${esc(sec.statement)}</div>`:''}
+          <div class="atividade-meta">${(sec.items||[]).length} questão(ões) — não entra no PDF da aula.</div>
+          <button type="button" class="btn-secondary" data-action="open-atividade-manage" data-secid="${esc(sec.id)}" data-aula="${state.aula}">📋 Gerenciar respostas e prazos</button>
+        </div>`;
+      } else if(!currentUser){
+        body = `<div class="atividade-card"><div class="atividade-head"><span class="atividade-badge">📝 ATIVIDADE</span></div><p>Entre com sua conta para responder.</p></div>`;
+      } else {
+        const cache = ACTIVITY_DATA_CACHE[sec.id];
+        if(!cache || !cache.loaded){
+          body = `<div class="atividade-card" data-atv-load-id="${esc(sec.id)}" data-atv-aula="${state.aula}"><div class="atividade-head"><span class="atividade-badge">📝 ATIVIDADE</span></div><p>Carregando…</p></div>`;
+        } else {
+          body = renderAtividadeStudentForm(sec, cache.response, cache.schedule);
+        }
+      }
       break;
+    }
   }
   const gridClass = (isAdmin && sectionGridMode) ? ' section-grid-on' : '';
   return `<section class="section${gridClass}" data-section-id="${esc(sec.id||'')}" data-section-idx="${idx}"${draggableAttr}${dropTargetAttr}>${editbar}${kicker}${title}${body}</section>`;
+}
+
+// ================= Bloco "Atividade" — dados e render (aluno + professor) =================
+// Cache em memória: sectionId -> {response, schedule, loaded}. Carregado sob demanda
+// quando a aula é exibida (padrão igual ao loadStorageImages: mostra um placeholder
+// e, quando os dados chegam, chama render() de novo).
+let ACTIVITY_DATA_CACHE = {};
+// Cache da tela "Gerenciar atividade" (professor): respostas da turma e prazos.
+let ATV_MANAGE_RESPONSES = null; // array de respostas da seção sendo gerenciada
+let ATV_MANAGE_SCHEDULES = {};   // turmaId -> {opensAt, closesAt}
+let atvSaveTimer = null;
+
+// Status é sempre CALCULADO (nunca gravado), evitando ficar dessincronizado:
+// 'corrigido' se o professor já lançou nota/comentário; 'enviado' se o prazo da
+// turma já passou (fica travado, aguardando correção); senão 'rascunho' (editável,
+// salva sozinho). Sem prazo configurado, fica sempre em 'rascunho' até ser corrigida.
+function computeActivityStatus(response, schedule){
+  const g = response && response.grading;
+  const graded = g && (g.score!=null || (g.commentParas && g.commentParas.length));
+  if(graded) return 'corrigido';
+  if(schedule && schedule.closesAt && Date.now() > schedule.closesAt) return 'enviado';
+  return 'rascunho';
+}
+
+async function loadActivityData(sectionId, aulaNum){
+  if(ACTIVITY_DATA_CACHE[sectionId] && ACTIVITY_DATA_CACHE[sectionId].loaded) return;
+  ACTIVITY_DATA_CACHE[sectionId] = ACTIVITY_DATA_CACHE[sectionId] || {};
+  if(!activeSubjectId || !currentUser){ ACTIVITY_DATA_CACHE[sectionId].loaded = true; return; }
+  try{
+    const uid = currentUser.uid;
+    const turmaId = (currentUserDoc && currentUserDoc.turmaId) || null;
+    const respId = `${aulaNum}_${sectionId}_${uid}`;
+    const respPromise = db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(respId).get();
+    const schedPromise = turmaId ? db.collection(`subjects/${activeSubjectId}/activity_schedules`).doc(`${sectionId}_${turmaId}`).get() : Promise.resolve(null);
+    const [respSnap, schedSnap] = await Promise.all([respPromise, schedPromise]);
+    ACTIVITY_DATA_CACHE[sectionId].response = respSnap.exists ? respSnap.data() : null;
+    ACTIVITY_DATA_CACHE[sectionId].schedule = (schedSnap && schedSnap.exists) ? schedSnap.data() : null;
+  }catch(e){ /* falha ao carregar não pode travar a aula — trata como rascunho vazio */ }
+  ACTIVITY_DATA_CACHE[sectionId].loaded = true;
+}
+async function loadAllActivityData(){
+  const placeholders = [...document.querySelectorAll('[data-atv-load-id]')];
+  const pending = placeholders.filter(p=>!(ACTIVITY_DATA_CACHE[p.dataset.atvLoadId] && ACTIVITY_DATA_CACHE[p.dataset.atvLoadId].loaded));
+  if(!pending.length) return;
+  await Promise.all(pending.map(p=>loadActivityData(p.dataset.atvLoadId, +p.dataset.atvAula)));
+  render(); // agora com os dados prontos, desenha o formulário de verdade
+}
+
+function renderAtividadeStudentForm(sec, response, schedule){
+  const status = computeActivityStatus(response, schedule);
+  const answers = (response && response.answers) || {};
+  const locked = status !== 'rascunho';
+  const statusLabel = status==='corrigido' ? '✅ Corrigida' : (status==='enviado' ? '📨 Enviada — prazo encerrado' : '✏️ Rascunho — salva sozinho enquanto você digita');
+  const prazoInfo = (schedule && schedule.closesAt) ? `<div class="atividade-prazo">Prazo: até ${new Date(schedule.closesAt).toLocaleString('pt-BR')}</div>` : '';
+  const itemsHtml = (sec.items||[]).map((item,i)=>renderAtividadeItemInput(sec.id, item, i, answers[item.itemId], locked)).join('');
+  let gradingHtml = '';
+  if(status==='corrigido'){
+    const g = response.grading || {};
+    const comentario = (g.commentParas && g.commentParas.length) ? g.commentParas.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${richOut(p)}</p>`).join('') : '';
+    gradingHtml = `<div class="atividade-grading">
+      ${g.score!=null?`<div class="atividade-grade-score">Nota: <strong>${esc(String(g.score))}</strong></div>`:''}
+      ${comentario?`<div class="atividade-grade-comment-label">Comentário do professor</div><div class="rich-content">${comentario}</div>`:''}
+    </div>`;
+  }
+  return `<div class="atividade-card">
+    <div class="atividade-head"><span class="atividade-badge">📝 ATIVIDADE</span><span class="atividade-status atividade-status-${status}">${statusLabel}</span></div>
+    ${sec.title?`<div class="atividade-title">${esc(sec.title)}</div>`:''}
+    ${sec.statement?`<div class="atividade-statement">${esc(sec.statement)}</div>`:''}
+    ${prazoInfo}
+    <div class="atividade-items">${itemsHtml}</div>
+    ${!locked?`<div class="atividade-save-status" id="atv-save-status-${esc(sec.id)}"></div>`:''}
+    ${gradingHtml}
+  </div>`;
+}
+
+function atvTableHtml(sectionId, item, rows, locked){
+  const headers = (item.headers && item.headers.length) ? item.headers : ['Coluna 1','Coluna 2'];
+  const dataRows = (rows && rows.length) ? rows : [headers.map(()=>'')];
+  let html = `<table class="atv-table"><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr>`;
+  dataRows.forEach((r,ri)=>{
+    html += `<tr>${headers.map((h,ci)=>`<td><input type="text" class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="tabela" data-ri="${ri}" data-ci="${ci}" value="${escAttr((r&&r[ci])||'')}" ${locked?'disabled':''}></td>`).join('')}</tr>`;
+  });
+  html += '</table>';
+  if(!locked) html += `<button type="button" class="btn-secondary" data-action="atv-add-row" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}">+ linha</button>`;
+  return html;
+}
+
+function renderAtividadeItemInput(sectionId, item, idx, value, locked){
+  const head = `<div class="atv-item-prompt">${idx+1}. ${esc(item.prompt||'')}</div>`;
+  let body = '';
+  if(item.type==='dissertativa'){
+    const paras = (value && value.length) ? value : [''];
+    const html = paras.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${p}</p>`).join('');
+    const fieldId = 'atv-ans-'+sectionId+'-'+item.itemId;
+    body = locked
+      ? `<div class="rich-content">${paras.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${richOut(p)}</p>`).join('')}</div>`
+      : `${richToolbarHtml(fieldId)}<div id="${fieldId}" class="rich-text atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="dissertativa" contenteditable="true" spellcheck="true" lang="pt-BR">${html}</div>`;
+  } else if(item.type==='curta'){
+    body = `<input type="text" class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="curta" value="${escAttr(value||'')}" ${locked?'disabled':''}>`;
+  } else if(item.type==='lista'){
+    body = `<textarea class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="lista" placeholder="Um item por linha" ${locked?'disabled':''}>${esc((value||[]).join('\n'))}</textarea>`;
+  } else if(item.type==='tabela'){
+    body = atvTableHtml(sectionId, item, value, locked);
+  } else if(item.type==='checklist'){
+    body = (item.options||[]).map(opt=>`<label class="atv-check-row"><input type="checkbox" class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="checklist" data-opt="${escAttr(opt)}" ${(value||[]).includes(opt)?'checked':''} ${locked?'disabled':''}><span>${esc(opt)}</span></label>`).join('');
+  } else if(item.type==='multipla_escolha'){
+    body = (item.options||[]).map(opt=>`<label class="atv-radio-row"><input type="radio" class="atv-ans-field" name="atv-mc-${esc(sectionId)}-${esc(item.itemId)}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="multipla_escolha" value="${escAttr(opt)}" ${value===opt?'checked':''} ${locked?'disabled':''}><span>${esc(opt)}</span></label>`).join('');
+  } else if(item.type==='verdadeiro_falso'){
+    body = (item.statements||[]).map((st,si)=>{
+      const v = (value||[])[si];
+      return `<div class="atv-vf-row"><span class="atv-vf-statement">${esc(st)}</span>
+        <label><input type="radio" class="atv-ans-field" name="atv-vf-${esc(sectionId)}-${esc(item.itemId)}-${si}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="verdadeiro_falso" data-si="${si}" value="V" ${v==='V'?'checked':''} ${locked?'disabled':''}> Verdadeiro</label>
+        <label><input type="radio" class="atv-ans-field" name="atv-vf-${esc(sectionId)}-${esc(item.itemId)}-${si}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="verdadeiro_falso" data-si="${si}" value="F" ${v==='F'?'checked':''} ${locked?'disabled':''}> Falso</label>
+      </div>`;
+    }).join('');
+  } else if(item.type==='associacao'){
+    body = (item.left||[]).map((lft,li)=>{
+      const chosen = (value||[])[li] || '';
+      const opts = (item.right||[]).map(r=>`<option value="${escAttr(r)}" ${chosen===r?'selected':''}>${esc(r)}</option>`).join('');
+      return `<div class="atv-assoc-row"><span class="atv-assoc-left">${esc(lft)}</span><select class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="associacao" data-li="${li}" ${locked?'disabled':''}><option value="">Selecione…</option>${opts}</select></div>`;
+    }).join('');
+  }
+  return `<div class="atv-item">${head}${body}</div>`;
+}
+
+function collectAtividadeAnswersFromDom(sectionId){
+  const answers = {};
+  const fields = [...document.querySelectorAll(`.atv-ans-field[data-secid="${sectionId}"]`)];
+  const byItem = {};
+  fields.forEach(el=>{ (byItem[el.dataset.itemId] = byItem[el.dataset.itemId] || []).push(el); });
+  Object.entries(byItem).forEach(([itemId, els])=>{
+    const type = els[0].dataset.itemType;
+    if(type==='dissertativa'){
+      answers[itemId] = richFieldToArray(els[0]);
+    } else if(type==='curta'){
+      answers[itemId] = els[0].value.trim();
+    } else if(type==='lista'){
+      answers[itemId] = els[0].value.split('\n').map(s=>s.trim()).filter(Boolean);
+    } else if(type==='tabela'){
+      const rowsMap = {};
+      els.forEach(el=>{ const ri=el.dataset.ri, ci=+el.dataset.ci; rowsMap[ri]=rowsMap[ri]||[]; rowsMap[ri][ci]=el.value; });
+      answers[itemId] = Object.keys(rowsMap).sort((a,b)=>a-b).map(k=>rowsMap[k]);
+    } else if(type==='checklist'){
+      answers[itemId] = els.filter(el=>el.checked).map(el=>el.dataset.opt);
+    } else if(type==='multipla_escolha'){
+      const sel = els.find(el=>el.checked);
+      answers[itemId] = sel ? sel.value : '';
+    } else if(type==='verdadeiro_falso'){
+      const arr = [];
+      els.forEach(el=>{ if(el.checked) arr[+el.dataset.si] = el.value; });
+      answers[itemId] = arr;
+    } else if(type==='associacao'){
+      const arr = [];
+      els.forEach(el=>{ arr[+el.dataset.li] = el.value; });
+      answers[itemId] = arr;
+    }
+  });
+  return answers;
+}
+
+function saveAtividadeAnswerDebounced(sectionId, aulaNum){
+  clearTimeout(atvSaveTimer);
+  atvSaveTimer = setTimeout(()=>persistAtividadeAnswer(sectionId, aulaNum), 1200);
+}
+async function persistAtividadeAnswer(sectionId, aulaNum){
+  if(realIsAdmin || !currentUser || !activeSubjectId) return;
+  const cache = ACTIVITY_DATA_CACHE[sectionId];
+  const status = computeActivityStatus(cache && cache.response, cache && cache.schedule);
+  if(status !== 'rascunho') return; // travado — não salva mais
+  const answers = collectAtividadeAnswersFromDom(sectionId);
+  const docId = `${aulaNum}_${sectionId}_${currentUser.uid}`;
+  const payload = {
+    subjectId: activeSubjectId, turmaId: (currentUserDoc&&currentUserDoc.turmaId)||null,
+    aulaNum, sectionId, studentUid: currentUser.uid,
+    studentName: (currentUserDoc&&((currentUserDoc.profile&&currentUserDoc.profile.fullName)||currentUserDoc.name))||'',
+    answers, updatedAt: Date.now(),
+  };
+  try{
+    await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId).set(payload, {merge:true});
+    if(cache){ cache.response = {...(cache.response||{}), ...payload}; }
+    const st = document.getElementById('atv-save-status-'+sectionId);
+    if(st) st.textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){ /* melhor-esforço — igual ao progresso, nunca trava a aula */ }
+}
+
+function toDatetimeLocal(ts){
+  const d = new Date(ts);
+  const pad = n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+async function fetchActivityResponsesForSection(sectionId){
+  const snap = await db.collection(`subjects/${activeSubjectId}/activity_responses`).where('sectionId','==',sectionId).get();
+  return snap.docs.map(d=>({id:d.id, ...d.data()}));
+}
+async function fetchActivitySchedule(sectionId, turmaId){
+  const snap = await db.collection(`subjects/${activeSubjectId}/activity_schedules`).doc(`${sectionId}_${turmaId}`).get();
+  return snap.exists ? snap.data() : null;
+}
+
+function renderAtividadeAnswerReadonly(item, value){
+  const vazio = (value===undefined || value===null || value==='' || (Array.isArray(value) && !value.length));
+  if(vazio) return '<em>(sem resposta)</em>';
+  if(item.type==='dissertativa'){
+    const paras = Array.isArray(value) ? value : [value];
+    return `<div class="rich-content">${paras.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${richOut(p)}</p>`).join('')}</div>`;
+  }
+  if(item.type==='curta') return esc(String(value));
+  if(item.type==='lista') return `<ul>${(value||[]).map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`;
+  if(item.type==='tabela') return `<table class="data-table"><tbody>${(value||[]).map(r=>`<tr>${(r||[]).map(cel=>`<td>${esc(cel||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  if(item.type==='checklist') return `<ul>${(value||[]).map(v=>`<li>✓ ${esc(v)}</li>`).join('')}</ul>`;
+  if(item.type==='multipla_escolha') return esc(String(value));
+  if(item.type==='verdadeiro_falso') return `<ul>${(item.statements||[]).map((st,i)=>`<li>${esc(st)} — <strong>${esc(value[i]==='V'?'Verdadeiro':(value[i]==='F'?'Falso':'—'))}</strong></li>`).join('')}</ul>`;
+  if(item.type==='associacao') return `<ul>${(item.left||[]).map((l,i)=>`<li>${esc(l)} → <strong>${esc(value[i]||'—')}</strong></li>`).join('')}</ul>`;
+  return esc(JSON.stringify(value));
+}
+
+function atvGradingPanelHtml(sec, resp, user){
+  const answers = (resp && resp.answers) || {};
+  const itemsHtml = (sec.items||[]).map((it,i)=>`
+    <div class="atv-grade-item">
+      <div class="atv-item-prompt">${i+1}. ${esc(it.prompt||'')}</div>
+      <div class="atv-grade-answer">${renderAtividadeAnswerReadonly(it, answers[it.itemId])}</div>
+    </div>`).join('');
+  const grading = (resp && resp.grading) || {};
+  const commentParas = (grading.commentParas && grading.commentParas.length) ? grading.commentParas : [''];
+  const commentHtml = commentParas.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${p}</p>`).join('');
+  return `<div class="atv-grading-panel">
+    ${itemsHtml}
+    <label>Nota geral (opcional)</label>
+    <input type="text" inputmode="decimal" id="atv-grade-score" value="${grading.score!=null?escAttr(String(grading.score)):''}" placeholder="Ex.: 8,5">
+    <label>Comentário geral (opcional) — visível para o aluno</label>
+    ${richToolbarHtml('atv-grade-comment')}
+    <div id="atv-grade-comment" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR">${commentHtml}</div>
+    <div class="editor-actions">
+      <button class="btn-primary" data-action="save-atv-grading" data-uid="${esc(user.id)}">Salvar correção</button>
+    </div>
+  </div>`;
+}
+
+function atividadeManageForm(){
+  const es = editState;
+  const b = COURSE.find(x=>x.num===es.blockNum);
+  const a = b && b.aulas.find(x=>x.num===es.aulaNum);
+  const sec = a && (a.sections||[]).find(s=>s.id===es.sectionId);
+  if(!sec) return `<div class="editor-form"><div class="editing-type-banner">Gerenciar atividade</div><p>Esta atividade não foi encontrada (pode ter sido excluída).</p><div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">← Voltar</button></div></div>`;
+  if(allTurmas===null || cachedUsersList===null || ATV_MANAGE_RESPONSES===null){
+    return `<div class="editor-form"><div class="editing-type-banner">📋 Gerenciar: ${esc(sec.title||'Atividade')}</div><p>Carregando…</p></div>`;
+  }
+  const turmaId = es.turmaId || (allTurmas[0] && allTurmas[0].id) || null;
+  const schedule = turmaId ? (ATV_MANAGE_SCHEDULES[turmaId] || null) : null;
+  const alunosDaTurma = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId);
+  const responsesByUid = {};
+  (ATV_MANAGE_RESPONSES||[]).forEach(r=>{ responsesByUid[r.studentUid]=r; });
+
+  const turmaOptions = allTurmas.map(t=>`<option value="${t.id}" ${t.id===turmaId?'selected':''}>${esc(t.name)}</option>`).join('');
+  const prazoBlock = turmaId ? `
+    <div class="atv-manage-prazo">
+      <div><label>Abre em (opcional)</label><input type="datetime-local" id="atv-opens-at" value="${schedule&&schedule.opensAt?toDatetimeLocal(schedule.opensAt):''}"></div>
+      <div><label>Fecha em (opcional)</label><input type="datetime-local" id="atv-closes-at" value="${schedule&&schedule.closesAt?toDatetimeLocal(schedule.closesAt):''}"></div>
+      <button type="button" class="btn-secondary" data-action="save-atv-schedule" data-turma="${esc(turmaId)}">Salvar prazo desta turma</button>
+    </div>
+    <div class="hint">Deixe os dois campos em branco para a atividade ficar sempre aberta (sem prazo) — você corrige quando quiser.</div>` : '<p class="hint">Esta matéria ainda não tem turmas cadastradas (crie turmas no Painel de alunos).</p>';
+
+  const rows = alunosDaTurma.map(u=>{
+    const resp = responsesByUid[u.id];
+    const status = computeActivityStatus(resp, schedule);
+    const statusLabel = resp ? ({rascunho:'✏️ Em andamento', enviado:'📨 Aguardando correção', corrigido:'✅ Corrigido'}[status]) : '— Não iniciado';
+    const isGrading = es.gradingUid === u.id;
+    const nomeAluno = (u.profile && u.profile.fullName) || u.name || '(sem nome)';
+    return `<div class="user-row atv-student-row">
+        <div class="user-row-info"><strong>${esc(nomeAluno)}</strong></div>
+        <div class="user-row-status">${statusLabel}</div>
+        <button class="btn-tiny" data-action="toggle-atv-grade-panel" data-uid="${esc(u.id)}">${isGrading?'Fechar':((resp&&resp.grading&&resp.grading.score!=null)?'Editar correção':'Corrigir')}</button>
+      </div>
+      ${isGrading ? atvGradingPanelHtml(sec, resp, u) : ''}`;
+  }).join('') || '<p class="hint">Nenhum aluno nesta turma ainda.</p>';
+
+  return `<div class="editor-form">
+    <div class="editing-type-banner">📋 Gerenciar atividade — ${esc(sec.title||'(sem título)')}</div>
+    <div class="hint">Aula ${a.num} — ${esc(a.title)}</div>
+    <label style="margin-top:10px;">Turma</label>
+    <select id="atv-manage-turma-select">${turmaOptions}</select>
+    ${prazoBlock}
+    <label style="margin-top:16px;">Respostas dos alunos</label>
+    <div class="users-list">${rows}</div>
+    <div class="editor-actions">
+      <button class="btn-secondary" data-action="cancel-edit">← Voltar para a aula</button>
+    </div>
+  </div>`;
 }
 
 function renderAulaPicker(){
@@ -3260,12 +3610,24 @@ const TYPE_LABELS = {
   figure:'Imagem', video:'Vídeo (YouTube)',
   grid:'Grade de cards', compare:'Comparação (2 colunas)',
   timeline:'Linha do tempo', axes:'Eixos/cards', hierarchy:'Cadeia hierárquica', chips:'Lista de chips',
-  activity:'🛠 Atividade prática (objetivo, método, materiais, resultados)',
-  quiz:'Questionário (em construção)',
+  activity:'🛠 Roteiro de Atividade (roteiro do professor para a aula presencial, sem resposta do aluno)',
+  atividade:'📝 Atividade (respondível pelo aluno dentro do sistema, com nota)',
 };
-const FRIENDLY_TYPES = ['prose','table','figure','video','activity'];
+const FRIENDLY_TYPES = ['prose','table','figure','video','activity','atividade'];
 const ADVANCED_TYPES = ['grid','compare','timeline','axes','hierarchy','chips'];
-const FUTURE_TYPES = ['quiz'];
+const FUTURE_TYPES = [];
+// Tipos de questão suportados dentro de um bloco "Atividade" — cada questão da
+// atividade pode ter um tipo diferente. Sem upload de arquivo/imagem nesta versão.
+const ATV_ITEM_TYPES = [
+  ['dissertativa','Dissertativa (texto livre)'],
+  ['curta','Resposta curta'],
+  ['lista','Lista'],
+  ['tabela','Tabela'],
+  ['checklist','Checklist'],
+  ['multipla_escolha','Múltipla escolha'],
+  ['verdadeiro_falso','Verdadeiro ou falso'],
+  ['associacao','Associação de colunas'],
+];
 
 function tableGridHtml(headers, rows){
   let html = '<table class="table-grid"><tr>';
@@ -3362,6 +3724,67 @@ function collectTableFromDom(){
   });
   const rows = Object.keys(rowsMap).sort((a,b)=>a-b).map(k=>rowsMap[k]);
   return {headers, rows};
+}
+
+// ===== Editor do bloco "Atividade" — lista de questões, cada uma com seu tipo =====
+function atvItemExtraFieldsHtml(it){
+  const type = it.type;
+  if(type==='multipla_escolha' || type==='checklist'){
+    return `<label>Opções (uma por linha)</label><textarea class="atv-item-options-field" placeholder="Uma opção por linha">${esc((it.options&&it.options.length?it.options:['']).join('\n'))}</textarea>`;
+  }
+  if(type==='verdadeiro_falso'){
+    return `<label>Afirmações (uma por linha)</label><textarea class="atv-item-statements-field" placeholder="Uma afirmação por linha">${esc((it.statements&&it.statements.length?it.statements:['']).join('\n'))}</textarea>`;
+  }
+  if(type==='tabela'){
+    return `<label>Cabeçalhos das colunas (separados por vírgula)</label><input type="text" spellcheck="true" lang="pt-BR" class="atv-item-headers-field" placeholder="Coluna 1, Coluna 2" value="${escAttr((it.headers&&it.headers.length?it.headers:['Coluna 1','Coluna 2']).join(', '))}">`;
+  }
+  if(type==='associacao'){
+    return `<div style="display:flex;gap:10px;">
+      <div style="flex:1;"><label>Coluna A (uma por linha)</label><textarea class="atv-item-left-field" placeholder="Um item por linha">${esc((it.left&&it.left.length?it.left:['']).join('\n'))}</textarea></div>
+      <div style="flex:1;"><label>Coluna B (uma por linha, correspondentes à coluna A)</label><textarea class="atv-item-right-field" placeholder="Um item por linha">${esc((it.right&&it.right.length?it.right:['']).join('\n'))}</textarea></div>
+    </div>`;
+  }
+  return '';
+}
+function atvItemsEditorHtml(items){
+  const list = (items && items.length) ? items : [{itemId:genItemId(), type:'dissertativa', prompt:''}];
+  return list.map((it,i)=>`
+    <div class="atv-item-editor-row" data-i="${i}" data-item-id="${escAttr(it.itemId||genItemId())}">
+      <div class="atv-item-editor-head">
+        <span class="atv-item-num">${i+1}.</span>
+        <select class="atv-item-type-select" data-i="${i}">${ATV_ITEM_TYPES.map(([v,l])=>`<option value="${v}" ${it.type===v?'selected':''}>${l}</option>`).join('')}</select>
+        <button type="button" class="edit-chip danger" data-action="del-atv-item-row" data-i="${i}" title="Remover questão">−</button>
+      </div>
+      <label>Enunciado desta questão</label>
+      <textarea class="atv-item-prompt-field" placeholder="Ex.: Justifique sua resposta com base no conteúdo de hoje...">${esc(it.prompt||'')}</textarea>
+      <div class="atv-item-extra" data-i="${i}">${atvItemExtraFieldsHtml(it)}</div>
+    </div>`).join('');
+}
+function collectAtvItemsFromDom(){
+  const wrap = document.getElementById('atv-items-wrap');
+  if(!wrap) return [];
+  return [...wrap.querySelectorAll('.atv-item-editor-row')].map(row=>{
+    const type = row.querySelector('.atv-item-type-select').value;
+    const prompt = row.querySelector('.atv-item-prompt-field').value.trim();
+    const itemId = row.dataset.itemId || genItemId();
+    const item = {itemId, type, prompt};
+    if(type==='multipla_escolha' || type==='checklist'){
+      const f = row.querySelector('.atv-item-options-field');
+      item.options = f ? f.value.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+    } else if(type==='verdadeiro_falso'){
+      const f = row.querySelector('.atv-item-statements-field');
+      item.statements = f ? f.value.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+    } else if(type==='tabela'){
+      const f = row.querySelector('.atv-item-headers-field');
+      item.headers = f ? f.value.split(',').map(s=>s.trim()).filter(Boolean) : ['Coluna 1','Coluna 2'];
+    } else if(type==='associacao'){
+      const lf = row.querySelector('.atv-item-left-field');
+      const rf = row.querySelector('.atv-item-right-field');
+      item.left = lf ? lf.value.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+      item.right = rf ? rf.value.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+    }
+    return item;
+  });
 }
 
 function sectionEditorForm(sec, idx){
@@ -3468,10 +3891,19 @@ function sectionEditorForm(sec, idx){
         </div>
       </div>
       <div class="hint">Vale só quando o vídeo estiver encaixado dentro de um texto (arraste-o sobre um parágrafo). Sozinho, na lista normal, o card do vídeo já tem tamanho fixo adequado.</div>`;
-  } else if(type==='quiz'){
+  } else if(type==='atividade'){
     fields = `
-      <label>Título do questionário</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-quiz-title" value="${escAttr(sec.title||'')}">
-      <div class="hint">Esta seção ainda está em construção — por enquanto, só reserva o lugar dela na aula. As perguntas e respostas de verdade virão numa atualização futura.</div>`;
+      <label>Título da atividade</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-atv-title" value="${escAttr(sec.title||'')}" placeholder="Ex.: Aplicando os critérios de viabilidade">
+      <label>Enunciado / instruções</label>
+      <textarea id="ef-atv-statement" style="min-height:80px;">${esc(sec.statement||'')}</textarea>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <input type="checkbox" id="ef-atv-required" ${sec.required===false?'':'checked'} style="width:auto;">
+        <span style="text-transform:none;font-weight:600;color:var(--charcoal);letter-spacing:normal;">Atividade obrigatória</span>
+      </label>
+      <label style="margin-top:14px;">Questões</label>
+      <div id="atv-items-wrap">${atvItemsEditorHtml(sec.items)}</div>
+      <button type="button" class="btn-secondary" data-action="add-atv-item-row" style="margin-top:8px;">+ Adicionar questão</button>
+      <div class="hint">O aluno responde esta atividade dentro do sistema (não entra no PDF da aula). Sem upload de arquivo/imagem nesta versão. Depois de responder, você corrige em "Gerenciar respostas" — nota e comentário gerais, ambos opcionais.</div>`;
   } else if(type==='timeline'){
     const items = (sec.steps||[]).map(s=>({_label:s.label, _desc:s.desc}));
     fields = `
@@ -3654,9 +4086,11 @@ const AI_FORMAT_PROMPT = `Você vai gerar o conteúdo de UMA aula universitária
     {"type":"table","kicker":"","title":"Título da tabela","headers":["Coluna 1","Coluna 2"],"rows":[["a","b"],["c","d"]]},
     {"type":"compare","title":"Título","leftTitle":"Lado A","leftItems":["item"],"rightTitle":"Lado B","rightItems":["item"]},
     {"type":"timeline","title":"Título","steps":[{"label":"Fase 1","desc":"descrição"}]},
-    {"type":"activity","title":"Nome da atividade prática","objective":"O que fixa do conteúdo","method":"Passo a passo da dinâmica (grupos, papel do professor)","timeMin":"40 min","materials":"Folhas, projetor...","results":"O que o aluno entrega e o que demonstra que aprendeu","obs":"Dicas de condução (opcional)"}
+    {"type":"activity","title":"Nome da atividade prática","objective":"O que fixa do conteúdo","method":"Passo a passo da dinâmica (grupos, papel do professor)","timeMin":"40 min","materials":"Folhas, projetor...","results":"O que o aluno entrega e o que demonstra que aprendeu","obs":"Dicas de condução (opcional)"},
+    {"type":"atividade","title":"Nome da atividade avaliativa","statement":"Enunciado/instruções para o aluno responder DENTRO DO SISTEMA (não é o mesmo que \"activity\" acima — este tipo é respondível, com nota)","required":true,"items":[{"itemId":"i1","type":"dissertativa","prompt":"Pergunta dissertativa..."}]}
   ]
 }
+QUASE TODA aula deve terminar com um bloco "atividade" (o aluno responde e recebe nota depois) — tipos de questão aceitos em "items": dissertativa, curta, lista, tabela (usa "headers"), checklist (usa "options"), multipla_escolha (usa "options"), verdadeiro_falso (usa "statements"), associacao (usa "left" e "right"). Não invente tipos fora desta lista.
 
 Regras: use quantas seções precisar, nos tipos acima, na ordem pedagógica (abertura -> desenvolvimento -> atividade -> fechamento). Fundamente o conteúdo na bibliografia que eu indicar e cite autor/página no campo sources e ao longo do texto. Não invente citações. A seguir, o meu pedido:`;
 
@@ -3670,7 +4104,7 @@ function parseAulaJsonOrAlert(raw){
   catch(e){ alert('Não consegui ler o JSON — parece incompleto ou fora do formato.\n\nDica: peça à IA "responda apenas com o JSON, sem explicações antes ou depois" e cole a resposta inteira.\n\nDetalhe técnico: ' + e.message); return null; }
   if(!dados || typeof dados.title !== 'string' || !dados.title.trim()){ alert('O JSON veio sem "title" (título da aula).'); return null; }
   if(!Array.isArray(dados.sections) || !dados.sections.length){ alert('O JSON veio sem "sections" (as seções da aula).'); return null; }
-  const tiposValidos = ['prose','table','figure','video','activity','grid','compare','timeline','axes','hierarchy','chips','points'];
+  const tiposValidos = ['prose','table','figure','video','activity','atividade','grid','compare','timeline','axes','hierarchy','chips','points'];
   const desconhecidos = dados.sections.filter(s=>!s || !tiposValidos.includes(s.type));
   if(desconhecidos.length){ alert('O JSON tem ' + desconhecidos.length + ' seção(ões) de tipo desconhecido. Tipos aceitos: ' + tiposValidos.join(', ') + '.'); return null; }
   return dados;
@@ -4089,12 +4523,17 @@ const TYPE_DESCRIPTIONS = {
   axes: 'Cartões organizados ao longo de eixos ou categorias. Use para classificações ou modelos com múltiplas dimensões.',
   hierarchy: 'Uma cadeia de itens conectados em sequência hierárquica (do geral ao específico, ou de uma etapa para a próxima). Use para mostrar dependências ou fluxos.',
   chips: 'Uma lista de palavras ou termos curtos exibidos como "etiquetas" (chips) lado a lado. Use para listar palavras-chave, tags ou categorias soltas.',
-  quiz: 'Um questionário com perguntas e respostas para o aluno responder dentro da aula. Ainda em construção — por enquanto, cria só um espaço reservado.',
+  activity: 'Um roteiro de atividade prática para conduzir em sala (objetivo, método, materiais, resultados esperados). É só um roteiro do professor — o aluno não responde nada aqui.',
+  atividade: 'Uma atividade que o aluno responde dentro do sistema (uma ou mais questões, de vários tipos), com nota e comentário do professor. Use ao final da aula para fixação/avaliação contínua.',
 };
 
-function newSectionForm(){
-  const opts = [...FRIENDLY_TYPES, ...ADVANCED_TYPES].map(t=>`<option value="${t}">${esc(TYPE_LABELS[t])}</option>`).join('');
-  const firstType = FRIENDLY_TYPES[0];
+function newSectionForm(aula){
+  // O bloco "Atividade" só pode ser adicionado em aulas novas (marcadas com
+  // atividadeEnabled na criação) — aulas antigas não ganham esse tipo, para não
+  // mexer no que já está construído e funcionando.
+  const tiposDisponiveis = [...FRIENDLY_TYPES, ...ADVANCED_TYPES].filter(t=> t!=='atividade' || (aula && aula.atividadeEnabled));
+  const opts = tiposDisponiveis.map(t=>`<option value="${t}">${esc(TYPE_LABELS[t])}</option>`).join('');
+  const firstType = tiposDisponiveis[0];
   return `<div class="editor-form" data-kind="newSectionPicker">
     <label>Tipo de conteúdo a adicionar</label>
     <select id="ef-new-type">${opts}</select>
@@ -4121,6 +4560,9 @@ function parsePositiveIntStrict(raw){
 function genSectionId(){
   return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 }
+function genItemId(){
+  return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
 function blankSection(type){
   const id = genSectionId();
   switch(type){
@@ -4136,7 +4578,8 @@ function blankSection(type){
     case 'axes': return {type, id, axes:[{title:'', desc:''}]};
     case 'hierarchy': return {type, id, chain:[{label:'', desc:''}]};
     case 'chips': return {type, id, chips:[{label:''}]};
-    case 'quiz': return {type, id, title:'', questions:[]};
+    case 'atividade': return {type, id, title:'', statement:'', required:true,
+      items:[{itemId:genItemId(), type:'dissertativa', prompt:''}]};
     default: return {type, id};
   }
 }
@@ -4206,6 +4649,29 @@ function render(){
     }
     if(allTurmas===null){
       fetchTurmas().then(()=>{ if(editState && editState.kind==='usersScreen') render(); }).catch(()=>{ allTurmas = []; });
+    }
+    return;
+  }
+  if(editState && editState.kind==='atividadeManage'){
+    content.innerHTML = atividadeManageForm();
+    if(allTurmas===null){
+      fetchTurmas().then(()=>{ if(editState && editState.kind==='atividadeManage') render(); }).catch(()=>{ allTurmas = []; });
+    }
+    if(cachedUsersList===null){
+      fetchAllUsers().then(()=>{ if(editState && editState.kind==='atividadeManage') render(); });
+    }
+    if(ATV_MANAGE_RESPONSES===null){
+      fetchActivityResponsesForSection(editState.sectionId).then(list=>{
+        ATV_MANAGE_RESPONSES = list;
+        if(editState && editState.kind==='atividadeManage') render();
+      }).catch(()=>{ ATV_MANAGE_RESPONSES = []; });
+    }
+    if(editState.turmaId===null && allTurmas && allTurmas.length){ editState.turmaId = allTurmas[0].id; }
+    if(editState.turmaId && !ATV_MANAGE_SCHEDULES[editState.turmaId]){
+      fetchActivitySchedule(editState.sectionId, editState.turmaId).then(s=>{
+        ATV_MANAGE_SCHEDULES[editState.turmaId] = s || {};
+        if(editState && editState.kind==='atividadeManage') render();
+      });
     }
     return;
   }
@@ -4370,7 +4836,7 @@ function render(){
     if(editState && editState.kind==='newSection'){
       inner += sectionEditorForm(editState.draft, (a.sections||[]).length);
     } else if(editState && editState.kind==='newSectionPicker'){
-      inner += newSectionForm();
+      inner += newSectionForm(a);
     } else {
       inner += `<div class="add-section-row"><button class="btn-secondary" data-action="start-new-section">+ Adicionar seção</button></div>`;
     }
@@ -4393,6 +4859,7 @@ function render(){
 
   content.innerHTML = inner;
   loadStorageImages();
+  loadAllActivityData();
   updateNavFabs();
   wireImageSizeFields();
   wireTypeDescription();
@@ -4888,7 +5355,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(!btn) return;
   const action = btn.dataset.action;
   // Ações que pertencem ao ALUNO (nunca editam o curso) passam pelo portão.
-  const studentActions = ['cancel-edit', 'save-student-note', 'open-my-notes', 'goto-note-aula', 'toggle-aula-seen'];
+  const studentActions = ['cancel-edit', 'save-student-note', 'open-my-notes', 'goto-note-aula', 'toggle-aula-seen', 'atv-add-row'];
   if(!isAdmin && !studentActions.includes(action)){
     // Camada extra de segurança: nenhuma ação de edição executa sem autenticação,
     // mesmo que algum botão administrativo tenha ficado visível por engano.
@@ -4916,6 +5383,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const newNum = parsePositiveIntStrict(document.getElementById('ef-new-a-num').value);
     if(newNum===null){ alert('Confira o campo "Número da aula" acima — precisa ser um número inteiro positivo.'); return; }
     if(COURSE.some(bb=>bb.aulas.some(aa=>aa.num===newNum))){ alert(`Já existe uma aula com o número ${newNum}. Ajuste o campo "Número da aula" acima.`); return; }
+    const secoesImportadas = dados.sections.map(s=>({ ...s, id: genSectionId() }));
     const novaAula = {
       num: newNum,
       title: dados.title.trim(),
@@ -4924,9 +5392,10 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       intro: (dados.intro||'').trim(),
       roteiro: (dados.roteiro||'').trim(),
       hidden: document.getElementById('ef-new-a-hidden').checked,
-      sections: dados.sections.map(s=>({ ...s, id: genSectionId() })),
+      sections: secoesImportadas,
       isPractice: dados.sections.some(s=>s.type==='activity'),
       contentModel: 'v2',
+      atividadeEnabled: true, // aula criada a partir de agora — pode receber o bloco "Atividade" (não nasce com ele, só fica disponível para adicionar)
       updatedAt: Date.now(),
     };
     targetBlock.aulas.push(novaAula);
@@ -4967,6 +5436,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       newAula.updatedAt = Date.now();
       if(!newAula.sections || !newAula.sections.length) newAula.sections = [initialProse];
       if(!newAula.contentModel) newAula.contentModel = 'v2';
+      // Aula criada a partir de agora — pode receber o bloco "Atividade" (não nasce
+      // com ele, só fica disponível em "+ Adicionar seção").
+      newAula.atividadeEnabled = true;
     } else {
       newAula = {
         num: newNum,
@@ -4978,6 +5450,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         sections: [initialProse],
         isPractice: false,
         contentModel: 'v2', // aulas novas usam o modelo de página contínua com imagens "encaixáveis"
+        atividadeEnabled: true, // aula criada a partir de agora — pode receber o bloco "Atividade" quando o professor quiser adicionar
       };
     }
     targetBlock.aulas.push(newAula);
@@ -4990,6 +5463,97 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
 
+  if(action==='add-atv-item-row'){
+    const wrap = document.getElementById('atv-items-wrap');
+    const currentItems = collectAtvItemsFromDom();
+    currentItems.push({itemId: genItemId(), type:'dissertativa', prompt:''});
+    wrap.innerHTML = atvItemsEditorHtml(currentItems);
+    return;
+  }
+  if(action==='del-atv-item-row'){
+    const wrap = document.getElementById('atv-items-wrap');
+    const currentItems = collectAtvItemsFromDom();
+    const i = +btn.dataset.i;
+    currentItems.splice(i,1);
+    wrap.innerHTML = atvItemsEditorHtml(currentItems);
+    return;
+  }
+  if(action==='atv-add-row'){
+    // Aluno adiciona uma linha numa questão do tipo "tabela" — fica só na memória
+    // (a tela) até o próximo autosave, sem precisar de ida e volta ao banco agora.
+    if(realIsAdmin || !currentUser) return;
+    const secid = btn.dataset.secid, itemId = btn.dataset.itemId;
+    const currentAnswers = collectAtividadeAnswersFromDom(secid);
+    const b2 = COURSE.find(x=>x.num===state.block);
+    const a2 = b2 && b2.aulas.find(x=>x.num===state.aula);
+    const sec2 = a2 && (a2.sections||[]).find(s=>s.id===secid);
+    const item2 = sec2 && (sec2.items||[]).find(it=>it.itemId===itemId);
+    const headers = (item2 && item2.headers) || ['Coluna 1','Coluna 2'];
+    const rows = currentAnswers[itemId] || [];
+    rows.push(headers.map(()=>''));
+    const cache = ACTIVITY_DATA_CACHE[secid] = ACTIVITY_DATA_CACHE[secid] || {loaded:true, response:null, schedule:null};
+    cache.response = cache.response || {};
+    cache.response.answers = {...(cache.response.answers||{}), ...currentAnswers, [itemId]: rows};
+    render();
+    return;
+  }
+  if(action==='open-atividade-manage'){
+    const secid = btn.dataset.secid;
+    editState = {kind:'atividadeManage', blockNum: state.block, aulaNum: +btn.dataset.aula, sectionId: secid, turmaId: null, gradingUid: null};
+    ATV_MANAGE_RESPONSES = null; ATV_MANAGE_SCHEDULES = {};
+    render();
+    return;
+  }
+  if(action==='toggle-atv-grade-panel'){
+    const uid = btn.dataset.uid;
+    editState.gradingUid = (editState.gradingUid===uid) ? null : uid;
+    render();
+    return;
+  }
+  if(action==='save-atv-schedule'){
+    const turmaId = btn.dataset.turma;
+    const opensVal = document.getElementById('atv-opens-at').value;
+    const closesVal = document.getElementById('atv-closes-at').value;
+    const opensAt = opensVal ? new Date(opensVal).getTime() : null;
+    const closesAt = closesVal ? new Date(closesVal).getTime() : null;
+    const sectionId = editState.sectionId;
+    try{
+      await db.collection(`subjects/${activeSubjectId}/activity_schedules`).doc(`${sectionId}_${turmaId}`)
+        .set({sectionId, turmaId, aulaNum: editState.aulaNum, opensAt, closesAt, updatedAt: Date.now()});
+      ATV_MANAGE_SCHEDULES[turmaId] = {sectionId, turmaId, aulaNum: editState.aulaNum, opensAt, closesAt};
+      alert('Prazo salvo para esta turma.');
+    }catch(err){ alert('Não foi possível salvar o prazo: ' + (err && err.message ? err.message : String(err))); }
+    render();
+    return;
+  }
+  if(action==='save-atv-grading'){
+    const uid = btn.dataset.uid;
+    const sectionId = editState.sectionId;
+    const scoreRaw = document.getElementById('atv-grade-score').value.trim().replace(',', '.');
+    const score = scoreRaw ? parseFloat(scoreRaw) : null;
+    const commentParas = richFieldToArray(document.getElementById('atv-grade-comment'));
+    const docId = `${editState.aulaNum}_${sectionId}_${uid}`;
+    const existing = (ATV_MANAGE_RESPONSES||[]).find(r=>r.studentUid===uid) || {};
+    const alunoDoc = (cachedUsersList||[]).find(u=>u.id===uid) || {};
+    const payload = {
+      subjectId: activeSubjectId,
+      turmaId: existing.turmaId || editState.turmaId || alunoDoc.turmaId || null,
+      aulaNum: editState.aulaNum, sectionId, studentUid: uid,
+      studentName: existing.studentName || (alunoDoc.profile && alunoDoc.profile.fullName) || alunoDoc.name || '',
+      answers: existing.answers || {},
+      grading: { score: (score===null || isNaN(score)) ? null : score, commentParas, gradedBy: currentUser.uid, gradedAt: Date.now() },
+      updatedAt: Date.now(),
+    };
+    try{
+      await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId).set(payload, {merge:true});
+      const idx = (ATV_MANAGE_RESPONSES||[]).findIndex(r=>r.studentUid===uid);
+      if(idx>=0){ ATV_MANAGE_RESPONSES[idx] = {...ATV_MANAGE_RESPONSES[idx], ...payload}; }
+      else { (ATV_MANAGE_RESPONSES = ATV_MANAGE_RESPONSES || []).push({id:docId, ...payload}); }
+      editState.gradingUid = null;
+    }catch(err){ alert('Não foi possível salvar a correção: ' + (err && err.message ? err.message : String(err))); }
+    render();
+    return;
+  }
   if(action==='set-size-preset'){
     const target = btn.dataset.target; // 'img' ou 'vid'
     const pct = btn.dataset.pct;
@@ -5467,7 +6031,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
 
-  if(action==='cancel-edit'){ editState=null; cachedUsersList=null; render(); return; }
+  if(action==='cancel-edit'){ editState=null; cachedUsersList=null; ATV_MANAGE_RESPONSES=null; ATV_MANAGE_SCHEDULES={}; render(); return; }
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
   if(action==='edit-aula-header'){ editState={kind:'aulaHeader'}; render(); return; }
@@ -5787,10 +6351,12 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         if(vidWidth) newSec.width = vidWidth;
         if(vidHeight) newSec.height = vidHeight;
         if(vidWidthPct) newSec.widthPct = vidWidthPct;
-      } else if(type==='quiz'){
-        const existingQuiz = a.sections[idx];
-        newSec = { type, title: document.getElementById('ef-quiz-title').value.trim(),
-          questions: (existingQuiz && existingQuiz.questions) || [] };
+      } else if(type==='atividade'){
+        newSec = { type,
+          title: document.getElementById('ef-atv-title').value.trim(),
+          statement: document.getElementById('ef-atv-statement').value.trim(),
+          required: document.getElementById('ef-atv-required').checked,
+          items: collectAtvItemsFromDom() };
       } else if(type==='timeline'){
         const items = collectLabelDescListFromDom('ef-ld-wrap');
         newSec = { type,
@@ -5855,6 +6421,24 @@ document.getElementById('content').addEventListener('click', async (e)=>{
 
 document.getElementById('content').addEventListener('change', async (e)=>{
   if(!isAdmin) return;
+  if(e.target.classList && e.target.classList.contains('atv-item-type-select')){
+    const row = e.target.closest('.atv-item-editor-row');
+    const extra = row.querySelector('.atv-item-extra');
+    extra.innerHTML = atvItemExtraFieldsHtml({type: e.target.value});
+    return;
+  }
+  if(e.target.id==='atv-manage-turma-select'){
+    editState.turmaId = e.target.value;
+    editState.gradingUid = null;
+    if(!ATV_MANAGE_SCHEDULES[editState.turmaId]){
+      fetchActivitySchedule(editState.sectionId, editState.turmaId).then(s=>{
+        ATV_MANAGE_SCHEDULES[editState.turmaId] = s || {};
+        if(editState && editState.kind==='atividadeManage') render();
+      });
+    }
+    render();
+    return;
+  }
   if(e.target.id==='ef-image'){
     const file = e.target.files[0];
     if(!file) return;
@@ -6073,7 +6657,7 @@ function buildAulaPrintHtml(b, a){
   const pageUrl = window.location.href.split('#')[0] + '#bloco-' + b.num + '-aula-' + a.num;
   const now = new Date();
   const nowStr = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-  const sectionsHtml = (a.sections||[]).map(sectionToPrintHtml).join('');
+  const sectionsHtml = (a.sections||[]).filter(s=>s.type!=='atividade').map(sectionToPrintHtml).join('');
   const docTitle = `Bloco ${toRoman(b.num)} - Aula ${a.num} - ${a.title}`;
 
   return `<!DOCTYPE html>
