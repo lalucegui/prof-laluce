@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v2.0.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v2.1.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -546,6 +546,17 @@
     font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
   }
   .auth-tab.active{background:var(--navy);color:#fff;}
+  .auth-forgot-link{
+    background:none;border:none;color:var(--navy);font-size:12.5px;font-weight:600;
+    cursor:pointer;margin-top:10px;text-decoration:underline;font-family:inherit;
+    display:block;width:100%;text-align:center;
+  }
+  .auth-forgot-link:hover{color:var(--navy-dark);}
+  .auth-ok{
+    margin-top:10px;font-size:12.5px;color:#2E7D32;background:#EAF5EB;
+    border-radius:8px;padding:10px 12px;line-height:1.5;
+  }
+  .auth-ok.hidden{display:none;}
   #auth-login-form input, #auth-register-form input{
     width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
     font-size:14px;margin-bottom:10px;text-align:left;
@@ -1092,6 +1103,20 @@
     font-size:15px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:inherit;
   }
   .pres-toolbar button:hover{background:rgba(255,255,255,0.25);}
+  .pres-toolbar button.pres-active{background:#E5484D;box-shadow:0 0 0 2px rgba(229,72,77,0.4);}
+  #pres-laser-dot{
+    position:fixed;width:16px;height:16px;border-radius:50%;z-index:9999;
+    background:radial-gradient(circle, rgba(255,60,60,0.95) 0%, rgba(255,60,60,0.55) 45%, rgba(255,60,60,0) 70%);
+    box-shadow:0 0 14px 5px rgba(255,60,60,0.55);
+    transform:translate(-50%,-50%);pointer-events:none;
+  }
+  #pres-laser-dot.hidden{display:none;}
+  #pres-draw-canvas{
+    position:fixed;inset:0;z-index:9998;pointer-events:none;
+  }
+  #pres-draw-canvas.hidden{display:none;}
+  body.pres-laser-cursor{cursor:none;}
+  body.pres-draw-cursor #pres-draw-canvas{cursor:crosshair;}
   .aula-seen-toggle-row{margin-top:10px;text-align:right;}
   .aula-seen-toggle{
     font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;cursor:pointer;
@@ -1565,7 +1590,9 @@
       <input type="email" id="auth-login-email" placeholder="E-mail" autocomplete="username">
       <input type="password" id="auth-login-password" placeholder="Senha" autocomplete="current-password">
       <button class="btn-primary" id="auth-login-btn" style="width:100%;margin-top:6px;">Entrar</button>
+      <button type="button" class="auth-forgot-link" id="auth-forgot-btn">Esqueci minha senha</button>
       <p class="auth-error hidden" id="auth-login-error"></p>
+      <p class="auth-ok hidden" id="auth-forgot-ok"></p>
     </div>
     <div id="auth-register-form" class="hidden">
       <input type="text" id="auth-register-name" placeholder="Nome completo" autocomplete="name">
@@ -1620,7 +1647,7 @@
     <button class="btn-tiny" id="restore-backup-btn" title="Restaura um arquivo de backup salvo antes">⬆ Restaurar backup</button>
     <input type="file" id="restore-backup-input" accept=".json" style="display:none;">
     <button class="btn-tiny" id="switch-subject-btn" title="Trocar para outra matéria, ou criar uma nova">🏠 Trocar de matéria</button>
-    <button class="btn-tiny" id="admin-users-btn" title="Aprovar ou remover acesso de alunos">👥 Alunos</button>
+    <button class="btn-tiny" id="admin-users-btn" title="Gestão de alunos, turmas, estatísticas e professores">🗂️ Gestão</button>
     <button class="btn-tiny" id="grid-mode-toggle-btn" title="Mostrar/esconder as bordas pontilhadas e a alça de arrastar seções">🔲 Grade: ligada</button>
   </span>
 </div>
@@ -1701,14 +1728,19 @@
   </div>
 </footer>
 <div class="ai-credit hidden" id="ai-credit">Conteúdo autoral do professor · estruturação e formatação do site com apoio de IA (Claude, Anthropic)</div>
+<canvas id="pres-draw-canvas" class="hidden"></canvas>
+<div id="pres-laser-dot" class="hidden"></div>
 <div class="pres-toolbar hidden" id="pres-toolbar">
-  <button id="pres-prev" title="Aula anterior (seta ←)">←</button>
-  <button id="pres-font-down" title="Diminuir fonte">A−</button>
-  <button id="pres-font-up" title="Aumentar fonte">A+</button>
-  <button id="pres-next" title="Próxima aula (seta →)">→</button>
-  <button id="pres-exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
+  <button type="button" data-pres="prev" title="Aula anterior (seta ←)">←</button>
+  <button type="button" data-pres="font-down" title="Diminuir fonte (-)">A−</button>
+  <button type="button" data-pres="font-up" title="Aumentar fonte (+)">A+</button>
+  <button type="button" data-pres="laser" id="pres-laser-btn" title="Apontador laser (L)">🔴</button>
+  <button type="button" data-pres="draw" id="pres-draw-btn" title="Rabiscar na tela (D)">✏️</button>
+  <button type="button" data-pres="clear" title="Limpar rabiscos (C)">🧹</button>
+  <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
+  <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v2.0.0</div>
+<div class="version-tag hidden" id="version-tag">v2.1.0</div>
 
 
 <script>
@@ -4526,31 +4558,80 @@ function applyStudentHeaderColor(userDoc){
 }
 
 // ===================== MODO AULA (projeção em datashow) =====================
-// Tela cheia, sem menus nem barras: só o conteúdo, com fonte ajustável e
-// navegação pelo teclado (setas / PageUp / PageDown — funciona com clicker).
+// Tela cheia, sem menus nem barras: só o conteúdo, com fonte ajustável,
+// navegação pelo teclado (setas/PageUp/PageDown — funciona com clicker),
+// apontador laser (L) e rabisco na tela (D). Exclusivo de professor/master.
 let presentationMode = false;
 let presFontScale = 1.15;
+let presLaserOn = false;
+let presDrawOn = false;
+let presDrawing = false;
 function applyPresFontScale(){
   document.documentElement.style.setProperty('--pres-scale', presFontScale);
 }
+function presCanvas(){ return document.getElementById('pres-draw-canvas'); }
+function presResizeCanvas(){
+  const c = presCanvas();
+  if(!c) return;
+  // Redimensionar apaga o desenho — preserva o traço copiando antes
+  const copia = document.createElement('canvas');
+  copia.width = c.width; copia.height = c.height;
+  if(c.width && c.height) copia.getContext('2d').drawImage(c, 0, 0);
+  c.width = window.innerWidth;
+  c.height = window.innerHeight;
+  if(copia.width && copia.height) c.getContext('2d').drawImage(copia, 0, 0);
+}
+function presClearCanvas(){
+  const c = presCanvas();
+  if(c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+}
+function presSetLaser(on){
+  presLaserOn = on;
+  if(on && presDrawOn) presSetDraw(false); // um de cada vez
+  document.getElementById('pres-laser-dot').classList.toggle('hidden', !on);
+  document.getElementById('pres-laser-btn').classList.toggle('pres-active', on);
+  document.body.classList.toggle('pres-laser-cursor', on && presentationMode);
+}
+function presSetDraw(on){
+  presDrawOn = on;
+  if(on && presLaserOn) presSetLaser(false);
+  const c = presCanvas();
+  c.classList.toggle('hidden', !presentationMode);
+  c.style.pointerEvents = (on && presentationMode) ? 'auto' : 'none';
+  document.getElementById('pres-draw-btn').classList.toggle('pres-active', on);
+  document.body.classList.toggle('pres-draw-cursor', on && presentationMode);
+}
 function enterPresentationMode(){
   if(presentationMode) return;
+  if(!realIsAdmin) return; // exclusivo de professor/master
   presentationMode = true;
   document.body.classList.add('presentation-mode');
   document.getElementById('pres-toolbar').classList.remove('hidden');
+  presResizeCanvas();
+  presClearCanvas();
+  presCanvas().classList.remove('hidden');
+  presCanvas().style.pointerEvents = 'none';
   applyPresFontScale();
-  if(document.documentElement.requestFullscreen){
-    document.documentElement.requestFullscreen().catch(()=>{ /* melhor-esforço */ });
-  }
+  try{
+    if(document.documentElement.requestFullscreen){
+      document.documentElement.requestFullscreen().catch(()=>{ /* melhor-esforço */ });
+    }
+  }catch(e){ /* alguns navegadores restringem — o modo funciona sem tela cheia */ }
 }
 function exitPresentationMode(){
-  if(!presentationMode) return;
+  // À prova de falhas: primeiro restaura a interface, SEMPRE; a tela cheia
+  // é desligada por último e qualquer erro dela não trava a saída.
   presentationMode = false;
+  presSetLaser(false);
+  presSetDraw(false);
+  presCanvas().classList.add('hidden');
   document.body.classList.remove('presentation-mode');
   document.getElementById('pres-toolbar').classList.add('hidden');
-  if(document.fullscreenElement && document.exitFullscreen){
-    document.exitFullscreen().catch(()=>{});
-  }
+  try{
+    if(document.fullscreenElement && document.exitFullscreen){
+      document.exitFullscreen().catch(()=>{});
+    }
+  }catch(e){}
 }
 function presGoAula(delta){
   const flat = [];
@@ -4563,17 +4644,59 @@ function presGoAula(delta){
   editState = null;
   render();
   window.scrollTo(0, 0);
+  presClearCanvas(); // rabisco pertence à aula em que foi feito
 }
+// Um ouvinte só para a barra toda — delegação, com stopPropagation para
+// nenhum outro ouvinte da página interferir nos cliques da barra.
+document.getElementById('pres-toolbar').addEventListener('click', (e)=>{
+  const b = e.target.closest('button[data-pres]');
+  if(!b) return;
+  e.stopPropagation();
+  e.preventDefault();
+  const cmd = b.dataset.pres;
+  if(cmd==='exit') exitPresentationMode();
+  else if(cmd==='prev') presGoAula(-1);
+  else if(cmd==='next') presGoAula(1);
+  else if(cmd==='font-up'){ presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale(); }
+  else if(cmd==='font-down'){ presFontScale = Math.max(0.9, presFontScale - 0.1); applyPresFontScale(); }
+  else if(cmd==='laser') presSetLaser(!presLaserOn);
+  else if(cmd==='draw') presSetDraw(!presDrawOn);
+  else if(cmd==='clear') presClearCanvas();
+});
 document.getElementById('presentation-btn').addEventListener('click', enterPresentationMode);
-document.getElementById('pres-exit').addEventListener('click', exitPresentationMode);
-document.getElementById('pres-prev').addEventListener('click', ()=>presGoAula(-1));
-document.getElementById('pres-next').addEventListener('click', ()=>presGoAula(1));
-document.getElementById('pres-font-up').addEventListener('click', ()=>{ presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale(); });
-document.getElementById('pres-font-down').addEventListener('click', ()=>{ presFontScale = Math.max(0.9, presFontScale - 0.1); applyPresFontScale(); });
+// Laser: o ponto segue o mouse
+document.addEventListener('mousemove', (e)=>{
+  if(!presentationMode || !presLaserOn) return;
+  const dot = document.getElementById('pres-laser-dot');
+  dot.style.left = e.clientX + 'px';
+  dot.style.top = e.clientY + 'px';
+});
+// Rabisco: desenhar segurando o botão do mouse
+(function(){
+  const c = document.getElementById('pres-draw-canvas');
+  c.addEventListener('mousedown', (e)=>{
+    if(!presentationMode || !presDrawOn) return;
+    presDrawing = true;
+    const ctx = c.getContext('2d');
+    ctx.strokeStyle = '#E5484D';
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(e.clientX, e.clientY);
+  });
+  c.addEventListener('mousemove', (e)=>{
+    if(!presDrawing) return;
+    const ctx = c.getContext('2d');
+    ctx.lineTo(e.clientX, e.clientY);
+    ctx.stroke();
+  });
+  ['mouseup','mouseleave'].forEach(ev=>c.addEventListener(ev, ()=>{ presDrawing = false; }));
+})();
 document.addEventListener('keydown', (e)=>{
   const t = e.target;
   if(t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT' || t.isContentEditable)) return;
-  if((e.key==='f' || e.key==='F') && !presentationMode && currentUser && document.getElementById('app-body-wrap') && !document.getElementById('app-body-wrap').classList.contains('hidden')){
+  if((e.key==='f' || e.key==='F') && !presentationMode && realIsAdmin && currentUser && document.getElementById('app-body-wrap') && !document.getElementById('app-body-wrap').classList.contains('hidden')){
     enterPresentationMode();
     return;
   }
@@ -4583,7 +4706,11 @@ document.addEventListener('keydown', (e)=>{
   if(e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); presGoAula(-1); return; }
   if(e.key==='+' || e.key==='='){ presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale(); return; }
   if(e.key==='-'){ presFontScale = Math.max(0.9, presFontScale - 0.1); applyPresFontScale(); return; }
+  if(e.key==='l' || e.key==='L'){ presSetLaser(!presLaserOn); return; }
+  if(e.key==='d' || e.key==='D'){ presSetDraw(!presDrawOn); return; }
+  if(e.key==='c' || e.key==='C'){ presClearCanvas(); return; }
 });
+window.addEventListener('resize', ()=>{ if(presentationMode) presResizeCanvas(); });
 // Sair da tela cheia pelo navegador (Esc nativo) também desliga o modo
 document.addEventListener('fullscreenchange', ()=>{
   if(!document.fullscreenElement && presentationMode) exitPresentationMode();
@@ -5982,6 +6109,35 @@ document.getElementById('auth-login-btn').addEventListener('click', async ()=>{
   }
 });
 document.getElementById('auth-login-password').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('auth-login-btn').click(); });
+document.getElementById('auth-forgot-btn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('auth-login-error');
+  const okEl = document.getElementById('auth-forgot-ok');
+  errEl.classList.add('hidden');
+  okEl.classList.add('hidden');
+  let email = document.getElementById('auth-login-email').value.trim();
+  if(!email){
+    email = (prompt('Digite o e-mail da sua conta para receber o link de redefinição de senha:') || '').trim();
+    if(!email) return;
+  }
+  try{
+    await auth.sendPasswordResetEmail(email);
+    okEl.textContent = 'Pronto! Enviamos um link de redefinição para ' + email + '. Confira a caixa de entrada (e o spam). O link expira em algumas horas.';
+    okEl.classList.remove('hidden');
+  }catch(e){
+    // Por segurança, e-mail inexistente recebe a mesma resposta de sucesso —
+    // assim ninguém usa esta tela para descobrir quais e-mails têm conta.
+    if(e && (e.code === 'auth/user-not-found')){
+      okEl.textContent = 'Pronto! Se existir uma conta com ' + email + ', o link de redefinição foi enviado. Confira a caixa de entrada (e o spam).';
+      okEl.classList.remove('hidden');
+    } else if(e && e.code === 'auth/invalid-email'){
+      errEl.textContent = 'Esse e-mail não parece válido — confira a digitação.';
+      errEl.classList.remove('hidden');
+    } else {
+      errEl.textContent = 'Não foi possível enviar agora: ' + (e && e.message ? e.message : String(e));
+      errEl.classList.remove('hidden');
+    }
+  }
+});
 
 document.getElementById('auth-register-btn').addEventListener('click', async ()=>{
   const name = document.getElementById('auth-register-name').value.trim();
@@ -6123,7 +6279,7 @@ async function openStudentSubject(subjectId){
   if(subtitleEl) subtitleEl.textContent = subjectDescription;
   showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit','version-tag']);
   document.getElementById('download-pdf-btn').classList.remove('hidden'); // aluno também baixa PDF — sai com marca d'água pessoal
-  document.getElementById('presentation-btn').classList.remove('hidden');
+  document.getElementById('presentation-btn').classList.add('hidden'); // Modo Aula é ferramenta de projeção — só professor/master
   document.getElementById('my-notes-btn').classList.remove('hidden');
   applySubjectBranding(allSubjects && allSubjects.find(x=>x.id===subjectId));
   await loadCourseFromStorage();
