@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v2.3.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v2.3.3                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -870,6 +870,25 @@
   .atv-item{border-top:1px dashed #D8A857;padding-top:12px;}
   .atv-item:first-child{border-top:none;padding-top:0;}
   .atv-item-prompt{font-weight:700;font-size:14px;color:#5C3D0A;margin-bottom:8px;}
+  /* Campos de resposta do aluno ficam FORA de .editor-form (essa é a tela da
+     aula, não a tela de edição) — por isso precisam do próprio estilo de caixa
+     visível (borda, fundo, altura mínima). Sem isto, o campo existe e funciona,
+     mas fica "invisível" (some no fundo da página). */
+  .atv-item input[type=text], .atv-item textarea, .atv-item div.rich-text{
+    width:100%;padding:8px 10px;border:1.5px solid #D8A857;border-radius:6px;
+    font-size:13.5px;font-family:inherit;resize:vertical;background:#fff;box-sizing:border-box;
+  }
+  .atv-item textarea{min-height:70px;line-height:1.5;}
+  .atv-item div.rich-text{min-height:90px;line-height:1.6;}
+  .atv-item div.rich-text p{margin:0 0 8px 0;}
+  .atv-item div.rich-text p:last-child{margin-bottom:0;}
+  .atv-item div.rich-text:focus{outline:2px solid #8A5A0F;outline-offset:-1px;}
+  .atv-item input[type=text]:focus, .atv-item textarea:focus{outline:none;border-color:#8A5A0F;}
+  .atv-option-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;margin:6px 0;cursor:pointer;background:#fff;}
+  .atv-option-row:hover{border-color:#D8A857;}
+  .atv-option-row input{width:auto;margin:0;flex:0 0 auto;}
+  .atv-option-letter{flex:0 0 22px;height:22px;border-radius:50%;background:#F2DFB8;color:#8A5A0F;font-weight:800;font-size:11.5px;display:flex;align-items:center;justify-content:center;}
+  .atv-option-text{flex:1;font-size:13.5px;line-height:1.4;}
   .atv-check-row, .atv-radio-row{display:flex;align-items:center;gap:8px;font-size:13.5px;margin:4px 0;}
   .atv-vf-row{display:flex;align-items:center;gap:14px;font-size:13.5px;margin:6px 0;}
   .atv-vf-statement{flex:1;}
@@ -879,6 +898,7 @@
   .atv-table th, .atv-table td{border:1px solid #E4D2AC;padding:4px;}
   .atv-table input{width:100%;border:none;font-size:13px;padding:4px;background:transparent;}
   .atividade-save-status{font-size:11.5px;color:var(--muted);margin-top:10px;text-align:right;min-height:14px;}
+  .atividade-save-status.atv-save-error{color:#B85042;font-weight:700;}
   .atividade-grading{margin-top:16px;padding-top:14px;border-top:1.5px solid #D8A857;}
   .atividade-grade-score{font-size:15px;font-weight:800;color:#5C3D0A;margin-bottom:8px;}
   .atividade-grade-comment-label{font-size:11.5px;font-weight:800;color:#8A5A0F;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;}
@@ -891,6 +911,10 @@
   .atv-grade-item:first-child{border-top:none;padding-top:0;margin-top:0;}
   .atv-grade-answer{font-size:13.5px;margin-top:4px;color:var(--charcoal);}
   .atv-grading-panel{background:#F7F7FB;border-radius:10px;padding:14px;margin:6px 0 14px 0;}
+  .atv-grading-section-label{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:2px 0 8px 0;}
+  .atv-grading-divider{margin-top:18px;padding-top:14px;border-top:1.5px solid var(--line);}
+  .atv-grade-answer-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-top:2px;}
+  .atv-grade-answer{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:4px;}
   .atv-manage-prazo{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:10px 0 16px 0;}
   .atv-manage-prazo label{margin:0;font-size:11px;}
   .atv-student-row{margin-bottom:2px;}
@@ -1849,7 +1873,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v2.3.0</div>
+<div class="version-tag hidden" id="version-tag">v2.3.3</div>
 
 
 <script>
@@ -2638,6 +2662,11 @@ function dockedItemsHtml(items, allSections){
 }
 
 function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
+  // Roteiro de Atividade marcado como "não visível para o aluno" — some por
+  // completo da tela (também no modo "ver como aluno", que já usa isAdmin=false
+  // durante a pré-visualização). Para o professor (isAdmin=true), continua
+  // aparecendo normalmente, para ele poder editar.
+  if(sec.type==='activity' && sec.visibleToStudent===false && !isAdmin) return '';
   const kicker = sec.kicker ? `<div class="section-kicker">${esc(sec.kicker)}</div>` : '';
   const title = sec.title ? `<h3 class="section-title">${esc(sec.title)}</h3>` : '';
   const draggableAttr = (isAdmin && contentModel==='v2' && (sec.type==='figure' || sec.type==='video')) ? ` draggable="true" data-drag-figure-idx="${idx}"` : '';
@@ -2908,9 +2937,9 @@ function renderAtividadeItemInput(sectionId, item, idx, value, locked){
   } else if(item.type==='tabela'){
     body = atvTableHtml(sectionId, item, value, locked);
   } else if(item.type==='checklist'){
-    body = (item.options||[]).map(opt=>`<label class="atv-check-row"><input type="checkbox" class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="checklist" data-opt="${escAttr(opt)}" ${(value||[]).includes(opt)?'checked':''} ${locked?'disabled':''}><span>${esc(opt)}</span></label>`).join('');
+    body = (item.options||[]).map((opt,oi)=>`<label class="atv-option-row"><span class="atv-option-letter">${String.fromCharCode(65+oi)}</span><input type="checkbox" class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="checklist" data-opt="${escAttr(opt)}" ${(value||[]).includes(opt)?'checked':''} ${locked?'disabled':''}><span class="atv-option-text">${esc(opt)}</span></label>`).join('');
   } else if(item.type==='multipla_escolha'){
-    body = (item.options||[]).map(opt=>`<label class="atv-radio-row"><input type="radio" class="atv-ans-field" name="atv-mc-${esc(sectionId)}-${esc(item.itemId)}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="multipla_escolha" value="${escAttr(opt)}" ${value===opt?'checked':''} ${locked?'disabled':''}><span>${esc(opt)}</span></label>`).join('');
+    body = (item.options||[]).map((opt,oi)=>`<label class="atv-option-row"><span class="atv-option-letter">${String.fromCharCode(65+oi)}</span><input type="radio" class="atv-ans-field" name="atv-mc-${esc(sectionId)}-${esc(item.itemId)}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="multipla_escolha" value="${escAttr(opt)}" ${value===opt?'checked':''} ${locked?'disabled':''}><span class="atv-option-text">${esc(opt)}</span></label>`).join('');
   } else if(item.type==='verdadeiro_falso'){
     body = (item.statements||[]).map((st,si)=>{
       const v = (value||[])[si];
@@ -2981,12 +3010,17 @@ async function persistAtividadeAnswer(sectionId, aulaNum){
     studentName: (currentUserDoc&&((currentUserDoc.profile&&currentUserDoc.profile.fullName)||currentUserDoc.name))||'',
     answers, updatedAt: Date.now(),
   };
+  const st = document.getElementById('atv-save-status-'+sectionId);
   try{
     await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId).set(payload, {merge:true});
     if(cache){ cache.response = {...(cache.response||{}), ...payload}; }
-    const st = document.getElementById('atv-save-status-'+sectionId);
-    if(st) st.textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  }catch(e){ /* melhor-esforço — igual ao progresso, nunca trava a aula */ }
+    if(st){ st.textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); st.classList.remove('atv-save-error'); }
+  }catch(e){
+    // Diferente do progresso de leitura, a resposta da atividade é importante
+    // demais para falhar em silêncio — o aluno precisa ver que não salvou.
+    console.error('Falha ao salvar resposta de atividade:', e);
+    if(st){ st.textContent = '⚠ Não foi possível salvar agora — verifique sua internet (vou tentar de novo)'; st.classList.add('atv-save-error'); }
+  }
 }
 
 function toDatetimeLocal(ts){
@@ -3024,17 +3058,20 @@ function atvGradingPanelHtml(sec, resp, user){
   const answers = (resp && resp.answers) || {};
   const itemsHtml = (sec.items||[]).map((it,i)=>`
     <div class="atv-grade-item">
-      <div class="atv-item-prompt">${i+1}. ${esc(it.prompt||'')}</div>
+      <div class="atv-item-prompt">Questão ${i+1} — ${esc(it.prompt||'')}</div>
+      <div class="atv-grade-answer-label">Resposta do aluno</div>
       <div class="atv-grade-answer">${renderAtividadeAnswerReadonly(it, answers[it.itemId])}</div>
     </div>`).join('');
   const grading = (resp && resp.grading) || {};
   const commentParas = (grading.commentParas && grading.commentParas.length) ? grading.commentParas : [''];
   const commentHtml = commentParas.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${p}</p>`).join('');
   return `<div class="atv-grading-panel">
+    <div class="atv-grading-section-label">Respostas do aluno</div>
     ${itemsHtml}
+    <div class="atv-grading-section-label atv-grading-divider">Sua avaliação — só fica visível para o aluno depois de salvar</div>
     <label>Nota geral (opcional)</label>
     <input type="text" inputmode="decimal" id="atv-grade-score" value="${grading.score!=null?escAttr(String(grading.score)):''}" placeholder="Ex.: 8,5">
-    <label>Comentário geral (opcional) — visível para o aluno</label>
+    <label>Comentário geral (opcional)</label>
     ${richToolbarHtml('atv-grade-comment')}
     <div id="atv-grade-comment" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR">${commentHtml}</div>
     <div class="editor-actions">
@@ -3828,6 +3865,11 @@ function sectionEditorForm(sec, idx){
       <textarea id="ef-act-results" style="min-height:70px;">${esc(sec.results||'')}</textarea>
       <label>Observações (opcional) <span style="text-transform:none;font-weight:400;color:var(--muted);">(variações, dicas de condução, erros comuns)</span></label>
       <textarea id="ef-act-obs" style="min-height:50px;">${esc(sec.obs||'')}</textarea>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+        <input type="checkbox" id="ef-act-visible" ${sec.visibleToStudent===false?'':'checked'} style="width:auto;">
+        <span style="text-transform:none;font-weight:600;color:var(--charcoal);letter-spacing:normal;">Visível para o aluno</span>
+      </label>
+      <div class="hint">Desmarque para deixar este roteiro só para você (fica oculto na aula e também no modo "ver como aluno") — útil quando é um roteiro de condução que só o professor deve ler.</div>
     `;
   } else if(type==='table'){
     fields = `
@@ -4103,10 +4145,53 @@ function parseAulaJsonOrAlert(raw){
   try{ dados = JSON.parse(cleaned); }
   catch(e){ alert('Não consegui ler o JSON — parece incompleto ou fora do formato.\n\nDica: peça à IA "responda apenas com o JSON, sem explicações antes ou depois" e cole a resposta inteira.\n\nDetalhe técnico: ' + e.message); return null; }
   if(!dados || typeof dados.title !== 'string' || !dados.title.trim()){ alert('O JSON veio sem "title" (título da aula).'); return null; }
+  // Erro comum da IA: usar uma LISTA (ex.: lista de autores) em campos que
+  // precisam ser um texto só, como "sources". Isso travava a tela sem avisar
+  // nada — agora aponta exatamente qual campo e o que veio no lugar de texto.
+  const tipoDeValor = (v)=> Array.isArray(v) ? 'uma lista' : (v!==null && typeof v==='object') ? 'um objeto' : (typeof v==='number') ? 'um número' : (typeof v==='boolean') ? 'um verdadeiro/falso' : typeof v;
+  for(const campo of ['subtitle','sources','intro','roteiro']){
+    if(dados[campo]!==undefined && dados[campo]!==null && typeof dados[campo]!=='string'){
+      alert(`O campo "${campo}" da aula precisa ser um TEXTO simples — veio ${tipoDeValor(dados[campo])}.\n\nExemplo correto de "sources": "Maximiano (2007), p. 4-13 · Kerzner (2006), cap. 2".\n\nAjuste no JSON e cole de novo — nada foi alterado na aula.`);
+      return null;
+    }
+  }
   if(!Array.isArray(dados.sections) || !dados.sections.length){ alert('O JSON veio sem "sections" (as seções da aula).'); return null; }
   const tiposValidos = ['prose','table','figure','video','activity','atividade','grid','compare','timeline','axes','hierarchy','chips','points'];
   const desconhecidos = dados.sections.filter(s=>!s || !tiposValidos.includes(s.type));
   if(desconhecidos.length){ alert('O JSON tem ' + desconhecidos.length + ' seção(ões) de tipo desconhecido. Tipos aceitos: ' + tiposValidos.join(', ') + '.'); return null; }
+  // Checagens de formato por tipo de seção — pega os erros mais comuns da IA
+  // (nome de campo trocado, tipo errado) ANTES de aplicar, com mensagem clara
+  // dizendo em qual seção está o problema.
+  for(let i=0;i<dados.sections.length;i++){
+    const s = dados.sections[i];
+    const onde = `seção ${i+1} ("${s.title||s.type}")`;
+    if(s.type==='prose' && s.paragraphs!==undefined && !Array.isArray(s.paragraphs)){
+      alert(`Na ${onde}: "paragraphs" precisa ser uma lista de textos.`); return null;
+    }
+    if(s.type==='points' && s.bullets!==undefined && !Array.isArray(s.bullets)){
+      alert(`Na ${onde}: "bullets" precisa ser uma lista de textos.`); return null;
+    }
+    if(s.type==='table' && ((s.headers!==undefined && !Array.isArray(s.headers)) || (s.rows!==undefined && !Array.isArray(s.rows)))){
+      alert(`Na ${onde}: "headers" e "rows" precisam ser listas.`); return null;
+    }
+    if(s.type==='atividade'){
+      if(!Array.isArray(s.items) || !s.items.length){
+        alert(`Na ${onde}: falta "items" (a lista de questões). Confira se a IA não usou outro nome, como "questions" — o campo certo é "items", e cada questão precisa de "type" e "prompt".`);
+        return null;
+      }
+      for(let j=0;j<s.items.length;j++){
+        const it = s.items[j];
+        if(!it || !ATV_ITEM_TYPES.some(([v])=>v===it.type)){
+          alert(`Na ${onde}, questão ${j+1}: tipo de questão "${it&&it.type}" não existe. Tipos aceitos: ${ATV_ITEM_TYPES.map(([v])=>v).join(', ')}.`);
+          return null;
+        }
+        if(typeof it.prompt !== 'string' || !it.prompt.trim()){
+          alert(`Na ${onde}, questão ${j+1}: falta "prompt" (o enunciado da questão).`);
+          return null;
+        }
+      }
+    }
+  }
   return dados;
 }
 
@@ -4567,7 +4652,7 @@ function blankSection(type){
   const id = genSectionId();
   switch(type){
     case 'prose': return {type, id, paragraphs:['']};
-    case 'activity': return {type, id, title:'', objective:'', method:'', timeMin:'', materials:'', results:'', obs:''};
+    case 'activity': return {type, id, title:'', objective:'', method:'', timeMin:'', materials:'', results:'', obs:'', visibleToStudent:true};
     case 'points': return {type, id, bullets:['']};
     case 'table': return {type, id, headers:['Coluna 1','Coluna 2'], rows:[['','']]};
     case 'figure': return {type, id, src:'', caption:'', source:''};
@@ -5383,21 +5468,29 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const newNum = parsePositiveIntStrict(document.getElementById('ef-new-a-num').value);
     if(newNum===null){ alert('Confira o campo "Número da aula" acima — precisa ser um número inteiro positivo.'); return; }
     if(COURSE.some(bb=>bb.aulas.some(aa=>aa.num===newNum))){ alert(`Já existe uma aula com o número ${newNum}. Ajuste o campo "Número da aula" acima.`); return; }
-    const secoesImportadas = dados.sections.map(s=>({ ...s, id: genSectionId() }));
-    const novaAula = {
-      num: newNum,
-      title: dados.title.trim(),
-      subtitle: (dados.subtitle||'').trim(),
-      sources: (dados.sources||'').trim(),
-      intro: (dados.intro||'').trim(),
-      roteiro: (dados.roteiro||'').trim(),
-      hidden: document.getElementById('ef-new-a-hidden').checked,
-      sections: secoesImportadas,
-      isPractice: dados.sections.some(s=>s.type==='activity'),
-      contentModel: 'v2',
-      atividadeEnabled: true, // aula criada a partir de agora — pode receber o bloco "Atividade" (não nasce com ele, só fica disponível para adicionar)
-      updatedAt: Date.now(),
-    };
+    // Cinto de segurança: mesmo depois da validação, se algo inesperado
+    // quebrar aqui, mostra erro em vez de travar a tela silenciosamente.
+    let novaAula;
+    try{
+      const secoesImportadas = dados.sections.map(s=>({ ...s, id: genSectionId() }));
+      novaAula = {
+        num: newNum,
+        title: dados.title.trim(),
+        subtitle: (dados.subtitle||'').trim(),
+        sources: (dados.sources||'').trim(),
+        intro: (dados.intro||'').trim(),
+        roteiro: (dados.roteiro||'').trim(),
+        hidden: document.getElementById('ef-new-a-hidden').checked,
+        sections: secoesImportadas,
+        isPractice: dados.sections.some(s=>s.type==='activity'),
+        contentModel: 'v2',
+        atividadeEnabled: true, // aula criada a partir de agora — pode receber o bloco "Atividade" (não nasce com ele, só fica disponível para adicionar)
+        updatedAt: Date.now(),
+      };
+    }catch(err){
+      alert('Não consegui importar este JSON — ele tem um formato inesperado. Nenhuma aula foi criada.\n\nDetalhe técnico: ' + (err && err.message ? err.message : String(err)));
+      return;
+    }
     targetBlock.aulas.push(novaAula);
     targetBlock.aulas.sort((x,y)=>x.num-y.num);
     state.block = blockNum;
@@ -6048,14 +6141,22 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const dados = parseAulaJsonOrAlert(document.getElementById('ef-aula-code').value);
     if(!dados) return;
     if(!confirm(`Aplicar esta programação à aula ${a.num}?\n\nO conteúdo atual da aula será SUBSTITUÍDO pelo código colado (título, introdução, roteiro e todas as seções). O número da aula e a visibilidade não mudam.`)) return;
-    a.title = dados.title.trim();
-    a.subtitle = (dados.subtitle||'').trim();
-    a.sources = (dados.sources||'').trim();
-    a.intro = (dados.intro||'').trim();
-    a.roteiro = (dados.roteiro||'').trim();
-    a.sections = dados.sections.map(s=>({ ...s, id: s.id || genSectionId() }));
-    a.updatedAt = Date.now();
-    if(!a.contentModel) a.contentModel = 'v2';
+    // Cinto de segurança: se o JSON passou na validação mas ainda assim tiver
+    // algo inesperado que eu não previ, isso mostra um erro em vez de travar a
+    // tela silenciosamente — e nada na aula fica alterado.
+    try{
+      a.title = dados.title.trim();
+      a.subtitle = (dados.subtitle||'').trim();
+      a.sources = (dados.sources||'').trim();
+      a.intro = (dados.intro||'').trim();
+      a.roteiro = (dados.roteiro||'').trim();
+      a.sections = dados.sections.map(s=>({ ...s, id: s.id || genSectionId() }));
+      a.updatedAt = Date.now();
+      if(!a.contentModel) a.contentModel = 'v2';
+    }catch(err){
+      alert('Não consegui aplicar este JSON — ele tem um formato inesperado. Nada foi alterado na aula.\n\nDetalhe técnico: ' + (err && err.message ? err.message : String(err)));
+      return;
+    }
     editState = null;
     const ok = await saveCourseToStorage();
     if(!ok){ await loadCourseFromStorage(); }
@@ -6300,7 +6401,8 @@ document.getElementById('content').addEventListener('click', async (e)=>{
           timeMin: document.getElementById('ef-act-time').value.trim(),
           materials: document.getElementById('ef-act-materials').value.trim(),
           results: document.getElementById('ef-act-results').value.trim(),
-          obs: document.getElementById('ef-act-obs').value.trim() };
+          obs: document.getElementById('ef-act-obs').value.trim(),
+          visibleToStudent: document.getElementById('ef-act-visible').checked };
       } else if(type==='table'){
         const t = collectTableFromDom();
         newSec = { type, kicker: document.getElementById('ef-kicker').value.trim()||undefined,
@@ -6657,7 +6759,7 @@ function buildAulaPrintHtml(b, a){
   const pageUrl = window.location.href.split('#')[0] + '#bloco-' + b.num + '-aula-' + a.num;
   const now = new Date();
   const nowStr = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-  const sectionsHtml = (a.sections||[]).filter(s=>s.type!=='atividade').map(sectionToPrintHtml).join('');
+  const sectionsHtml = (a.sections||[]).filter(s=>s.type!=='atividade' && !(s.type==='activity' && s.visibleToStudent===false)).map(sectionToPrintHtml).join('');
   const docTitle = `Bloco ${toRoman(b.num)} - Aula ${a.num} - ${a.title}`;
 
   return `<!DOCTYPE html>
