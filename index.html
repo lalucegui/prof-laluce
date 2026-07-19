@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v2.3.3                   -->
+<!-- VERSAO DESTE ARQUIVO: v2.3.4                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -897,7 +897,8 @@
   .atv-table{width:100%;border-collapse:collapse;margin-bottom:8px;}
   .atv-table th, .atv-table td{border:1px solid #E4D2AC;padding:4px;}
   .atv-table input{width:100%;border:none;font-size:13px;padding:4px;background:transparent;}
-  .atividade-save-status{font-size:11.5px;color:var(--muted);margin-top:10px;text-align:right;min-height:14px;}
+  .atividade-save-row{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;}
+  .atividade-save-status{font-size:11.5px;color:var(--muted);min-height:14px;}
   .atividade-save-status.atv-save-error{color:#B85042;font-weight:700;}
   .atividade-grading{margin-top:16px;padding-top:14px;border-top:1.5px solid #D8A857;}
   .atividade-grade-score{font-size:15px;font-weight:800;color:#5C3D0A;margin-bottom:8px;}
@@ -1873,7 +1874,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v2.3.3</div>
+<div class="version-tag hidden" id="version-tag">v2.3.4</div>
 
 
 <script>
@@ -2903,7 +2904,10 @@ function renderAtividadeStudentForm(sec, response, schedule){
     ${sec.statement?`<div class="atividade-statement">${esc(sec.statement)}</div>`:''}
     ${prazoInfo}
     <div class="atividade-items">${itemsHtml}</div>
-    ${!locked?`<div class="atividade-save-status" id="atv-save-status-${esc(sec.id)}"></div>`:''}
+    ${!locked?`<div class="atividade-save-row">
+      <button type="button" class="btn-primary" data-action="save-atv-answer" data-secid="${esc(sec.id)}" data-aula="${state.aula}">💾 Salvar resposta</button>
+      <span class="atividade-save-status" id="atv-save-status-${esc(sec.id)}"></span>
+    </div>`:''}
     ${gradingHtml}
   </div>`;
 }
@@ -2997,11 +3001,12 @@ function saveAtividadeAnswerDebounced(sectionId, aulaNum){
   clearTimeout(atvSaveTimer);
   atvSaveTimer = setTimeout(()=>persistAtividadeAnswer(sectionId, aulaNum), 1200);
 }
+let LAST_ATV_SAVE_ERROR = '';
 async function persistAtividadeAnswer(sectionId, aulaNum){
-  if(realIsAdmin || !currentUser || !activeSubjectId) return;
+  if(realIsAdmin || !currentUser || !activeSubjectId) return false;
   const cache = ACTIVITY_DATA_CACHE[sectionId];
   const status = computeActivityStatus(cache && cache.response, cache && cache.schedule);
-  if(status !== 'rascunho') return; // travado — não salva mais
+  if(status !== 'rascunho') return false; // travado — não salva mais
   const answers = collectAtividadeAnswersFromDom(sectionId);
   const docId = `${aulaNum}_${sectionId}_${currentUser.uid}`;
   const payload = {
@@ -3015,11 +3020,19 @@ async function persistAtividadeAnswer(sectionId, aulaNum){
     await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId).set(payload, {merge:true});
     if(cache){ cache.response = {...(cache.response||{}), ...payload}; }
     if(st){ st.textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); st.classList.remove('atv-save-error'); }
+    return true;
   }catch(e){
     // Diferente do progresso de leitura, a resposta da atividade é importante
-    // demais para falhar em silêncio — o aluno precisa ver que não salvou.
+    // demais para falhar em silêncio — o aluno precisa ver o motivo real, não
+    // uma mensagem genérica de internet quando o problema é outro (ex.: as
+    // regras do Firestore ainda não foram publicadas).
     console.error('Falha ao salvar resposta de atividade:', e);
-    if(st){ st.textContent = '⚠ Não foi possível salvar agora — verifique sua internet (vou tentar de novo)'; st.classList.add('atv-save-error'); }
+    const detalhe = (e && e.code==='permission-denied')
+      ? 'sem permissão para salvar (avise o professor — pode ser as regras do banco de dados)'
+      : ((e && e.message) || 'erro desconhecido');
+    LAST_ATV_SAVE_ERROR = detalhe;
+    if(st){ st.textContent = '⚠ Não salvou: ' + detalhe; st.classList.add('atv-save-error'); }
+    return false;
   }
 }
 
@@ -4933,7 +4946,7 @@ function render(){
   if(!realIsAdmin && currentUser){
     const minhaNota = (currentUserDoc && currentUserDoc.aulaNotes && currentUserDoc.aulaNotes[activeSubjectId] && currentUserDoc.aulaNotes[activeSubjectId][String(a.num)]) || '';
     inner += `<div class="student-notes">
-      <div class="student-notes-head">📝 Minhas anotações desta aula <span>(só você vê — nem o professor tem acesso pela plataforma)</span></div>
+      <div class="student-notes-head">📝 Minhas anotações desta aula</div>
       <textarea id="student-note-text" placeholder="Anote aqui seus pontos importantes, dúvidas para perguntar, ideias...">${esc(minhaNota)}</textarea>
       <div class="student-notes-actions">
         <span id="student-note-status"></span>
@@ -5440,7 +5453,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(!btn) return;
   const action = btn.dataset.action;
   // Ações que pertencem ao ALUNO (nunca editam o curso) passam pelo portão.
-  const studentActions = ['cancel-edit', 'save-student-note', 'open-my-notes', 'goto-note-aula', 'toggle-aula-seen', 'atv-add-row'];
+  const studentActions = ['cancel-edit', 'save-student-note', 'open-my-notes', 'goto-note-aula', 'toggle-aula-seen', 'atv-add-row', 'save-atv-answer'];
   if(!isAdmin && !studentActions.includes(action)){
     // Camada extra de segurança: nenhuma ação de edição executa sem autenticação,
     // mesmo que algum botão administrativo tenha ficado visível por engano.
@@ -5569,6 +5582,24 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const i = +btn.dataset.i;
     currentItems.splice(i,1);
     wrap.innerHTML = atvItemsEditorHtml(currentItems);
+    return;
+  }
+  if(action==='save-atv-answer'){
+    // Clique do aluno tem prioridade sobre o autosave: cancela o salvamento
+    // automático pendente e salva agora, na hora, mostrando erro de verdade
+    // (não só o texto discreto) se não conseguir — diferente do autosave
+    // silencioso, aqui é uma ação explícita do aluno e ele precisa de resposta.
+    if(realIsAdmin || !currentUser) return;
+    clearTimeout(atvSaveTimer);
+    const secid = btn.dataset.secid;
+    const aulaNum = +btn.dataset.aula;
+    const originalLabel = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Salvando…';
+    const ok = await persistAtividadeAnswer(secid, aulaNum);
+    btn.disabled = false; btn.textContent = originalLabel;
+    if(!ok){
+      alert('Não consegui salvar sua resposta agora.\n\nMotivo: ' + (LAST_ATV_SAVE_ERROR || 'desconhecido') + '.\n\nTente novamente — se continuar falhando, avise o professor.');
+    }
     return;
   }
   if(action==='atv-add-row'){
@@ -7368,6 +7399,14 @@ window.addEventListener('beforeunload', (e)=>{
 function draftKey(){ return 'prof-laluce-rascunho-' + (activeSubjectId || 'sem-materia'); }
 function saveLocalDraft(){
   if(!isAdmin || !editState) return;
+  // BUG CORRIGIDO: antes, isto capturava QUALQUER formulário aberto (inclusive
+  // cadastro de aluno, perfil etc.), e só era limpo quando o CONTEÚDO DA AULA
+  // era salvo — então editar e salvar um cadastro de aluno, por exemplo, deixava
+  // um rascunho "preso" que reaparecia (com a mensagem falando em "aula X") toda
+  // vez que a matéria era reaberta, mesmo já tudo salvo. Agora só protege mesmo
+  // a edição de conteúdo de aula, que é o que a mensagem de recuperação promete.
+  const kindsDeConteudoDaAula = ['section','newSection','aulaCode','newAula','newBlock'];
+  if(!kindsDeConteudoDaAula.includes(editState.kind)) return;
   const form = document.querySelector('#content .editor-form');
   if(!form) return;
   const parts = [];
