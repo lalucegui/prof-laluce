@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v2.3.4                   -->
+<!-- VERSAO DESTE ARQUIVO: v2.3.5                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1757,6 +1757,7 @@
     <input type="file" id="restore-backup-input" accept=".json" style="display:none;">
     <button class="btn-tiny" id="switch-subject-btn" title="Trocar para outra matéria, ou criar uma nova">🏠 Trocar de matéria</button>
     <button class="btn-tiny" id="admin-users-btn" title="Gestão de alunos, turmas, estatísticas e professores">🗂️ Gestão</button>
+    <button class="btn-tiny" id="atividades-central-btn" title="Ver e corrigir todas as atividades do curso, de todas as aulas">📋 Central de Atividades</button>
     <button class="btn-tiny" id="grid-mode-toggle-btn" title="Mostrar/esconder as bordas pontilhadas e a alça de arrastar seções">🔲 Grade: ligada</button>
   </span>
 </div>
@@ -1874,7 +1875,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v2.3.4</div>
+<div class="version-tag hidden" id="version-tag">v2.3.5</div>
 
 
 <script>
@@ -3093,12 +3094,53 @@ function atvGradingPanelHtml(sec, resp, user){
   </div>`;
 }
 
+function collectAllAtividades(){
+  const out = [];
+  COURSE.forEach(b=>{
+    (b.aulas||[]).forEach(a=>{
+      (a.sections||[]).forEach(sec=>{
+        if(sec.type==='atividade'){
+          out.push({
+            blockNum: b.num, blockTitle: b.title,
+            aulaNum: a.num, aulaTitle: a.title, aulaHidden: !!a.hidden,
+            sectionId: sec.id, title: sec.title||'(sem título)',
+            itemCount: (sec.items||[]).length, required: sec.required!==false
+          });
+        }
+      });
+    });
+  });
+  return out;
+}
+
+function atividadesCentralForm(){
+  const all = collectAllAtividades();
+  const rows = all.map(it=>`
+    <div class="user-row atv-central-row">
+      <div class="user-row-info">
+        <strong>${esc(it.title)}</strong>
+        <div class="hint" style="margin:2px 0 0;">Bloco ${toRoman(it.blockNum)} · Aula ${it.aulaNum} — ${esc(it.aulaTitle)}${it.aulaHidden?' <em>(aula oculta)</em>':''}</div>
+      </div>
+      <div class="user-row-status">${it.itemCount} questão(ões)${it.required===false?' · opcional':''}</div>
+      <button class="btn-secondary" data-action="open-atividade-central-item" data-block="${it.blockNum}" data-aula="${it.aulaNum}" data-secid="${esc(it.sectionId)}">📋 Gerenciar</button>
+    </div>`).join('') || '<p class="hint">Nenhuma atividade foi criada ainda em nenhuma aula deste curso.</p>';
+
+  return `<div class="editor-form">
+    <div class="editing-type-banner">🗂️ Central de Atividades</div>
+    <p class="hint">Todas as atividades respondíveis do curso, em ordem de aula. Clique em "Gerenciar" para configurar prazos e corrigir as respostas de uma atividade.</p>
+    <div class="users-list" style="margin-top:12px;">${rows}</div>
+    <div class="editor-actions">
+      <button class="btn-secondary" data-action="cancel-edit">← Voltar</button>
+    </div>
+  </div>`;
+}
+
 function atividadeManageForm(){
   const es = editState;
   const b = COURSE.find(x=>x.num===es.blockNum);
   const a = b && b.aulas.find(x=>x.num===es.aulaNum);
   const sec = a && (a.sections||[]).find(s=>s.id===es.sectionId);
-  if(!sec) return `<div class="editor-form"><div class="editing-type-banner">Gerenciar atividade</div><p>Esta atividade não foi encontrada (pode ter sido excluída).</p><div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">← Voltar</button></div></div>`;
+  if(!sec) return `<div class="editor-form"><div class="editing-type-banner">Gerenciar atividade</div><p>Esta atividade não foi encontrada (pode ter sido excluída).</p><div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">← Voltar</button><button class="btn-secondary" data-action="open-atividades-central">🗂️ Central de Atividades</button></div></div>`;
   if(allTurmas===null || cachedUsersList===null || ATV_MANAGE_RESPONSES===null){
     return `<div class="editor-form"><div class="editing-type-banner">📋 Gerenciar: ${esc(sec.title||'Atividade')}</div><p>Carregando…</p></div>`;
   }
@@ -3141,6 +3183,7 @@ function atividadeManageForm(){
     <div class="users-list">${rows}</div>
     <div class="editor-actions">
       <button class="btn-secondary" data-action="cancel-edit">← Voltar para a aula</button>
+      <button class="btn-secondary" data-action="open-atividades-central">🗂️ Central de Atividades</button>
     </div>
   </div>`;
 }
@@ -4750,6 +4793,10 @@ function render(){
     }
     return;
   }
+  if(editState && editState.kind==='atividadesCentral'){
+    content.innerHTML = atividadesCentralForm();
+    return;
+  }
   if(editState && editState.kind==='atividadeManage'){
     content.innerHTML = atividadeManageForm();
     if(allTurmas===null){
@@ -5624,6 +5671,24 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='open-atividade-manage'){
     const secid = btn.dataset.secid;
     editState = {kind:'atividadeManage', blockNum: state.block, aulaNum: +btn.dataset.aula, sectionId: secid, turmaId: null, gradingUid: null};
+    ATV_MANAGE_RESPONSES = null; ATV_MANAGE_SCHEDULES = {};
+    render();
+    return;
+  }
+  if(action==='open-atividades-central'){
+    if(!isAdmin) return;
+    editState = {kind:'atividadesCentral'};
+    cachedUsersList = null; ATV_MANAGE_RESPONSES = null; ATV_MANAGE_SCHEDULES = {};
+    render();
+    document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  if(action==='open-atividade-central-item'){
+    if(!isAdmin) return;
+    const blockNum = +btn.dataset.block, aulaNum = +btn.dataset.aula, secid = btn.dataset.secid;
+    // Navega o estado da aula atual para a aula dona da atividade, pra "Voltar para a aula" fazer sentido
+    state.block = blockNum; state.aula = aulaNum;
+    editState = {kind:'atividadeManage', blockNum, aulaNum, sectionId: secid, turmaId: null, gradingUid: null};
     ATV_MANAGE_RESPONSES = null; ATV_MANAGE_SCHEDULES = {};
     render();
     return;
@@ -6925,6 +6990,13 @@ document.getElementById('admin-users-btn').addEventListener('click', ()=>{
   if(!isAdmin) return;
   cachedUsersList = null; // sempre busca a lista atualizada ao abrir, nunca usa cache antigo
   editState = {kind:'usersScreen'};
+  render();
+  document.getElementById('content').scrollIntoView({behavior:'smooth'});
+});
+
+document.getElementById('atividades-central-btn').addEventListener('click', ()=>{
+  if(!isAdmin) return;
+  editState = {kind:'atividadesCentral'};
   render();
   document.getElementById('content').scrollIntoView({behavior:'smooth'});
 });
