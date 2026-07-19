@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v2.3.5                   -->
+<!-- VERSAO DESTE ARQUIVO: v2.4.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -919,6 +919,16 @@
   .atv-manage-prazo{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:10px 0 16px 0;}
   .atv-manage-prazo label{margin:0;font-size:11px;}
   .atv-student-row{margin-bottom:2px;}
+  .atv-grade-auto{font-size:12.5px;font-weight:700;margin-top:6px;padding:6px 10px;border-radius:8px;background:#F1F1F5;display:inline-block;}
+  .atv-auto-correct{color:#1C7C4C;}
+  .atv-auto-wrong{color:#B23B3B;}
+  .atv-item-grade-points{max-width:140px;}
+  .atv-item-grade-feedback{width:100%;min-height:50px;margin-top:4px;}
+  .atv-grading-total{font-size:14px;font-weight:800;color:var(--navy);margin:14px 0 4px 0;padding:8px 12px;background:#EFEFF7;border-radius:8px;}
+  .atv-item-grade-fb{margin-top:6px;font-size:12.5px;background:#FFF7E8;border:1px solid #E4D2AC;border-radius:8px;padding:8px 10px;}
+  .atv-fb-correct{color:#1C7C4C;}
+  .atv-fb-wrong{color:#B23B3B;}
+  .atv-item-grade-fb-text{margin-top:4px;color:var(--charcoal);white-space:pre-wrap;}
   .nav-aula-practice-badge{font-size:10px;margin-left:4px;}
   .nav-aula-seen{color:#2E7D32;font-weight:800;font-size:11px;margin-left:4px;}
   .student-notes{margin-top:26px;background:#FFFDF2;border:1.5px dashed #D9C97A;border-radius:12px;padding:16px 18px;}
@@ -1875,7 +1885,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v2.3.5</div>
+<div class="version-tag hidden" id="version-tag">v2.4.0</div>
 
 
 <script>
@@ -2851,6 +2861,33 @@ let atvSaveTimer = null;
 // 'corrigido' se o professor já lançou nota/comentário; 'enviado' se o prazo da
 // turma já passou (fica travado, aguardando correção); senão 'rascunho' (editável,
 // salva sozinho). Sem prazo configurado, fica sempre em 'rascunho' até ser corrigida.
+function autoGradeClosedItem(item, studentValue){
+  // Retorna null quando o professor não cadastrou gabarito (ou o tipo não é fechado) —
+  // nesses casos a correção continua manual. Quando retorna algo, é 100% calculado.
+  const maxPts = (item.points!=null && !isNaN(item.points)) ? item.points : 1;
+  if(item.type==='multipla_escolha'){
+    if(!item.correctOption) return null;
+    const acertou = String(studentValue||'').trim() === String(item.correctOption).trim();
+    return {correct: acertou, points: acertou ? maxPts : 0, maxPoints: maxPts};
+  }
+  if(item.type==='checklist'){
+    if(!item.correctOptions || !item.correctOptions.length) return null;
+    const chosen = new Set((Array.isArray(studentValue)?studentValue:[]).map(v=>String(v).trim()));
+    const correct = new Set(item.correctOptions.map(v=>String(v).trim()));
+    const acertou = chosen.size===correct.size && [...correct].every(x=>chosen.has(x));
+    return {correct: acertou, points: acertou ? maxPts : 0, maxPoints: maxPts};
+  }
+  if(item.type==='verdadeiro_falso'){
+    if(!item.correctAnswers || !item.correctAnswers.length) return null;
+    const total = item.correctAnswers.length;
+    let ok = 0;
+    for(let i=0;i<total;i++){ if(studentValue && studentValue[i]===item.correctAnswers[i]) ok++; }
+    const frac = total ? (ok/total) : 0;
+    const pts = Math.round(maxPts*frac*100)/100;
+    return {correct: ok===total, points: pts, maxPoints: maxPts, partial:{ok, total}};
+  }
+  return null;
+}
 function computeActivityStatus(response, schedule){
   const g = response && response.grading;
   const graded = g && (g.score!=null || (g.commentParas && g.commentParas.length));
@@ -2889,14 +2926,30 @@ function renderAtividadeStudentForm(sec, response, schedule){
   const locked = status !== 'rascunho';
   const statusLabel = status==='corrigido' ? '✅ Corrigida' : (status==='enviado' ? '📨 Enviada — prazo encerrado' : '✏️ Rascunho — salva sozinho enquanto você digita');
   const prazoInfo = (schedule && schedule.closesAt) ? `<div class="atividade-prazo">Prazo: até ${new Date(schedule.closesAt).toLocaleString('pt-BR')}</div>` : '';
-  const itemsHtml = (sec.items||[]).map((item,i)=>renderAtividadeItemInput(sec.id, item, i, answers[item.itemId], locked)).join('');
+  const gForItems = (status==='corrigido') ? (response.grading || {}) : null;
+  const itemsHtml = (sec.items||[]).map((item,i)=>{
+    const inputHtml = renderAtividadeItemInput(sec.id, item, i, answers[item.itemId], locked);
+    if(!gForItems) return inputHtml;
+    const maxPts = (item.points!=null && !isNaN(item.points)) ? item.points : 1;
+    const auto = autoGradeClosedItem(item, answers[item.itemId]);
+    let fb = '';
+    if(auto){
+      fb = `<div class="atv-item-grade-fb ${auto.correct?'atv-fb-correct':'atv-fb-wrong'}">${auto.correct?'✓ Correto':'✗ Incorreto'} — ${auto.points}/${maxPts} pts</div>`;
+    } else {
+      const pi = (gForItems.perItem && gForItems.perItem[item.itemId]) || null;
+      if(pi && (pi.points!=null || pi.feedback)){
+        fb = `<div class="atv-item-grade-fb">${pi.points!=null?`<strong>${esc(String(pi.points))}/${esc(String(maxPts))} pts</strong>`:''}${pi.feedback?`<div class="atv-item-grade-fb-text">${esc(pi.feedback)}</div>`:''}</div>`;
+      }
+    }
+    return inputHtml + fb;
+  }).join('');
   let gradingHtml = '';
   if(status==='corrigido'){
     const g = response.grading || {};
     const comentario = (g.commentParas && g.commentParas.length) ? g.commentParas.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${richOut(p)}</p>`).join('') : '';
     gradingHtml = `<div class="atividade-grading">
-      ${g.score!=null?`<div class="atividade-grade-score">Nota: <strong>${esc(String(g.score))}</strong></div>`:''}
-      ${comentario?`<div class="atividade-grade-comment-label">Comentário do professor</div><div class="rich-content">${comentario}</div>`:''}
+      ${g.score!=null?`<div class="atividade-grade-score">Nota: <strong>${esc(String(g.score))}${g.maxScore!=null?` / ${esc(String(g.maxScore))}`:''}</strong></div>`:''}
+      ${comentario?`<div class="atividade-grade-comment-label">Comentário geral do professor</div><div class="rich-content">${comentario}</div>`:''}
     </div>`;
   }
   return `<div class="atividade-card">
@@ -3068,28 +3121,62 @@ function renderAtividadeAnswerReadonly(item, value){
   return esc(JSON.stringify(value));
 }
 
+function recalcAtvGradeTotal(){
+  const panel = document.querySelector('.atv-grading-panel');
+  if(!panel) return;
+  const disp = document.getElementById('atv-grade-total-display');
+  if(!disp) return;
+  let total = 0;
+  panel.querySelectorAll('.atv-item-grade-points').forEach(inp=>{
+    const v = parseFloat(String(inp.value).replace(',', '.'));
+    if(!isNaN(v)) total += v;
+  });
+  disp.textContent = (Math.round(total*100)/100).toString();
+}
 function atvGradingPanelHtml(sec, resp, user){
   const answers = (resp && resp.answers) || {};
-  const itemsHtml = (sec.items||[]).map((it,i)=>`
-    <div class="atv-grade-item">
+  const grading = (resp && resp.grading) || {};
+  const perItem = grading.perItem || {};
+  let maxTotal = 0, curTotal = 0;
+  const itemsHtml = (sec.items||[]).map((it,i)=>{
+    const val = answers[it.itemId];
+    const maxPts = (it.points!=null && !isNaN(it.points)) ? it.points : 1;
+    maxTotal += maxPts;
+    const auto = autoGradeClosedItem(it, val);
+    const saved = perItem[it.itemId] || {};
+    let scoreBlockHtml, feedbackBlockHtml = '';
+    if(auto){
+      curTotal += auto.points;
+      const badge = auto.correct ? `<span class="atv-auto-correct">✓ Correto</span>` : `<span class="atv-auto-wrong">✗ Incorreto</span>`;
+      scoreBlockHtml = `<div class="atv-grade-auto">${badge} — ${auto.points}/${maxPts} pts (gabarito automático)${auto.partial?` · ${auto.partial.ok}/${auto.partial.total} afirmações certas`:''}</div>
+        <input type="hidden" class="atv-item-grade-points" data-item-id="${escAttr(it.itemId)}" value="${auto.points}">`;
+    } else {
+      const savedPts = (saved.points!=null && saved.points!=='') ? saved.points : '';
+      if(savedPts!=='') curTotal += (Number(savedPts)||0);
+      scoreBlockHtml = `<label>Pontos (máx. ${maxPts})</label>
+        <input type="text" inputmode="decimal" class="atv-item-grade-points" data-item-id="${escAttr(it.itemId)}" value="${savedPts!==''?escAttr(String(savedPts)):''}" placeholder="Ex.: ${maxPts}">`;
+      feedbackBlockHtml = `<label>Feedback desta questão (opcional)</label>
+        <textarea class="atv-item-grade-feedback" data-item-id="${escAttr(it.itemId)}" placeholder="Onde o aluno errou / o que você esperava da resposta...">${esc(saved.feedback||'')}</textarea>`;
+    }
+    return `<div class="atv-grade-item">
       <div class="atv-item-prompt">Questão ${i+1} — ${esc(it.prompt||'')}</div>
       <div class="atv-grade-answer-label">Resposta do aluno</div>
-      <div class="atv-grade-answer">${renderAtividadeAnswerReadonly(it, answers[it.itemId])}</div>
-    </div>`).join('');
-  const grading = (resp && resp.grading) || {};
+      <div class="atv-grade-answer">${renderAtividadeAnswerReadonly(it, val)}</div>
+      ${scoreBlockHtml}
+      ${feedbackBlockHtml}
+    </div>`;
+  }).join('');
   const commentParas = (grading.commentParas && grading.commentParas.length) ? grading.commentParas : [''];
   const commentHtml = commentParas.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${p}</p>`).join('');
   return `<div class="atv-grading-panel">
-    <div class="atv-grading-section-label">Respostas do aluno</div>
+    <div class="atv-grading-section-label">Respostas do aluno e correção por questão</div>
     ${itemsHtml}
-    <div class="atv-grading-section-label atv-grading-divider">Sua avaliação — só fica visível para o aluno depois de salvar</div>
-    <label>Nota geral (opcional)</label>
-    <input type="text" inputmode="decimal" id="atv-grade-score" value="${grading.score!=null?escAttr(String(grading.score)):''}" placeholder="Ex.: 8,5">
-    <label>Comentário geral (opcional)</label>
+    <div class="atv-grading-total">Nota total: <strong id="atv-grade-total-display">${Math.round(curTotal*100)/100}</strong> / ${maxTotal}</div>
+    <div class="atv-grading-section-label atv-grading-divider">Comentário geral (opcional) — além do feedback por questão acima</div>
     ${richToolbarHtml('atv-grade-comment')}
     <div id="atv-grade-comment" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR">${commentHtml}</div>
     <div class="editor-actions">
-      <button class="btn-primary" data-action="save-atv-grading" data-uid="${esc(user.id)}">Salvar correção</button>
+      <button class="btn-primary" data-action="save-atv-grading" data-uid="${esc(user.id)}" data-max-total="${maxTotal}">Salvar correção</button>
     </div>
   </div>`;
 }
@@ -3822,11 +3909,23 @@ function collectTableFromDom(){
 // ===== Editor do bloco "Atividade" — lista de questões, cada uma com seu tipo =====
 function atvItemExtraFieldsHtml(it){
   const type = it.type;
-  if(type==='multipla_escolha' || type==='checklist'){
-    return `<label>Opções (uma por linha)</label><textarea class="atv-item-options-field" placeholder="Uma opção por linha">${esc((it.options&&it.options.length?it.options:['']).join('\n'))}</textarea>`;
+  if(type==='multipla_escolha'){
+    return `<label>Opções (uma por linha)</label><textarea class="atv-item-options-field" placeholder="Uma opção por linha">${esc((it.options&&it.options.length?it.options:['']).join('\n'))}</textarea>
+      <label>Gabarito — resposta correta (opcional)</label>
+      <input type="text" spellcheck="true" lang="pt-BR" class="atv-item-correct-option-field" placeholder="Copie o texto exato de uma das opções acima. Deixe em branco para corrigir manualmente." value="${escAttr(it.correctOption||'')}">
+      <div class="hint">Se preencher, o sistema corrige essa questão sozinho comparando com a resposta do aluno.</div>`;
+  }
+  if(type==='checklist'){
+    return `<label>Opções (uma por linha)</label><textarea class="atv-item-options-field" placeholder="Uma opção por linha">${esc((it.options&&it.options.length?it.options:['']).join('\n'))}</textarea>
+      <label>Gabarito — opções corretas (opcional, uma por linha)</label>
+      <textarea class="atv-item-correct-options-field" placeholder="Copie o texto exato das opções corretas acima, uma por linha. Deixe em branco para corrigir manualmente.">${esc((it.correctOptions&&it.correctOptions.length?it.correctOptions:[]).join('\n'))}</textarea>
+      <div class="hint">Se preencher, o sistema considera certo só quando o aluno marcar exatamente essas opções.</div>`;
   }
   if(type==='verdadeiro_falso'){
-    return `<label>Afirmações (uma por linha)</label><textarea class="atv-item-statements-field" placeholder="Uma afirmação por linha">${esc((it.statements&&it.statements.length?it.statements:['']).join('\n'))}</textarea>`;
+    return `<label>Afirmações (uma por linha)</label><textarea class="atv-item-statements-field" placeholder="Uma afirmação por linha">${esc((it.statements&&it.statements.length?it.statements:['']).join('\n'))}</textarea>
+      <label>Gabarito (opcional; uma letra por linha — V ou F — na mesma ordem das afirmações acima)</label>
+      <textarea class="atv-item-correct-vf-field" placeholder="V&#10;F&#10;V (deixe em branco para corrigir manualmente)">${esc((it.correctAnswers&&it.correctAnswers.length?it.correctAnswers:[]).join('\n'))}</textarea>
+      <div class="hint">Se preencher, o sistema dá nota parcial conforme o número de afirmações certas.</div>`;
   }
   if(type==='tabela'){
     return `<label>Cabeçalhos das colunas (separados por vírgula)</label><input type="text" spellcheck="true" lang="pt-BR" class="atv-item-headers-field" placeholder="Coluna 1, Coluna 2" value="${escAttr((it.headers&&it.headers.length?it.headers:['Coluna 1','Coluna 2']).join(', '))}">`;
@@ -3850,6 +3949,8 @@ function atvItemsEditorHtml(items){
       </div>
       <label>Enunciado desta questão</label>
       <textarea class="atv-item-prompt-field" placeholder="Ex.: Justifique sua resposta com base no conteúdo de hoje...">${esc(it.prompt||'')}</textarea>
+      <label>Pontos desta questão (usado para somar a nota final)</label>
+      <input type="text" inputmode="decimal" class="atv-item-points-field" value="${it.points!=null?escAttr(String(it.points)):'1'}" placeholder="Ex.: 1">
       <div class="atv-item-extra" data-i="${i}">${atvItemExtraFieldsHtml(it)}</div>
     </div>`).join('');
 }
@@ -3861,12 +3962,24 @@ function collectAtvItemsFromDom(){
     const prompt = row.querySelector('.atv-item-prompt-field').value.trim();
     const itemId = row.dataset.itemId || genItemId();
     const item = {itemId, type, prompt};
-    if(type==='multipla_escolha' || type==='checklist'){
+    const ptsField = row.querySelector('.atv-item-points-field');
+    const ptsRaw = ptsField ? parseFloat(ptsField.value.replace(',', '.')) : 1;
+    item.points = (ptsRaw!=null && !isNaN(ptsRaw) && ptsRaw>=0) ? ptsRaw : 1;
+    if(type==='multipla_escolha'){
       const f = row.querySelector('.atv-item-options-field');
       item.options = f ? f.value.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+      const cf = row.querySelector('.atv-item-correct-option-field');
+      item.correctOption = (cf && cf.value.trim()) ? cf.value.trim() : null;
+    } else if(type==='checklist'){
+      const f = row.querySelector('.atv-item-options-field');
+      item.options = f ? f.value.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+      const cf = row.querySelector('.atv-item-correct-options-field');
+      item.correctOptions = cf ? cf.value.split('\n').map(s=>s.trim()).filter(Boolean) : [];
     } else if(type==='verdadeiro_falso'){
       const f = row.querySelector('.atv-item-statements-field');
       item.statements = f ? f.value.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+      const cf = row.querySelector('.atv-item-correct-vf-field');
+      item.correctAnswers = cf ? cf.value.split('\n').map(s=>s.trim().toUpperCase()).filter(s=>s==='V'||s==='F') : [];
     } else if(type==='tabela'){
       const f = row.querySelector('.atv-item-headers-field');
       item.headers = f ? f.value.split(',').map(s=>s.trim()).filter(Boolean) : ['Coluna 1','Coluna 2'];
@@ -5718,8 +5831,20 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='save-atv-grading'){
     const uid = btn.dataset.uid;
     const sectionId = editState.sectionId;
-    const scoreRaw = document.getElementById('atv-grade-score').value.trim().replace(',', '.');
-    const score = scoreRaw ? parseFloat(scoreRaw) : null;
+    const panel = btn.closest('.atv-grading-panel');
+    const perItem = {};
+    let total = 0;
+    panel.querySelectorAll('.atv-item-grade-points').forEach(inp=>{
+      const itemId = inp.dataset.itemId;
+      const raw = String(inp.value).trim().replace(',', '.');
+      const pts = raw ? parseFloat(raw) : null;
+      const feedbackEl = panel.querySelector(`.atv-item-grade-feedback[data-item-id="${CSS.escape(itemId)}"]`);
+      const feedback = feedbackEl ? feedbackEl.value.trim() : '';
+      perItem[itemId] = { points: (pts!=null && !isNaN(pts)) ? pts : null, feedback: feedback || null };
+      if(pts!=null && !isNaN(pts)) total += pts;
+    });
+    total = Math.round(total*100)/100;
+    const maxTotal = parseFloat(btn.dataset.maxTotal) || 0;
     const commentParas = richFieldToArray(document.getElementById('atv-grade-comment'));
     const docId = `${editState.aulaNum}_${sectionId}_${uid}`;
     const existing = (ATV_MANAGE_RESPONSES||[]).find(r=>r.studentUid===uid) || {};
@@ -5730,7 +5855,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       aulaNum: editState.aulaNum, sectionId, studentUid: uid,
       studentName: existing.studentName || (alunoDoc.profile && alunoDoc.profile.fullName) || alunoDoc.name || '',
       answers: existing.answers || {},
-      grading: { score: (score===null || isNaN(score)) ? null : score, commentParas, gradedBy: currentUser.uid, gradedAt: Date.now() },
+      grading: { score: total, maxScore: maxTotal, perItem, commentParas, gradedBy: currentUser.uid, gradedAt: Date.now() },
       updatedAt: Date.now(),
     };
     try{
@@ -6648,6 +6773,13 @@ document.getElementById('content').addEventListener('change', async (e)=>{
     img.style.display='block';
     const hint = document.getElementById('ef-img-hint');
     if(hint) hint.textContent = 'Nova imagem selecionada — será salva ao clicar em Salvar.';
+  }
+});
+
+document.getElementById('content').addEventListener('input', (e)=>{
+  if(!isAdmin) return;
+  if(e.target.classList && e.target.classList.contains('atv-item-grade-points')){
+    recalcAtvGradeTotal();
   }
 });
 
