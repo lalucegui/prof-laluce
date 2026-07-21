@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v3.2.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v3.3.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -71,39 +71,62 @@
     --radius-sm:8px;
     --radius:10px;
     --radius-lg:14px;
+
+    /* Cabecalho e barra da materia tem tokens proprios: precisam de mais
+       contraste que a cor de marca e precisam inverter na Noite. */
+    --header-bg:#2B2C58;
+    --header-fg:#FFFFFF;
+    --header-tint:rgba(255,255,255,0.10);
+    --header-line:rgba(255,255,255,0.20);
+    --header-muted:#D6DAF2;
+    --bar-bg:rgba(61,62,119,0.10);
+    --bar-fg:#3D3E77;
+    --bar-line:rgba(61,62,119,0.16);
   }
 
   html[data-palette="grafite"]{
+    --header-bg:#2F2F2D; --header-muted:#D9D8D2;
+    --bar-bg:rgba(70,70,68,0.10); --bar-fg:#464644; --bar-line:rgba(70,70,68,0.16);
     --navy:#464644; --navy-dark:#2F2F2D; --ice:#D9D8D2; --ice-tint:#F5F5F3;
     --gold:#B8860B; --terracotta:#A65043; --terracotta-tint:#F8F0EE;
     --charcoal:#2B2B2A; --muted:#6E6E68; --line:#E4E3DE;
     --brand-rgb:70,70,68; --surface-page:#F8F8F7;
   }
   html[data-palette="floresta"]{
+    --header-bg:#143D27; --header-muted:#C7E0D0;
+    --bar-bg:rgba(31,90,58,0.10); --bar-fg:#1F5A3A; --bar-line:rgba(31,90,58,0.16);
     --navy:#1F5A3A; --navy-dark:#143D27; --ice:#C7E0D0; --ice-tint:#F2F8F4;
     --gold:#B07A16; --terracotta:#A6533F; --terracotta-tint:#F8F1ED;
     --charcoal:#222B25; --muted:#5F6B63; --line:#DDE9E1;
     --brand-rgb:31,90,58; --surface-page:#F6F9F5;
   }
   html[data-palette="vinho"]{
+    --header-bg:#571822; --header-muted:#E8CDD3;
+    --bar-bg:rgba(122,38,53,0.10); --bar-fg:#7A2635; --bar-line:rgba(122,38,53,0.16);
     --navy:#7A2635; --navy-dark:#571822; --ice:#E8CDD3; --ice-tint:#FAF2F3;
     --gold:#A67C1A; --terracotta:#A64236; --terracotta-tint:#F9EFEC;
     --charcoal:#2B2224; --muted:#6E5D61; --line:#EBDCE0;
     --brand-rgb:122,38,53; --surface-page:#FBF7F7;
   }
   html[data-palette="oceano"]{
+    --header-bg:#083E46; --header-muted:#C2E0E4;
+    --bar-bg:rgba(15,90,100,0.10); --bar-fg:#0F5A64; --bar-line:rgba(15,90,100,0.16);
     --navy:#0F5A64; --navy-dark:#083E46; --ice:#C2E0E4; --ice-tint:#F1F8F9;
     --gold:#B5761C; --terracotta:#A85434; --terracotta-tint:#F9F0EB;
     --charcoal:#22292B; --muted:#5C6B6E; --line:#DAE8EA;
     --brand-rgb:15,90,100; --surface-page:#F5F9FA;
   }
   html[data-palette="ardosia"]{
+    --header-bg:#333747; --header-muted:#D4D7E2;
+    --bar-bg:rgba(74,80,99,0.10); --bar-fg:#4A5063; --bar-line:rgba(74,80,99,0.16);
     --navy:#4A5063; --navy-dark:#333747; --ice:#D4D7E2; --ice-tint:#F4F5F8;
     --gold:#8A6BB5; --terracotta:#A65567; --terracotta-tint:#F8F0F2;
     --charcoal:#26282F; --muted:#666B78; --line:#E2E4EB;
     --brand-rgb:74,80,99; --surface-page:#F7F7FA;
   }
   html[data-palette="rose"]{
+    --header-bg:#7A2E4B; --header-muted:#F2D2DE;
+    --bar-bg:rgba(163,67,103,0.10); --bar-fg:#A34367; --bar-line:rgba(163,67,103,0.16);
     --navy:#A34367; --navy-dark:#7A2E4B; --ice:#F2D2DE; --ice-tint:#FDF4F7;
     --gold:#C2790C; --terracotta:#B0475A; --terracotta-tint:#FBEFF2;
     --charcoal:#2E2429; --muted:#75626A; --line:#F0DEE5;
@@ -131,6 +154,14 @@
     --ok:#5FBF66; --ok-tint:#1C2A1D;
     --warn:#D9A441; --warn-tint:#2B2418;
     --err:#F0736F; --err-tint:#2E1D1E;
+    --header-bg:#101119;
+    --header-fg:#EDEDF2;
+    --header-tint:rgba(255,255,255,0.07);
+    --header-line:rgba(255,255,255,0.13);
+    --header-muted:#9A9CB5;
+    --bar-bg:rgba(255,255,255,0.05);
+    --bar-fg:#C9CBE8;
+    --bar-line:rgba(255,255,255,0.10);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -211,14 +242,22 @@
   html[data-palette="noite"] .card,
   html[data-palette="noite"] .compare-col,
   html[data-palette="noite"] .axis-card,
-  html[data-palette="noite"] .chip{
-    background-image:linear-gradient(rgba(22,23,31,0.86),rgba(22,23,31,0.86));
-    color:var(--charcoal);
+  html[data-palette="noite"] .chip,
+  html[data-palette="noite"] .timeline-step,
+  html[data-palette="noite"] .hier-item,
+  html[data-palette="noite"] .axes-example{
+    background-image:linear-gradient(rgba(18,19,26,0.88),rgba(18,19,26,0.88)) !important;
+    color:var(--charcoal) !important;
+    border-color:var(--hairline) !important;
   }
   html[data-palette="noite"] .note-box h4,
   html[data-palette="noite"] .card h4,
   html[data-palette="noite"] .compare-col h4,
-  html[data-palette="noite"] .axis-card h4{color:var(--charcoal);}
+  html[data-palette="noite"] .axis-card h4,
+  html[data-palette="noite"] .note-box strong,
+  html[data-palette="noite"] .card li,
+  html[data-palette="noite"] .compare-col li,
+  html[data-palette="noite"] .axis-card p{color:var(--charcoal) !important;}
 
   .palette-grid{
     display:grid;
@@ -238,8 +277,8 @@
   }
   .palette-swatch:hover{border-color:var(--hairline-strong);}
   .palette-swatch.is-active{border-color:var(--navy);border-width:2px;padding:6px 5px 5px;}
-  .palette-dots{display:flex;gap:3px;justify-content:center;margin-bottom:5px;}
-  .palette-dots i{width:11px;height:11px;border-radius:50%;display:block;}
+  .palette-dots{display:flex;justify-content:center;margin-bottom:6px;}
+  .palette-dots i{width:20px;height:20px;border-radius:50%;display:block;border:0.5px solid var(--hairline);}
   .palette-name{font-size:10.5px;color:var(--muted);font-style:normal;}
   .palette-swatch.is-active .palette-name{color:var(--navy);font-weight:600;}
 
@@ -390,6 +429,61 @@
     .painel-box{padding:20px 18px 22px;border-radius:14px;}
   }
 
+  .ia-etapa{
+    font-size:10.5px;font-weight:600;color:var(--gold);
+    text-transform:uppercase;letter-spacing:1.1px;
+    margin:20px 0 9px;
+  }
+  .ia-etapa:first-child{margin-top:0;}
+  .ia-opcoes{display:grid;gap:8px;}
+  .ia-opcao{
+    display:flex;align-items:center;gap:11px;
+    background:var(--surface-raised);
+    border:0.5px solid var(--hairline);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    font-family:inherit;font-size:13.5px;color:var(--charcoal);
+    cursor:pointer;text-align:left;width:100%;
+    transition:border-color .13s ease,background-color .13s ease;
+  }
+  .ia-opcao:hover:not(:disabled){border-color:var(--hairline-strong);}
+  .ia-opcao.is-ativa{border:1.5px solid var(--navy);background:var(--tint-soft);padding:11.5px 13.5px;}
+  .ia-opcao:disabled{opacity:.45;cursor:default;}
+  .ia-opcao .mi{font-size:19px;color:var(--navy);flex:0 0 auto;}
+  .ia-opcao-txt{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+  .ia-opcao-txt em{font-style:normal;font-size:11.5px;color:var(--muted);}
+  .editor-form textarea#ia-pedido,
+  .editor-form textarea#ia-resposta{min-height:88px;}
+  .ia-copiar-linha{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-top:9px;}
+  .ia-copiar-linha .hint{margin-top:0;}
+  .ia-resultado{
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-top:14px;
+  }
+  .ia-ok{background:var(--ok-tint);border:0.5px solid var(--ok);}
+  .ia-erro{background:var(--err-tint);border:0.5px solid var(--err);}
+  .ia-resultado-titulo{
+    display:flex;align-items:center;gap:7px;
+    font-size:13.5px;font-weight:600;margin-bottom:8px;
+  }
+  .ia-ok .ia-resultado-titulo{color:var(--ok);}
+  .ia-erro .ia-resultado-titulo{color:var(--err);}
+  .ia-resumo{margin:0 0 12px;padding-left:18px;font-size:13px;line-height:1.7;}
+  .ia-erro-texto{font-size:12.5px;line-height:1.6;white-space:pre-wrap;margin-bottom:8px;}
+  .ia-resultado-acoes{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .ia-ver-codigo{
+    background:none;border:none;font-family:inherit;font-size:12px;
+    color:var(--muted);text-decoration:underline;cursor:pointer;margin-left:auto;
+  }
+  .ia-ver-codigo:hover{color:var(--navy);}
+  .ia-codigo{
+    margin:12px 0 0;padding:12px;
+    background:var(--tint-soft);border-radius:var(--radius-sm);
+    font-size:11px;line-height:1.5;max-height:280px;overflow:auto;
+    white-space:pre-wrap;word-break:break-word;
+  }
+
   .has-tip{position:relative;}
   .has-tip::after{
     content:attr(data-tip);
@@ -440,8 +534,8 @@
 
   /* ===== Top header ===== */
   .site-header{
-    background:var(--navy);
-    color:var(--white);
+    background:var(--header-bg);
+    color:var(--header-fg);
     padding:22px 28px 0 28px;
     position:relative;
     overflow:hidden;
@@ -924,11 +1018,11 @@
   /* ===== Admin: lock button, modal, status bar ===== */
   .user-badge{
     display:flex;align-items:center;gap:10px;
-    background:rgba(255,255,255,0.08);
-    border:1px solid rgba(255,255,255,0.18);
-    border-radius:20px;
+    background:var(--header-tint);
+    border:0.5px solid var(--header-line);
+    border-radius:999px;
     padding:6px 14px;
-    color:var(--ice);
+    color:var(--header-muted);
     font-size:12.5px;
   }
   .user-badge-name{font-weight:600;white-space:nowrap;}
@@ -1134,13 +1228,17 @@
   }
   .size-preset-btn{padding:7px 12px;font-size:12.5px;}
   .size-preset-btn.active-preset{background:var(--navy);color:#fff;}
-  /* Vive dentro da barra da materia (fundo gold), entao continua branco
-     translucido — tingir de navy aqui derrubaria o contraste. */
   .btn-tiny{
-    background:rgba(255,255,255,0.16);color:#fff;border:0.5px solid rgba(255,255,255,0.32);
+    background:var(--tint-soft);color:var(--navy);border:0.5px solid var(--hairline);
     padding:7px 13px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;
+    font-family:inherit;
   }
-  .btn-tiny:hover{background:rgba(255,255,255,0.26);}
+  .btn-tiny:hover{background:var(--tint-medium);}
+  /* Dentro do cabecalho escuro, o mesmo botao precisa do tratamento claro. */
+  .site-header .btn-tiny{
+    background:var(--header-tint);color:var(--header-fg);border-color:var(--header-line);
+  }
+  .site-header .btn-tiny:hover{background:var(--header-line);}
   .btn-approve{background:var(--navy) !important;color:#fff !important;border:1px solid var(--navy) !important;}
   .btn-approve:hover{background:var(--navy-dark) !important;}
 
@@ -1148,7 +1246,9 @@
      afeta a materia inteira mora aqui: curso, alunos, atividades, diario. */
   .edit-status-bar{
     position:sticky;top:0;z-index:60;
-    background:var(--gold);color:#fff;
+    background:var(--bar-bg);color:var(--bar-fg);
+    border-bottom:0.5px solid var(--bar-line);
+    backdrop-filter:saturate(1.4) blur(6px);
     padding:9px 24px;
     font-size:13px;
     display:flex;align-items:center;justify-content:space-between;
@@ -2421,6 +2521,7 @@
     <button class="btn-tiny" id="bar-diario-btn" data-action="ir-para-tela" data-tela="diarioAula" title="Diário de classe: chamada, conteúdo dado e observações">📒 Diário de classe</button>
     <button class="btn-tiny" data-action="ir-para-tela" data-tela="atividadesBoletim" title="Boletim: notas e entregas no prazo da turma">📊 Boletim</button>
     <button class="btn-tiny" data-action="ir-para-tela" data-tela="diarioFrequencia" title="Frequência consolidada de todas as aulas">✅ Frequência</button>
+    <button class="btn-tiny" data-action="ir-para-tela" data-tela="iaScreen" title="Criar ou melhorar aulas com ajuda de IA">✨ Criar com IA</button>
     <button class="btn-tiny" id="grid-mode-toggle-btn" title="Mostrar/esconder as bordas pontilhadas e a alça de arrastar seções">🔲 Grade: ligada</button>
   </span>
 </div>
@@ -2439,8 +2540,7 @@
     <label>Endereço completo</label><input type="text" spellcheck="true" lang="pt-BR" id="profile-address" placeholder="Rua, número, bairro, cidade">
     <label>Tema de cores <span class="tip has-tip" data-tip="Muda as cores de todo o sistema, só para você. O conteúdo das aulas que o professor montou não muda.">?</span></label>
     <div class="palette-grid" id="profile-palette-grid"></div>
-    <label style="margin-top:14px;">Cor do cabeçalho <span class="tip has-tip tip-left" data-tip="Uma cor só para a faixa do topo, por cima do tema escolhido. Deixe igual ao tema se não quiser destacar.">?</span></label>
-    <input type="color" id="profile-header-color" value="#3D3E77">
+
     <div class="modal-actions">
       <button class="btn-secondary" id="profile-cancel-btn">Cancelar</button>
       <button class="btn-primary" id="profile-save-btn">Salvar</button>
@@ -2540,7 +2640,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v3.2.0</div>
+<div class="version-tag hidden" id="version-tag">v3.3.0</div>
 
 
 <script>
@@ -6173,6 +6273,69 @@ function configScreenForm(){
   </div>`;
 }
 
+function iaScreenForm(){
+  const b = COURSE.find(x=>x.num===state.block);
+  const a = b ? b.aulas.find(x=>x.num===state.aula) : null;
+  const e = IA_ESTADO;
+
+  const opcoes = Object.entries(IA_INTENCOES).map(([id,i])=>{
+    const indisponivel = (id==='melhorar' && !a);
+    return `<button type="button" class="ia-opcao ${e.intencao===id?'is-ativa':''}" data-action="ia-intencao" data-ia="${id}" ${indisponivel?'disabled':''}>
+      <span class="mi">${i.icone}</span>
+      <span class="ia-opcao-txt">${esc(i.rotulo)}${id==='melhorar'&&a?`<em>Aula ${a.num} — ${esc(a.title)}</em>`:''}</span>
+      <span class="tip has-tip tip-left" data-tip="${escAttr(i.dica)}">?</span>
+    </button>`;
+  }).join('');
+
+  // Etapa 3 so existe quando da para aplicar de volta. Curso inteiro e
+  // consulta: aplicar 48 aulas de uma vez automaticamente seria irresponsavel.
+  const podeAplicar = e.intencao !== 'curso';
+
+  let resultado = '';
+  if(e.erro){
+    resultado = `<div class="ia-resultado ia-erro">
+      <div class="ia-resultado-titulo"><span class="mi">error</span>Não consegui usar essa resposta</div>
+      <div class="ia-erro-texto">${esc(e.erro)}</div>
+      <div class="hint">Nada foi alterado. Corrija na IA e cole de novo.</div>
+    </div>`;
+  } else if(e.dados){
+    const linhas = iaResumirMudanca(e.dados);
+    resultado = `<div class="ia-resultado ia-ok">
+      <div class="ia-resultado-titulo"><span class="mi">check_circle</span>Entendi a resposta. Isto vai mudar:</div>
+      <ul class="ia-resumo">${linhas.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>
+      <div class="ia-resultado-acoes">
+        <button class="btn-primary" data-action="ia-aplicar">Aplicar</button>
+        <button class="btn-secondary" data-action="ia-descartar">Descartar</button>
+        <button type="button" class="ia-ver-codigo" data-action="ia-ver-codigo">${e.verCodigo?'esconder código':'ver código'}</button>
+      </div>
+      ${e.verCodigo?`<pre class="ia-codigo">${esc(JSON.stringify(e.dados,null,2))}</pre>`:''}
+    </div>`;
+  }
+
+  return `<div class="editor-form" data-kind="iaScreen">
+    <div class="ia-etapa">1 — O que você quer fazer</div>
+    <div class="ia-opcoes">${opcoes}</div>
+
+    <div class="ia-etapa">2 — Descreva o pedido e leve para a IA</div>
+    <textarea id="ia-pedido" placeholder="Ex.: aula sobre ciclo de vida do projeto, com uma tabela comparando as fases e uma atividade de fixação de 30 minutos.">${esc(e.pedido||'')}</textarea>
+    <div class="ia-copiar-linha">
+      <button type="button" class="btn-primary" data-action="ia-copiar"><span class="mi">content_copy</span>Copiar tudo</button>
+      <span class="hint">Vai junto o formato, o contexto e o seu pedido — é só colar na IA.</span>
+    </div>
+
+    ${podeAplicar ? `<div class="ia-etapa">3 — Cole aqui a resposta da IA</div>
+    <textarea id="ia-resposta" placeholder="Cole aqui o que a IA devolveu…">${esc(e.resposta||'')}</textarea>
+    <div class="ia-copiar-linha">
+      <button type="button" class="btn-secondary" data-action="ia-analisar"><span class="mi">plagiarism</span>Conferir antes de aplicar</button>
+    </div>
+    ${resultado}` : `<div class="hint" style="margin-top:14px;">Nesta opção o sistema não aplica nada sozinho — é material de consulta. Para trazer uma aula ajustada de volta, escolha "Melhorar a aula atual".</div>`}
+
+    <div class="editor-actions">
+      <button class="btn-secondary" data-action="cancel-edit">Fechar</button>
+    </div>
+  </div>`;
+}
+
 function newBlockForm(suggestedNum){
   return `<div class="editor-form" data-kind="newBlock">
     <label>Número do bloco (algarismo romano)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-b-num" value="${toRoman(suggestedNum)}" placeholder="Ex.: IV">
@@ -6308,6 +6471,10 @@ function render(){
   }
   if(editState && editState.kind==='newBlock'){
     content.innerHTML = comCabecalho('newBlock', newBlockForm(editState.suggestedNum));
+    return;
+  }
+  if(editState && editState.kind==='iaScreen'){
+    content.innerHTML = comCabecalho('iaScreen', iaScreenForm());
     return;
   }
   if(editState && editState.kind==='configScreen'){
@@ -6530,7 +6697,7 @@ function render(){
     inner = aulaHeaderEditorForm(a);
   } else {
     inner = `<div class="aula-header">
-      <div class="aula-editbar"><button class="edit-chip" data-action="open-diario-aula" title="Diário de classe: registrar turma, data, chamada e observações desta aula">📒</button><button class="edit-chip" data-action="edit-aula-header" title="Editar informações da aula">✎</button><button class="edit-chip" data-action="open-aula-code" title="Ver/editar esta aula como programação (JSON) — para ajustes com ajuda de IA">&lt;/&gt;</button></div>
+      <div class="aula-editbar"><button class="edit-chip" data-action="ir-para-tela" data-tela="iaScreen" title="Criar com IA: melhorar esta aula ou criar uma nova">✨</button><button class="edit-chip" data-action="open-diario-aula" title="Diário de classe: registrar turma, data, chamada e observações desta aula">📒</button><button class="edit-chip" data-action="edit-aula-header" title="Editar informações da aula">✎</button><button class="edit-chip" data-action="open-aula-code" title="Ver/editar esta aula como programação (JSON) — para ajustes com ajuda de IA">&lt;/&gt;</button></div>
       <div class="aula-eyebrow">${blocoEyebrow(b, a)}</div>
       <h2 class="aula-title">${esc(a.title)}</h2>
       ${a.subtitle?`<p class="aula-subtitle">${esc(a.subtitle)}</p>`:''}
@@ -6901,14 +7068,14 @@ function applyUserBadgeAvatar(userDoc){
 // que ele ja tem permissao de gravar — nenhuma regra do Firestore mudou.
 // Trocar de paleta e so trocar um atributo no <html>; o CSS faz o resto.
 const PALETAS = [
-  {id:'nevoa',    nome:'Névoa',    cores:['#3D3E77','#D6DAF2','#F79C31']},
-  {id:'grafite',  nome:'Grafite',  cores:['#464644','#D9D8D2','#B8860B']},
-  {id:'floresta', nome:'Floresta', cores:['#1F5A3A','#C7E0D0','#B07A16']},
-  {id:'vinho',    nome:'Vinho',    cores:['#7A2635','#E8CDD3','#A67C1A']},
-  {id:'oceano',   nome:'Oceano',   cores:['#0F5A64','#C2E0E4','#B5761C']},
-  {id:'ardosia',  nome:'Ardósia',  cores:['#4A5063','#D4D7E2','#8A6BB5']},
-  {id:'rose',     nome:'Rosé',     cores:['#A34367','#F2D2DE','#C2790C']},
-  {id:'noite',    nome:'Noite',    cores:['#8A8CD9','#3A3C55','#E0A860']},
+  {id:'nevoa',    nome:'Névoa',    cor:'#3D3E77'},
+  {id:'grafite',  nome:'Grafite',  cor:'#464644'},
+  {id:'floresta', nome:'Floresta', cor:'#1F5A3A'},
+  {id:'vinho',    nome:'Vinho',    cor:'#7A2635'},
+  {id:'oceano',   nome:'Oceano',   cor:'#0F5A64'},
+  {id:'ardosia',  nome:'Ardósia',  cor:'#4A5063'},
+  {id:'rose',     nome:'Rosé',     cor:'#A34367'},
+  {id:'noite',    nome:'Noite',    cor:'#12131A'},
 ];
 const PALETA_PADRAO = 'nevoa';
 
@@ -6929,7 +7096,7 @@ function renderPaletteGrid(selecionada){
   if(!grid) return;
   grid.innerHTML = PALETAS.map(p=>`
     <button type="button" class="palette-swatch ${p.id===selecionada?'is-active':''}" data-paleta="${p.id}" title="${esc(p.nome)}">
-      <span class="palette-dots">${p.cores.map(c=>`<i style="background:${c}"></i>`).join('')}</span>
+      <span class="palette-dots"><i style="background:${p.cor}"></i></span>
       <span class="palette-name">${esc(p.nome)}</span>
     </button>`).join('');
   grid.querySelectorAll('.palette-swatch').forEach(btn=>{
@@ -6945,10 +7112,13 @@ function paletaSelecionadaNoGrid(){
   return ativo ? ativo.dataset.paleta : PALETA_PADRAO;
 }
 
+// A cor do cabecalho passou a vir da PALETA (v3.3.0). Antes o usuario
+// escolhia uma cor avulsa aqui, o que podia gerar combinacao ilegivel com o
+// tema. Esta funcao limpa qualquer cor antiga que tenha ficado gravada no
+// perfil, para que contas criadas antes da mudanca nao fiquem presas nela.
 function applyStudentHeaderColor(userDoc){
   const header = document.getElementById('site-header');
-  const cor = userDoc && userDoc.profile && userDoc.profile.headerColor;
-  if(header && cor) header.style.background = cor;
+  if(header) header.style.background = '';
 }
 
 // ===================== MODO AULA (projeção em datashow) =====================
@@ -8236,6 +8406,96 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
 
+  if(action==='ia-intencao'){
+    IA_ESTADO.pedido = (document.getElementById('ia-pedido')||{}).value || IA_ESTADO.pedido;
+    IA_ESTADO.intencao = btn.dataset.ia;
+    IA_ESTADO.dados = null; IA_ESTADO.erro = null; IA_ESTADO.verCodigo = false;
+    render();
+    return;
+  }
+  if(action==='ia-copiar'){
+    const pedido = (document.getElementById('ia-pedido')||{}).value || '';
+    IA_ESTADO.pedido = pedido;
+    const pacote = iaMontarPacote(pedido);
+    const rotuloOriginal = btn.innerHTML;
+    navigator.clipboard.writeText(pacote).then(()=>{
+      btn.textContent = 'Copiado! Cole na IA';
+      setTimeout(()=>{ btn.innerHTML = rotuloOriginal; }, 2500);
+    }).catch(()=>{ prompt('Copie o texto abaixo (Ctrl+C):', pacote); });
+    return;
+  }
+  if(action==='ia-analisar'){
+    const raw = (document.getElementById('ia-resposta')||{}).value || '';
+    IA_ESTADO.resposta = raw;
+    IA_ESTADO.pedido = (document.getElementById('ia-pedido')||{}).value || IA_ESTADO.pedido;
+    const r = analisarAulaJson(raw);
+    IA_ESTADO.dados = r.dados; IA_ESTADO.erro = r.erro; IA_ESTADO.verCodigo = false;
+    render();
+    return;
+  }
+  if(action==='ia-ver-codigo'){
+    IA_ESTADO.verCodigo = !IA_ESTADO.verCodigo;
+    render();
+    return;
+  }
+  if(action==='ia-descartar'){
+    IA_ESTADO.dados = null; IA_ESTADO.erro = null; IA_ESTADO.resposta = ''; IA_ESTADO.verCodigo = false;
+    render();
+    return;
+  }
+  if(action==='ia-aplicar'){
+    const dados = IA_ESTADO.dados;
+    if(!dados){ return; }
+    if(IA_ESTADO.intencao === 'melhorar'){
+      if(!a){ alert('Nenhuma aula aberta para receber o conteúdo.'); return; }
+      if(!confirm('Aplicar as mudanças a esta aula?\n\nO conteúdo atual será substituído pelo que a IA devolveu. Se quiser voltar atrás depois, use um backup.')) return;
+      // Seções sem id ganham um novo; as que vieram COM id mantêm o dele —
+      // é isso que preserva imagens e encaixes.
+      a.title = dados.title.trim();
+      a.subtitle = (dados.subtitle||'').trim();
+      a.sources = (dados.sources||'').trim();
+      a.intro = (dados.intro||'').trim();
+      a.roteiro = (dados.roteiro||'').trim();
+      a.sections = dados.sections.map(s=> s.id ? s : {...s, id: genSectionId()});
+      a.updatedAt = Date.now();
+      editState = null;
+      IA_ESTADO = {intencao:'melhorar', resposta:'', dados:null, erro:null, verCodigo:false};
+      const ok1 = await saveCourseToStorage();
+      if(!ok1){ await loadCourseFromStorage(); }
+      render();
+      if(ok1) alert('Aula atualizada. Revise com calma — a IA monta a estrutura, mas a autoria e a conferência das fontes são suas.');
+      return;
+    }
+    // intencao "nova"
+    const maxNum = Math.max(0, ...COURSE.flatMap(bb=>bb.aulas.map(aa=>aa.num)));
+    const alvo = COURSE.find(x=>x.num===state.block) || COURSE[0];
+    if(!alvo){ alert('Crie um bloco antes de adicionar uma aula.'); return; }
+    const novaAula = {
+      num: maxNum + 1,
+      title: dados.title.trim(),
+      subtitle: (dados.subtitle||'').trim(),
+      sources: (dados.sources||'').trim(),
+      intro: (dados.intro||'').trim(),
+      roteiro: (dados.roteiro||'').trim(),
+      hidden: true, // nasce oculta: voce revisa antes de o aluno ver
+      sections: dados.sections.map(s=>({...s, id: genSectionId()})),
+      isPractice: dados.sections.some(s=>s.type==='activity'),
+      contentModel: 'v2',
+      atividadeEnabled: true,
+      updatedAt: Date.now(),
+    };
+    alvo.aulas.push(novaAula);
+    alvo.aulas.sort((x,y)=>x.num-y.num);
+    state.block = alvo.num; state.aula = novaAula.num;
+    editState = null;
+    IA_ESTADO = {intencao:'melhorar', resposta:'', dados:null, erro:null, verCodigo:false};
+    const ok2 = await saveCourseToStorage();
+    if(!ok2){ await loadCourseFromStorage(); }
+    render();
+    if(ok2) alert(`Aula ${novaAula.num} criada e OCULTA dos alunos. Revise o conteúdo e publique quando quiser.`);
+    return;
+  }
+
   if(action==='save-config'){
     if(!isMaster){ alert('Só o administrador altera as configurações do sistema.'); return; }
     const min = parseInt(document.getElementById('cfg-inactivity-minutes').value, 10);
@@ -8829,6 +9089,102 @@ try{
   }
 }catch(e){ /* sem observador, os hints so ficam como eram antes */ }
 
+// ===================== PAINEL UNICO DE IA (v3.3.0) =====================
+// Ate a v3.2.0 havia TRES fluxos de IA, em tres telas, com tres nomes para a
+// mesma ideia: "Importar aula gerada" (criar aula), "Aplicar programacao"
+// (ajustar aula) e "Exportar curso completo" (curso inteiro). O professor
+// tinha que lembrar qual botao servia para que, e o mesmo "Copiar prompt de
+// formatacao" aparecia em dois lugares sem deixar claro se era o mesmo.
+//
+// Agora e um so: voce diz em portugues o que quer, o sistema monta o pacote
+// certo (pedido + contexto + formato) num unico "copiar", e antes de aplicar
+// mostra em portugues o que vai mudar. O JSON continua acessivel, mas atras
+// de um link — deixou de ser a interface principal.
+let IA_ESTADO = {intencao:'melhorar', resposta:'', dados:null, erro:null, verCodigo:false};
+
+const IA_INTENCOES = {
+  nova:     {rotulo:'Criar uma aula nova',   icone:'note_add', dica:'A IA monta a aula do zero a partir do tema que você descrever. Nada do que já existe é alterado.'},
+  melhorar: {rotulo:'Melhorar a aula atual', icone:'auto_fix_high', dica:'Envia a aula aberta junto com seu pedido. Imagens e encaixes são preservados automaticamente.'},
+  curso:    {rotulo:'Trabalhar o curso todo',icone:'library_books', dica:'Manda todas as aulas de uma vez, para revisões amplas ou para a IA sugerir o que falta no semestre.'},
+};
+
+// Reaproveita a validacao que ja existia (que e boa e detalhada), mas captura
+// a mensagem em vez de deixar o alert interromper — assim o erro aparece
+// dentro da tela, ao lado de onde o professor colou.
+function analisarAulaJson(raw){
+  const alertOriginal = window.alert;
+  let msg = null;
+  window.alert = (m)=>{ msg = m; };
+  let dados = null;
+  try{ dados = parseAulaJsonOrAlert(raw); }
+  catch(e){ msg = (e && e.message) ? e.message : String(e); }
+  finally{ window.alert = alertOriginal; }
+  return {dados, erro: dados ? null : (msg || 'Não consegui ler a resposta.')};
+}
+
+// Monta o pacote inteiro que vai para a IA: o formato, o contexto certo para
+// a intencao escolhida e o pedido do professor. Um copiar so.
+function iaMontarPacote(pedido){
+  const b = COURSE.find(x=>x.num===state.block);
+  const a = b ? b.aulas.find(x=>x.num===state.aula) : null;
+  let contexto = '';
+  if(IA_ESTADO.intencao === 'melhorar' && a){
+    contexto = `\n\n===== AULA ATUAL (ajuste ESTA aula e devolva o JSON completo dela) =====\n` +
+      JSON.stringify({title:a.title, subtitle:a.subtitle||'', sources:a.sources||'',
+                      intro:a.intro||'', roteiro:a.roteiro||'', sections:a.sections||[]}, null, 2) +
+      `\n\nIMPORTANTE: preserve os campos "id" e "storageKey" de cada seção exatamente como estão — são eles que mantêm as imagens e os encaixes funcionando.`;
+  } else if(IA_ESTADO.intencao === 'curso'){
+    const resumo = COURSE.map(bl=>({
+      bloco: blocoEhAbertura(bl) ? (bl.title||'Abertura') : `Bloco ${toRoman(bl.num)} — ${bl.title}`,
+      aulas: (bl.aulas||[]).map(au=>({num:au.num, titulo:au.title, subtitulo:au.subtitle||'',
+                                      secoes:(au.sections||[]).map(s=>s.type)})),
+    }));
+    contexto = `\n\n===== ESTRUTURA ATUAL DO CURSO (para contexto) =====\n` + JSON.stringify(resumo, null, 2);
+  }
+  const cabecalho = IA_ESTADO.intencao === 'nova'
+    ? '===== O QUE EU QUERO =====\nCrie UMA aula nova, seguindo o formato descrito acima.\n\nPedido:\n'
+    : IA_ESTADO.intencao === 'melhorar'
+      ? '===== O QUE EU QUERO =====\nAjuste a aula enviada abaixo e devolva o JSON completo dela.\n\nPedido:\n'
+      : '===== O QUE EU QUERO =====\nAnalise a estrutura do curso abaixo.\n\nPedido:\n';
+  return AI_FORMAT_PROMPT + '\n\n' + cabecalho + (pedido || '(descreva aqui o que você quer)') + contexto;
+}
+
+// Traduz para portugues o que a resposta da IA vai provocar. E o passo que
+// faltava: antes, aplicar era um salto no escuro.
+function iaResumirMudanca(dados){
+  const b = COURSE.find(x=>x.num===state.block);
+  const a = b ? b.aulas.find(x=>x.num===state.aula) : null;
+  const novas = (dados.sections||[]).length;
+  const linhas = [];
+  if(IA_ESTADO.intencao === 'melhorar' && a){
+    const antes = (a.sections||[]).length;
+    const idsAntes = new Set((a.sections||[]).map(s=>s.id).filter(Boolean));
+    const mantidas = (dados.sections||[]).filter(s=>s.id && idsAntes.has(s.id)).length;
+    const acrescentadas = novas - mantidas;
+    const removidas = Math.max(0, antes - mantidas);
+    linhas.push(`${antes} seç${antes===1?'ão':'ões'} antes → ${novas} depois`);
+    if(acrescentadas > 0) linhas.push(`${acrescentadas} seção(ões) nova(s)`);
+    if(removidas > 0) linhas.push(`${removidas} seção(ões) removida(s)`);
+    if(mantidas > 0) linhas.push(`${mantidas} mantida(s) com o mesmo identificador`);
+    const imgAntes = (a.sections||[]).filter(s=>s.type==='figure').length;
+    const imgDepois = (dados.sections||[]).filter(s=>s.type==='figure').length;
+    if(imgAntes) linhas.push(imgDepois >= imgAntes
+      ? `${imgAntes} imagem(ns) preservada(s)`
+      : `atenção: você tinha ${imgAntes} imagem(ns) e a resposta traz ${imgDepois}`);
+    if(dados.title && a.title && dados.title.trim() !== a.title.trim()) linhas.push(`título passa a ser "${dados.title.trim()}"`);
+    else linhas.push('título mantido');
+  } else {
+    linhas.push(`aula nova com ${novas} seção(ões)`);
+    const tipos = {};
+    (dados.sections||[]).forEach(s=>{ tipos[s.type] = (tipos[s.type]||0)+1; });
+    const desc = Object.entries(tipos).map(([t,n])=>`${n} ${TYPE_LABELS[t]||t}`).join(' · ');
+    if(desc) linhas.push(desc);
+  }
+  const temAtividade = (dados.sections||[]).some(s=>s.type==='atividade');
+  linhas.push(temAtividade ? 'inclui uma atividade respondível' : 'sem atividade respondível');
+  return linhas;
+}
+
 // ===================== REGISTRO DE TELAS (v3.1.0) =====================
 // Fonte UNICA de verdade para nome, icone e nivel de cada tela do sistema.
 //
@@ -8859,6 +9215,7 @@ const TELAS = {
   aulaCode:          {rotulo:'Código da aula',      icone:'code',                 nivel:'aula',    relacionadas:[]},
 
   configScreen:      {rotulo:'Configurações',       icone:'settings',             nivel:'conta',   relacionadas:['usersScreen','turmasScreen']},
+  iaScreen:          {rotulo:'Criar com IA',        icone:'auto_awesome',         nivel:'materia', relacionadas:['orgScreen','aulaCode']},
 };
 
 // ===================== GLOBAL x MATERIA (v3.2.0) =====================
@@ -8902,7 +9259,7 @@ const NIVEL_ROTULO = {conta:'Sua conta', materia:'Matéria', aula:'Aula', secao:
 // especifico) ficam de fora — um atalho que abre vazio confunde mais do que ajuda.
 function telaAbrivelDireto(kind){
   return ['usersScreen','professorsScreen','turmasScreen','classStats','myNotes','configScreen',
-          'orgScreen','atividadesCentral','atividadesBoletim','diarioFrequencia','diarioAula'].includes(kind);
+          'orgScreen','atividadesCentral','atividadesBoletim','diarioFrequencia','diarioAula','iaScreen'].includes(kind);
 }
 
 // Monta o editState de cada tela do mesmo jeito que o botao original ja fazia,
@@ -8931,6 +9288,8 @@ function irParaTela(kind){
       editState = {kind:'myNotes'}; break;
     case 'configScreen':
       editState = {kind:'configScreen'}; break;
+    case 'iaScreen':
+      editState = {kind:'iaScreen'}; break;
     case 'orgScreen':
       editState = {kind:'orgScreen'}; break;
     case 'atividadesCentral':
@@ -9715,7 +10074,6 @@ function openProfileModal(){
   preview.style.visibility = p.photoUrl ? 'visible' : 'hidden';
   document.getElementById('profile-error').classList.add('hidden');
   document.getElementById('profile-modal-backdrop').classList.remove('hidden');
-  document.getElementById('profile-header-color').value = (currentUserDoc.profile && currentUserDoc.profile.headerColor) || '#3D3E77';
   renderPaletteGrid(paletaDoUsuario(currentUserDoc));
 }
 function closeProfileModal(){
@@ -9749,7 +10107,6 @@ document.getElementById('profile-save-btn').addEventListener('click', async ()=>
     phone: document.getElementById('profile-phone').value.trim(),
     address: document.getElementById('profile-address').value.trim(),
     photoUrl: preview.dataset.newPhoto || (currentUserDoc.profile && currentUserDoc.profile.photoUrl) || '',
-    headerColor: document.getElementById('profile-header-color').value,
     palette: paletaSelecionadaNoGrid(),
   };
   try{
