@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.0.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.1.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -185,7 +185,7 @@
   ==================================================================== */
   .btn-primary, .btn-secondary, .btn-tiny,
   .add-block-btn, .organize-sidebar-btn, .add-aula-btn,
-  .add-standalone-aula-btn, .picker-gestao-btn{
+  .picker-gestao-btn{
     font-family:inherit;
     font-size:13px;
     font-weight:600;
@@ -207,13 +207,13 @@
   }
   .btn-primary:hover, .picker-gestao-btn:hover{background:var(--navy-dark);border-color:var(--navy-dark);}
   .btn-secondary, .add-block-btn, .organize-sidebar-btn,
-  .add-aula-btn, .add-standalone-aula-btn{
+  .add-aula-btn{
     background:var(--tint-soft);
     color:var(--navy);
     border-color:var(--hairline);
   }
   .btn-secondary:hover, .add-block-btn:hover, .organize-sidebar-btn:hover,
-  .add-aula-btn:hover, .add-standalone-aula-btn:hover{
+  .add-aula-btn:hover{
     background:var(--tint-medium);
     border-color:var(--hairline-strong);
   }
@@ -238,6 +238,16 @@
      Uso: <span class="tip" data-tip="texto">?</span>
      ou qualquer elemento com class="has-tip" data-tip="texto".
   ================================================================= */
+  html[data-palette="noite"] .activity-card{
+    background:rgba(60,120,70,0.16) !important;
+    border-color:rgba(127,168,130,0.45) !important;
+  }
+  html[data-palette="noite"] .activity-title,
+  html[data-palette="noite"] .activity-head,
+  html[data-palette="noite"] .activity-card div,
+  html[data-palette="noite"] .activity-card p,
+  html[data-palette="noite"] .activity-card li,
+  html[data-palette="noite"] .activity-card strong{color:#CFE8D2 !important;}
   html[data-palette="noite"] .note-box,
   html[data-palette="noite"] .card,
   html[data-palette="noite"] .compare-col,
@@ -633,6 +643,13 @@
   }
   @media(max-width:620px){ .an-opcao-rot{flex:0 0 120px;} }
 
+  .gestao-materia-row{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding-bottom:12px;margin-bottom:14px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  .gestao-materia-row label{margin:0;flex:0 0 auto;}
+  .gestao-materia-row select{max-width:280px;}
   .gestao-sub{
     font-size:10.5px;font-weight:600;color:var(--gold);
     text-transform:uppercase;letter-spacing:1.1px;margin-bottom:10px;
@@ -1113,22 +1130,6 @@
   .add-block-btn:hover{background:var(--navy-dark);}
   body.admin-mode .add-block-btn{display:block !important;}
   .side-nav.collapsed .add-block-btn{display:none !important;}
-  .add-standalone-aula-btn{
-    display:none !important;
-    width:calc(100% - 16px);
-    margin:10px 8px 0 8px;
-    background:var(--gold);
-    color:#fff;
-    border:none;
-    border-radius:8px;
-    padding:9px 8px;
-    font-size:12.5px;
-    font-weight:600;
-    cursor:pointer;
-  }
-  .add-standalone-aula-btn:hover{opacity:0.9;}
-  body.admin-mode .add-standalone-aula-btn{display:block !important;}
-  .side-nav.collapsed .add-standalone-aula-btn{display:none !important;}
   .nav-standalone{
     border:1px dashed rgba(247,156,49,0.5);
     border-radius:8px;
@@ -1231,27 +1232,30 @@
     color:var(--header-muted);
     font-size:12.5px;
   }
-  .user-badge-name{font-weight:600;white-space:nowrap;}
+  .user-badge-name{font-weight:600;white-space:nowrap;color:var(--header-fg);}
   .user-badge-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.7);}
-  .user-badge-avatar-placeholder{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:17px;}
-  .user-badge-timer{color:rgba(255,255,255,0.7);white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .user-badge-avatar-placeholder{width:34px;height:34px;border-radius:50%;background:var(--header-line);display:flex;align-items:center;justify-content:center;font-size:17px;}
+  .user-badge-timer{color:var(--header-muted);white-space:nowrap;font-variant-numeric:tabular-nums;}
   .user-badge-logout{
-    background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:var(--ice);cursor:pointer;font-size:11.5px;font-weight:600;
-    padding:5px 12px;display:flex;align-items:center;justify-content:center;border-radius:14px;white-space:nowrap;
+    background:var(--header-tint);border:0.5px solid var(--header-line);color:var(--header-fg);cursor:pointer;font-size:11.5px;font-weight:600;
+    padding:5px 12px;display:flex;align-items:center;justify-content:center;border-radius:999px;white-space:nowrap;font-family:inherit;
   }
+  .user-badge-logout:hover{background:var(--header-line);}
   .user-badge-logout:hover{background:rgba(255,255,255,0.16);}
   .user-badge-viewas{
-    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-    color:var(--ice);cursor:pointer;font-size:11px;font-weight:600;
-    padding:4px 10px;border-radius:14px;white-space:nowrap;
+    background:var(--header-tint);border:0.5px solid var(--header-line);
+    color:var(--header-fg);cursor:pointer;font-size:11px;font-weight:600;
+    padding:5px 11px;border-radius:999px;white-space:nowrap;font-family:inherit;
   }
+  .user-badge-viewas:hover{background:var(--header-line);}
   .user-badge-viewas:hover{background:rgba(255,255,255,0.2);}
   .user-badge-viewas.active{background:var(--gold);border-color:var(--gold);color:#fff;}
   .user-badge-subject-switch{
-    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-    color:var(--ice);cursor:pointer;font-size:11px;font-weight:600;
-    padding:4px 10px;border-radius:14px;white-space:nowrap;
+    background:var(--header-tint);border:0.5px solid var(--header-line);
+    color:var(--header-fg);cursor:pointer;font-size:11px;font-weight:600;
+    padding:5px 11px;border-radius:999px;white-space:nowrap;font-family:inherit;
   }
+  .user-badge-subject-switch:hover{background:var(--header-line);}
   .user-badge-subject-switch:hover{background:rgba(255,255,255,0.2);}
   .subject-checklist{
     display:flex;flex-direction:column;gap:6px;margin:8px 0 16px 0;
@@ -1260,10 +1264,11 @@
   .subject-check-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;cursor:pointer;}
   .subject-check-row input{width:auto;}
   .user-badge-profile{
-    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-    color:var(--ice);cursor:pointer;font-size:11px;font-weight:600;
-    padding:4px 10px;border-radius:14px;white-space:nowrap;
+    background:var(--header-tint);border:0.5px solid var(--header-line);
+    color:var(--header-fg);cursor:pointer;font-size:11px;font-weight:600;
+    padding:5px 11px;border-radius:999px;white-space:nowrap;font-family:inherit;
   }
+  .user-badge-profile:hover{background:var(--header-line);}
   .user-badge-profile:hover{background:rgba(255,255,255,0.2);}
 
 
@@ -1849,6 +1854,9 @@
   .num-hier, .num-hier ul, .num-hier ol{list-style-type:none !important;counter-reset:nivel;}
   .num-hier li{counter-increment:nivel;position:relative;}
   .num-hier li::before{content:counters(nivel, ".") ". ";font-weight:700;color:var(--navy);}
+  html[data-palette="noite"] .nav-search-row input{
+    background:var(--surface-card);color:var(--charcoal);border-color:var(--hairline);
+  }
   .my-notes-btn{
     margin:6px 12px 2px 12px;padding:8px 10px;font-size:12.5px;font-weight:700;
     background:#FFFDF2;border:1.5px dashed #D9C97A;border-radius:8px;color:#7A6716;
@@ -1862,9 +1870,37 @@
   .my-note-text{margin-top:8px;font-size:13.5px;line-height:1.6;color:var(--charcoal);white-space:pre-wrap;}
   .users-list{margin-top:16px;display:flex;flex-direction:column;gap:8px;}
   .user-row{
-    display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:12px;
-    background:var(--ice-tint);border-radius:10px;padding:12px 14px;
+    display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;
+    background:var(--surface-card);border:0.5px solid var(--hairline);
+    border-radius:var(--radius);padding:10px 13px;
   }
+  .status-pill{
+    display:inline-block;font-size:10.5px;font-weight:600;
+    padding:3px 9px;border-radius:999px;white-space:nowrap;
+    text-transform:uppercase;letter-spacing:.4px;
+  }
+  .status-ok{background:var(--ok-tint);color:var(--ok);}
+  .status-pend{background:var(--warn-tint);color:var(--warn);}
+  .status-prof{background:var(--tint-medium);color:var(--navy);}
+  .status-master{background:var(--tint-strong);color:var(--navy);}
+  /* Acoes de linha: discretas por padrao, ganham cor so no hover. Numa lista
+     de 40 alunos, 80 botoes coloridos competem com o que importa (os nomes). */
+  .row-acoes{display:flex;align-items:center;gap:4px;}
+  .row-acao{
+    background:none;border:0.5px solid transparent;
+    color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;
+    padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;
+    display:inline-flex;align-items:center;gap:4px;
+    transition:background-color .12s ease,color .12s ease,border-color .12s ease;
+  }
+  .row-acao .mi{font-size:16px;}
+  .row-acao:hover{background:var(--tint-soft);color:var(--navy);border-color:var(--hairline);}
+  .row-acao-perigo:hover{background:rgba(184,80,66,0.1);color:var(--terracotta);border-color:rgba(184,80,66,0.22);}
+  .row-acao-destaque{color:var(--ok);border-color:rgba(46,125,50,0.25);}
+  .row-acao-destaque:hover{background:var(--ok-tint);color:var(--ok);}
+  .turma-vazia{opacity:.55;font-style:italic;}
+  .subject-owner-tag .mi{font-size:14px;vertical-align:-2px;margin-right:3px;}
+  .owner-outro{background:var(--tint-soft);color:var(--muted);font-weight:600;}
   .user-row-info{display:flex;flex-direction:column;}
   .user-row-info strong{color:var(--navy);font-size:13.5px;}
   .user-row-info span{font-size:12px;color:var(--muted);}
@@ -2730,14 +2766,13 @@
     <button class="btn-tiny" id="restore-backup-btn" title="Restaura um arquivo de backup salvo antes">⬆ Restaurar backup</button>
     <input type="file" id="restore-backup-input" accept=".json" style="display:none;">
     <button class="btn-tiny" id="switch-subject-btn" title="Trocar para outra matéria, ou criar uma nova">🏠 Trocar de matéria</button>
-    <button class="btn-tiny" id="admin-users-btn" data-action="ir-para-tela" data-tela="usersScreen" title="Alunos, turmas, professores e estatísticas">👤 Alunos</button>
-    <button class="btn-tiny" id="atividades-central-btn" data-action="ir-para-tela" data-tela="atividadesCentral" title="Ver e corrigir todas as atividades do curso, de todas as aulas">📋 Central de Atividades</button>
-    <button class="btn-tiny" id="bar-organize-btn" data-action="ir-para-tela" data-tela="orgScreen" title="Organizar curso: blocos, aulas, numeração e visibilidade">🗂 Organizar curso</button>
-    <button class="btn-tiny" id="bar-diario-btn" data-action="ir-para-tela" data-tela="diarioAula" title="Diário de classe: chamada, conteúdo dado e observações">📒 Diário de classe</button>
-    <button class="btn-tiny" data-action="ir-para-tela" data-tela="atividadesBoletim" title="Boletim: notas e entregas no prazo da turma">📊 Boletim</button>
-    <button class="btn-tiny" data-action="ir-para-tela" data-tela="diarioFrequencia" title="Frequência consolidada de todas as aulas">✅ Frequência</button>
-    <button class="btn-tiny" data-action="ir-para-tela" data-tela="iaScreen" title="Criar ou melhorar aulas com ajuda de IA">✨ Criar com IA</button>
-    <button class="btn-tiny" data-action="ir-para-tela" data-tela="avaliacao" title="O que a turma achou das aulas e da plataforma">💬 Avaliação da turma</button>
+    <button class="btn-tiny" data-action="gestao-ir" data-grupo="materias" data-aba="organizar" title="Organizar curso: blocos, aulas, numeração e visibilidade">🗂 Organizar curso</button>
+    <button class="btn-tiny" data-action="gestao-ir" data-grupo="materias" data-aba="ia" title="Criar ou melhorar aulas com ajuda de IA">✨ Criar com IA</button>
+    <button class="btn-tiny" data-action="gestao-ir" data-grupo="materias" data-aba="atividades" title="Ver e corrigir todas as atividades do curso">📋 Atividades</button>
+    <button class="btn-tiny" id="bar-diario-btn" data-action="ir-para-tela" data-tela="diarioAula" title="Diário desta aula: chamada, conteúdo dado e observações">📒 Diário da aula</button>
+    <button class="btn-tiny" data-action="gestao-ir" data-grupo="alunos" data-aba="boletim" title="Boletim: notas e entregas no prazo">📊 Boletim</button>
+    <button class="btn-tiny" data-action="gestao-ir" data-grupo="alunos" data-aba="frequencia" title="Frequência consolidada de todas as aulas">✅ Frequência</button>
+    <button class="btn-tiny" data-action="gestao-ir" data-grupo="alunos" data-aba="ativos" title="Alunos, turmas, professores e configurações">👤 Gestão</button>
     <button class="btn-tiny" id="grid-mode-toggle-btn" title="Mostrar/esconder as bordas pontilhadas e a alça de arrastar seções">🔲 Grade: ligada</button>
   </span>
 </div>
@@ -2857,7 +2892,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.0.0</div>
+<div class="version-tag hidden" id="version-tag">v4.1.0</div>
 
 
 <script>
@@ -3200,7 +3235,7 @@ function goToAula(aulaNum){
   state.block = bn;
   state.aula = aulaNum;
   render();
-  document.getElementById('content').scrollIntoView({behavior:'smooth'});
+  focarConteudo();
 }
 function updateNavFabs(){
   const prevBtn = document.getElementById('prev-aula-btn');
@@ -3395,7 +3430,7 @@ document.addEventListener('click', (e)=>{
   renderSearchResults('');
   editState = null;
   render();
-  document.getElementById('content').scrollIntoView({behavior:'smooth'});
+  focarConteudo();
 });
 
 function renderSideNav(){
@@ -3439,7 +3474,7 @@ function renderSideNav(){
         <button class="add-aula-btn" data-add-aula-block="${b.num}">+ Adicionar aula</button>
       </div>
     </div>`;
-  }).join('') + (existeBlocoAbertura() ? '' : `<button class="add-standalone-aula-btn" id="add-standalone-aula-btn">★ + Adicionar aula de abertura (antes do Bloco I)</button>`) + `<button class="add-block-btn" id="add-block-btn">+ Adicionar bloco</button><button class="organize-sidebar-btn" id="organize-btn">🗂 Organizar curso</button>`;
+  }).join('') + `<button class="add-block-btn" id="add-block-btn">+ Adicionar bloco</button><button class="organize-sidebar-btn" id="organize-btn">🗂 Organizar curso</button>`;
 
   el.querySelectorAll('.nav-block-header').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -3459,7 +3494,7 @@ function renderSideNav(){
       state.aula = parseInt(btn.dataset.aula,10);
       render();
       closeMobileNav();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+      focarConteudo();
     });
   });
   el.querySelectorAll('.nav-block-visible-cb').forEach(cb=>{
@@ -3495,7 +3530,7 @@ function renderSideNav(){
       editState = {kind:'aulaHeader'};
       render();
       closeMobileNav();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+      focarConteudo();
     });
   });
   el.querySelectorAll('.block-edit-btn').forEach(btn=>{
@@ -3504,7 +3539,7 @@ function renderSideNav(){
       if(!isAdmin) return;
       editState = {kind:'orgScreen'};
       render();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+      focarConteudo();
     });
   });
   el.querySelectorAll('.add-aula-btn').forEach(btn=>{
@@ -3515,7 +3550,7 @@ function renderSideNav(){
       editState = {kind:'newAula', blockNum: bn, suggestedNum: maxNum+1};
       state.block = bn;
       render();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+      focarConteudo();
     });
   });
   el.querySelectorAll('.nav-standalone-empty').forEach(btn=>{
@@ -3525,26 +3560,9 @@ function renderSideNav(){
       editState = {kind:'newAula', blockNum: bn, suggestedNum: 0};
       state.block = bn;
       render();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+      focarConteudo();
     });
   });
-  const addStandaloneAulaBtn = document.getElementById('add-standalone-aula-btn');
-  if(addStandaloneAulaBtn){
-    addStandaloneAulaBtn.addEventListener('click', async ()=>{
-      if(!isAdmin) return;
-      if(existeBlocoAbertura()){ render(); return; }
-      // Cria só o contêiner técnico (bloco isIntro), na hora — o professor nunca
-      // vê "bloco": o próximo passo já é o formulário normal de criar aula.
-      const blocoAbertura = {num:0, title:'Abertura', isIntro:true, aulaRange:'', sources:'', aulas:[]};
-      COURSE.push(blocoAbertura);
-      COURSE.sort((x,y)=>x.num-y.num);
-      await saveCourseToStorage();
-      editState = {kind:'newAula', blockNum: 0, suggestedNum: 0};
-      state.block = 0;
-      render();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
-    });
-  }
   const addBlockBtn = document.getElementById('add-block-btn');
   if(addBlockBtn){
     addBlockBtn.addEventListener('click', ()=>{
@@ -3552,7 +3570,7 @@ function renderSideNav(){
       const maxBlockNum = Math.max(0, ...COURSE.map(bb=>bb.num).filter(n=>n>0));
       editState = {kind:'newBlock', suggestedNum: maxBlockNum+1};
       render();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+      focarConteudo();
     });
   }
   const organizeBtn = document.getElementById('organize-btn');
@@ -3561,7 +3579,7 @@ function renderSideNav(){
       if(!isAdmin) return;
       editState = {kind:'orgScreen'};
       render();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+      focarConteudo();
     });
   }
 }
@@ -5191,7 +5209,7 @@ function renderAulaPicker(){
       state.aula = parseInt(btn.dataset.aula,10);
       closeAulaPicker();
       render();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+      focarConteudo();
     });
   });
 }
@@ -6506,7 +6524,7 @@ function userDetailForm(u){
       <option value="">— Sem turma —</option>
       ${(allTurmas||[]).map(t=>`<option value="${t.id}" ${u.turmaId===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}
     </select>
-    <div class="hint">A troca salva na hora, sem precisar de botão. Para criar/renomear turmas, use a aba "🎓 Turmas" do painel.</div>
+    <div class="hint">A troca salva na hora, sem precisar de botão. Para criar ou renomear turmas, vá em Gestão &rsaquo; Turmas.</div>
     <label>Anotações do professor <span style="text-transform:none;font-weight:400;color:var(--muted);">(o aluno nunca vê isso)</span></label>
     <textarea id="ud-admin-notes" style="min-height:90px;">${esc((u.adminNotes&&u.adminNotes.notes)||'')}</textarea>
 
@@ -6544,60 +6562,128 @@ let usersViewMode = 'active'; // 'active' ou 'archived'
 // Linha de baixo = ABA dentro daquele grupo.
 // Antes as duas coisas dividiam a mesma linha, o que fazia "Arquivados"
 // trocar o filtro de ALUNOS mesmo quando voce estava em Professores.
+// ===================== GESTAO: 5 GRUPOS, ABAS PROPRIAS (v4.1.0) =====================
+// Cada grupo tem AS SUAS abas, nao uma lista unica repetida em todos. Antes,
+// "Boletim" e "Frequencia" moravam na barra da materia junto com "Organizar
+// curso" e "Criar com IA", sem nenhuma regra dizendo por que — agora Boletim e
+// Frequencia sao assunto de ALUNO (desempenho e presenca de gente), e
+// Organizar/IA/Atividades sao assunto de MATERIA (o curso em si).
+//
+// Varias abas dependem de uma materia especifica. Como a gestao abre sem
+// materia nenhuma, elas mostram um seletor no topo — ja preenchido com a
+// materia aberta, se voce veio de dentro de uma.
 const GESTAO_GRUPOS = {
-  alunos:      {rotulo:'Alunos',      icone:'group'},
-  turmas:      {rotulo:'Turmas',      icone:'groups'},
-  professores: {rotulo:'Professores', icone:'school',  soMaster:true},
-  materias:    {rotulo:'Matérias',    icone:'folder'},
+  alunos:      {rotulo:'Alunos',        icone:'group',           abas:{
+                  ativos:'Ativos', arquivados:'Arquivados',
+                  boletim:'Boletim', frequencia:'Frequência', estatisticas:'Estatísticas'}},
+  turmas:      {rotulo:'Turmas',        icone:'groups',          abas:{
+                  ativos:'Turmas'}},
+  professores: {rotulo:'Professores',   icone:'school',          soMaster:true, abas:{
+                  ativos:'Ativos', estatisticas:'Estatísticas'}},
+  materias:    {rotulo:'Matérias',      icone:'folder',          abas:{
+                  ativos:'Ativas', arquivados:'Arquivadas',
+                  organizar:'Organizar curso', ia:'Criar com IA',
+                  atividades:'Atividades', avaliacao:'Avaliação',
+                  estatisticas:'Estatísticas'}},
+  config:      {rotulo:'Configurações', icone:'settings',        abas:{
+                  geral:'Geral'}},
 };
-const GESTAO_ABAS = {
-  ativos:       'Ativos',
-  arquivados:   'Arquivados',
-  estatisticas: 'Estatísticas',
-};
+
+// Abas que so fazem sentido com UMA materia escolhida.
+const ABAS_COM_MATERIA = ['boletim','frequencia','organizar','ia','atividades','avaliacao'];
+
+function gestaoAbaPadrao(grupo){
+  const g = GESTAO_GRUPOS[grupo];
+  return g ? Object.keys(g.abas)[0] : 'ativos';
+}
 
 function gestaoNavHtml(grupo, aba){
   const grupos = Object.entries(GESTAO_GRUPOS)
     .filter(([,g]) => !g.soMaster || isMaster)
     .map(([id,g]) => `<button type="button" class="gestao-grupo ${id===grupo?'is-ativo':''}" data-action="gestao-grupo" data-grupo="${id}"><span class="mi">${g.icone}</span>${esc(g.rotulo)}</button>`)
     .join('');
-  const abas = Object.entries(GESTAO_ABAS)
+  const abasDoGrupo = (GESTAO_GRUPOS[grupo]||{}).abas || {};
+  const abas = Object.entries(abasDoGrupo)
     .map(([id,rot]) => `<button type="button" class="gestao-aba ${id===aba?'is-ativa':''}" data-action="gestao-aba" data-aba="${id}">${esc(rot)}</button>`)
     .join('');
   return `<div class="gestao-grupos">${grupos}</div><div class="gestao-abas">${abas}</div>`;
 }
 
-// Uma tela so, com grupo e aba — em vez de quatro telas com barras diferentes
-// (que era o motivo de os botoes do cabecalho mudarem conforme voce navegava).
+// Seletor de materia das abas que precisam de uma.
+function gestaoSeletorMateriaHtml(){
+  const minhas = (allSubjects||[]).filter(s=> !s.archived && (isMaster || (s.ownerUid && currentUser && s.ownerUid===currentUser.uid)));
+  if(!minhas.length) return '';
+  const atual = activeSubjectId || minhas[0].id;
+  return `<div class="gestao-materia-row">
+    <label>Matéria</label>
+    <select id="gestao-materia-select">${minhas.map(s=>`<option value="${s.id}" ${s.id===atual?'selected':''}>${esc(s.name)}</option>`).join('')}</select>
+  </div>`;
+}
+
 function gestaoScreenForm(){
   const grupo = (editState && editState.grupo) || 'alunos';
-  const aba = (editState && editState.aba) || 'ativos';
+  const abasDoGrupo = (GESTAO_GRUPOS[grupo]||{}).abas || {};
+  let aba = (editState && editState.aba) || gestaoAbaPadrao(grupo);
+  if(!abasDoGrupo[aba]) aba = gestaoAbaPadrao(grupo);   // aba que nao existe neste grupo
+  if(editState) editState.aba = aba;
+
+  const precisaMateria = ABAS_COM_MATERIA.includes(aba);
+  const semMateria = precisaMateria && !activeSubjectId;
   let corpo = '';
 
-  if(aba === 'estatisticas'){
-    if(grupo === 'alunos'){
+  if(precisaMateria && semMateria){
+    corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}
+      <p class="painel-vazio">Escolha uma matéria acima para ver esta aba.</p></div>`;
+    return gestaoNavHtml(grupo, aba) + corpo;
+  }
+
+  // ---------- ALUNOS ----------
+  if(grupo === 'alunos'){
+    if(aba === 'boletim'){
+      corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + atividadesBoletimForm();
+    } else if(aba === 'frequencia'){
+      corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + diarioFrequenciaForm();
+    } else if(aba === 'estatisticas'){
       corpo = `<div class="editor-form">
         <div class="gestao-sub">Quem procurar esta semana</div>
         ${riscoPorAlunoHtml()}
         <div class="gestao-sub" style="margin-top:24px;">Visão geral da turma</div>
         ${classStatsHtml()}
       </div>`;
-    } else if(grupo === 'materias'){
-      corpo = `<div class="editor-form">${saudeMateriaHtml()}</div>`;
-    } else if(grupo === 'professores'){
-      corpo = `<div class="editor-form">${espelhoProfessorHtml()}</div>`;
     } else {
-      corpo = `<div class="editor-form"><p class="painel-vazio">Sem estatísticas próprias para turmas — elas aparecem dentro de Alunos, filtradas por turma.</p></div>`;
+      usersViewMode = (aba === 'arquivados') ? 'archived' : 'active';
+      corpo = usersScreenForm();
     }
-  } else if(grupo === 'alunos'){
-    usersViewMode = (aba === 'arquivados') ? 'archived' : 'active';
-    corpo = usersScreenForm();
-  } else if(grupo === 'turmas'){
+  }
+  // ---------- TURMAS ----------
+  else if(grupo === 'turmas'){
     corpo = turmasScreenForm();
-  } else if(grupo === 'professores'){
-    corpo = professorsScreenForm();
-  } else if(grupo === 'materias'){
-    corpo = materiasScreenForm(aba);
+  }
+  // ---------- PROFESSORES ----------
+  else if(grupo === 'professores'){
+    corpo = (aba === 'estatisticas')
+      ? `<div class="editor-form">${espelhoProfessorHtml()}</div>`
+      : professorsScreenForm();
+  }
+  // ---------- MATERIAS ----------
+  else if(grupo === 'materias'){
+    if(aba === 'organizar'){
+      corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + orgScreenForm();
+    } else if(aba === 'ia'){
+      corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + iaScreenForm();
+    } else if(aba === 'atividades'){
+      corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + atividadesCentralForm();
+    } else if(aba === 'avaliacao'){
+      corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + avaliacaoResultadoForm();
+    } else if(aba === 'estatisticas'){
+      corpo = `<div class="editor-form">${saudeMateriaHtml()}</div>`;
+    } else {
+      corpo = materiasScreenForm(aba === 'arquivados' ? 'arquivados' : 'ativos');
+    }
+  }
+  // ---------- CONFIGURACOES ----------
+  else if(grupo === 'config'){
+    corpo = configScreenForm();
   }
   return gestaoNavHtml(grupo, aba) + corpo;
 }
@@ -6607,10 +6693,17 @@ function gestaoScreenForm(){
 function materiasScreenForm(aba){
   const minhas = (allSubjects||[]).filter(s=> isMaster || (s.ownerUid && currentUser && s.ownerUid===currentUser.uid));
   const lista = minhas.filter(s => aba === 'arquivados' ? s.archived : !s.archived);
+  const nomeDoDono = (s)=>{
+    if(s.ownerName) return s.ownerName;
+    const u = (cachedUsersList||[]).find(x=>x.id===s.ownerUid);
+    return (u && (u.name || u.email)) || 'Professor';
+  };
   const donoTag = (s)=>{
     if(!isMaster) return '';
     const minha = !s.ownerUid || (currentUser && s.ownerUid===currentUser.uid);
-    return `<span class="subject-owner-tag ${minha?'owner-master':''}">${minha ? 'Sua' : esc(s.ownerName || 'Professor')}</span>`;
+    return minha
+      ? `<span class="subject-owner-tag owner-master">Sua</span>`
+      : `<span class="subject-owner-tag owner-outro"><span class="mi">person</span>${esc(nomeDoDono(s))}</span>`;
   };
   const rows = lista.map(s=>`
     <div class="turma-row">
@@ -6644,18 +6737,27 @@ function usersScreenForm(){
     }
     return true;
   });
-  const turmaOptions = (sel)=>`<option value="">— Sem turma —</option>` + (allTurmas||[]).map(t=>`<option value="${t.id}" ${sel===t.id?'selected':''}>${esc(t.name)}</option>`).join('');
   const rows = visibleUsers.map(u => `
     <div class="user-row">
-      <div class="user-row-info">${!roleIsStaff(u.role) ? `<button class="user-row-name-btn" data-action="open-user-detail" data-uid="${u.id}"><strong>${esc(u.name||'(sem nome)')}</strong></button>` : `<strong>${esc(u.name||'(sem nome)')}</strong>`}<span>${esc(u.email||'')}</span>${(!roleIsStaff(u.role) && usersViewMode==='active') ? `<select class="turma-assign-select" data-uid="${u.id}" title="Turma deste aluno — a troca salva na hora">${turmaOptions(u.turmaId)}</select>` : (u.turmaId && turmaNameById(u.turmaId) ? `<span class="turma-badge">🎓 ${esc(turmaNameById(u.turmaId))}</span>` : '')}</div>
-      <div class="user-row-status">${roleIsMaster(u.role) ? '👑 Master' : (u.role==='professor' ? '🧑‍🏫 Professor' : (u.approved ? '✅ Aprovado' : '⏳ Pendente de aprovação'))}</div>
+      <div class="user-row-info">${!roleIsStaff(u.role) ? `<button class="user-row-name-btn" data-action="open-user-detail" data-uid="${u.id}"><strong>${esc(u.name||'(sem nome)')}</strong></button>` : `<strong>${esc(u.name||'(sem nome)')}</strong>`}<span>${esc(u.email||'')}</span>${(u.turmaId && turmaNameById(u.turmaId)) ? `<span class="turma-badge">${esc(turmaNameById(u.turmaId))}</span>` : (!roleIsStaff(u.role) ? '<span class="turma-badge turma-vazia">sem turma</span>' : '')}</div>
+      <div class="user-row-status">${roleIsMaster(u.role)
+        ? '<span class="status-pill status-master">Master</span>'
+        : (u.role==='professor'
+          ? '<span class="status-pill status-prof">Professor</span>'
+          : (u.approved
+            ? '<span class="status-pill status-ok" title="Acesso liberado">Aprovado</span>'
+            : '<span class="status-pill status-pend" title="Aguardando sua aprovação">Pendente</span>'))}</div>
       ${!roleIsMaster(u.role) ? (usersViewMode==='active' ? `
-        <button class="btn-tiny btn-approve" data-action="toggle-approve-user" data-uid="${u.id}">${u.approved ? 'Revogar acesso' : 'Aprovar acesso'}</button>
-        <button class="btn-tiny" style="background:#6b6b6b;" data-action="archive-user-row" data-uid="${u.id}">📦 Arquivar</button>
+        <div class="row-acoes">
+          <button class="row-acao ${u.approved?'':'row-acao-destaque'}" data-action="toggle-approve-user" data-uid="${u.id}" title="${u.approved ? 'Revogar o acesso deste aluno ao conteúdo' : 'Liberar o acesso deste aluno ao conteúdo'}">${u.approved ? 'Revogar' : 'Aprovar'}</button>
+          <button class="row-acao" data-action="archive-user-row" data-uid="${u.id}" title="Arquivar: tira da lista ativa e guarda tudo (perfil, log, anotações)"><span class="mi">inventory_2</span></button>
+        </div>
       ` : `
-        <button class="btn-tiny btn-approve" data-action="unarchive-user-row" data-uid="${u.id}">♻️ Restaurar</button>
-        <button class="btn-tiny" style="background:var(--terracotta);" data-action="delete-user-row" data-uid="${u.id}">🗑️ Excluir definitivamente</button>
-      `) : '<span></span><span></span>'}
+        <div class="row-acoes">
+          <button class="row-acao" data-action="unarchive-user-row" data-uid="${u.id}" title="Restaurar para a lista de ativos">Restaurar</button>
+          <button class="row-acao row-acao-perigo" data-action="delete-user-row" data-uid="${u.id}" title="Excluir definitivamente — sem volta"><span class="mi">delete</span></button>
+        </div>
+      `) : '<span></span>'}
     </div>`).join('') || `<p style="color:var(--muted);font-size:13px;">Nenhum aluno ${usersViewMode==='archived'?'arquivado':'ativo'} no momento.</p>`;
   return `<div class="editor-form users-screen">
     ${usersViewMode==='active' ? `<div class="turma-filter-row">
@@ -6740,7 +6842,10 @@ function turmasScreenForm(){
 }
 
 function orgScreenForm(){
-  const blockOptsFor = (curBn)=>COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===curBn?'selected':''}>${blocoRotulo(bb)}</option>`).join('');
+  // A opcao "antes do Bloco I" so aparece quando ainda NAO existe abertura —
+  // se ja existe, ela ja consta na lista normal de blocos logo acima.
+  const blockOptsFor = (curBn)=>COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===curBn?'selected':''}>${blocoRotulo(bb)}</option>`).join('')
+    + (existeBlocoAbertura() ? '' : `<option value="__abertura__">★ Antes do Bloco I (aula de abertura)</option>`);
   const blockRows = COURSE.map(b=>`
     <div class="org-block-card" data-org-block="${b.num}">
       <div class="org-block-header-row">
@@ -6772,7 +6877,7 @@ function orgScreenForm(){
     <input type="text" id="org-pontos-atividades" value="${String(pontosDaMateria()).replace('.',',')}" style="max-width:120px;">
     <label>Descrição do cabeçalho (linha pequena abaixo do título)</label>
     <input type="text" spellcheck="true" lang="pt-BR" id="org-subject-description" value="${escAttr(currentSubject.description||'')}" placeholder="Ex.: Administração de Empresas · 8º Semestre · Faculdade da Fundação Educacional de Araçatuba">
-    <div class="hint">Mude números, títulos, blocos e visibilidade à vontade. Nada é salvo até você clicar em "Salvar todas as alterações" no final. Excluir aqui também é definitivo (use um backup se quiser voltar atrás).</div>
+    <div class="hint">Para colocar uma aula ANTES do Bloco I (aula de apresentação da disciplina), escolha "★ Antes do Bloco I" no seletor de bloco daquela aula. Mude números, títulos, blocos e visibilidade à vontade. Nada é salvo até você clicar em "Salvar todas as alterações" no final. Excluir aqui também é definitivo (use um backup se quiser voltar atrás).</div>
     <div class="org-blocks-list">${blockRows}</div>
     <label style="margin-top:22px;">Exportar o curso</label>
     <div class="hint">Baixa um arquivo .txt com o código (JSON) de TODAS as aulas desta matéria — pronto para colar numa IA junto com o prompt de formatação e pedir ajustes, revisões ou aulas novas com o contexto do curso inteiro. As imagens não vão no arquivo (ficam referenciadas pelos campos storageKey, que a IA deve preservar).</div>
@@ -7030,18 +7135,39 @@ function render(){
   }
   if(editState && editState.kind==='gestao'){
     content.innerHTML = comCabecalho('gestao', gestaoScreenForm());
-    // A aba de estatisticas cruza diario com entregas — busca sob demanda,
-    // so quando ela esta aberta, para nao pesar as outras abas.
-    if(editState.aba === 'estatisticas'){
-      if(DIARIO_TODOS===null){
-        fetchDiarioCompleto().then(l=>{ DIARIO_TODOS = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ DIARIO_TODOS = []; });
-      }
+    // Cada aba busca so o que ela usa — carregar tudo sempre deixaria as
+    // abas simples (listas) lentas sem motivo.
+    const abaAtual = editState.aba;
+    if(abaAtual === 'boletim' || abaAtual === 'estatisticas'){
       if(ATV_BOLETIM_DATA===null){
         fetchAllActivityResponses().then(l=>{ ATV_BOLETIM_DATA = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ ATV_BOLETIM_DATA = []; });
       }
       if(ATV_BOLETIM_SCHEDULES===null){
         fetchAllActivitySchedules().then(l=>{ ATV_BOLETIM_SCHEDULES = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ ATV_BOLETIM_SCHEDULES = []; });
       }
+      if(editState.turmaId===null && allTurmas && allTurmas.length){ editState.turmaId = allTurmas[0].id; }
+    }
+    if(abaAtual === 'frequencia' || abaAtual === 'estatisticas'){
+      if(DIARIO_TODOS===null){
+        fetchDiarioCompleto().then(l=>{ DIARIO_TODOS = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ DIARIO_TODOS = []; });
+      }
+    }
+    if(abaAtual === 'avaliacao' && AVAL_RESPOSTAS===null){
+      fetchAvaliacoes().then(l=>{ AVAL_RESPOSTAS = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ AVAL_RESPOSTAS = []; });
+    }
+    // Seletor de materia das abas que dependem de uma.
+    const selMat = document.getElementById('gestao-materia-select');
+    if(selMat){
+      selMat.addEventListener('change', async ()=>{
+        await openSubject(selMat.value);
+        MODO_GLOBAL = true;
+        document.body.classList.add('modo-global');
+        showOnly(['site-header','app-body-wrap','combined-footer','ai-credit','version-tag']);
+        document.getElementById('edit-status-bar').classList.add('hidden');
+        editState = {kind:'gestao', grupo:(editState&&editState.grupo)||'materias', aba:abaAtual};
+        ATV_BOLETIM_DATA = null; ATV_BOLETIM_SCHEDULES = null; DIARIO_TODOS = null; AVAL_RESPOSTAS = null;
+        render();
+      });
     }
     if(!cachedUsersList){
       fetchAllUsers().then(()=>{ if(editState && editState.kind==='gestao') render(); });
@@ -7903,13 +8029,13 @@ document.getElementById('my-notes-btn').addEventListener('click', ()=>{
   if(realIsAdmin) return;
   editState = {kind:'myNotes'};
   render();
-  document.getElementById('content').scrollIntoView({behavior:'smooth'});
+  focarConteudo();
 });
 document.getElementById('avaliar-btn').addEventListener('click', ()=>{
   if(realIsAdmin) return;
   editState = {kind:'avaliacao', turmaId:'all'};
   render();
-  document.getElementById('content').scrollIntoView({behavior:'smooth'});
+  focarConteudo();
 });
 
 document.getElementById('content').addEventListener('click', async (e)=>{
@@ -8123,7 +8249,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     editState = {kind:'atividadesCentral'};
     cachedUsersList = null; ATV_MANAGE_RESPONSES = null; ATV_MANAGE_SCHEDULES = {}; ATV_MANAGE_DRAFTS = null;
     render();
-    document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    focarConteudo();
     return;
   }
   if(action==='open-atividade-central-item'){
@@ -8379,7 +8505,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     editState = {kind:'diarioAula', blockNum: state.block, aulaNum: state.aula, date: hojeISO()};
     DIARIO_REGISTROS = null;
     render();
-    document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    focarConteudo();
     return;
   }
   if(action==='diario-hoje'){
@@ -8673,7 +8799,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='open-my-notes'){
     editState = {kind:'myNotes'};
     render();
-    document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    focarConteudo();
     return;
   }
   if(action==='goto-note-aula'){
@@ -8681,7 +8807,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     state.aula = +btn.dataset.aula;
     editState = null;
     render();
-    document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    focarConteudo();
     return;
   }
   if(action==='open-professors-screen'){
@@ -8935,6 +9061,21 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       newCourse.push(newBlock);
       blockByOldNum[oldNum] = newBlock; // fallback, caso o select não tenha sido mudado
     }
+    // Alguma aula foi marcada como "antes do Bloco I"? Entao o contêiner de
+    // abertura e criado aqui, na hora de salvar. O professor nunca precisou
+    // saber que existe um "bloco de abertura" por tras — ele so disse onde
+    // queria a aula.
+    const querAbertura = [...document.querySelectorAll('.org-aula-block')]
+      .some(sel => sel.value === '__abertura__');
+    let blocoAberturaNovo = null;
+    if(querAbertura && !newCourse.some(b=>b.isIntro)){
+      blocoAberturaNovo = {num:0, title:'Abertura', isIntro:true, hidden:false,
+                           aulaRange:'', sources:'', aulas:[]};
+      newCourse.push(blocoAberturaNovo);
+    } else if(querAbertura){
+      blocoAberturaNovo = newCourse.find(b=>b.isIntro);
+    }
+
     // Mapa de numero-de-bloco-NOVO por numero-de-bloco escolhido no select (que usa os numeros ORIGINAIS como value)
     const newBlockByOldSelectValue = {};
     blockCards.forEach(card=>{
@@ -8952,8 +9093,10 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       const origAula = origBlock ? origBlock.aulas.find(x=>x.num===oldAulaNum) : null;
       const newNum = parsePositiveIntStrict(row.querySelector('.org-aula-num').value);
       const newTitle = row.querySelector('.org-aula-title').value.trim();
-      const selectedOldBlockNum = +row.querySelector('.org-aula-block').value;
-      const targetBlock = newBlockByOldSelectValue[selectedOldBlockNum];
+      const valorSelecionado = row.querySelector('.org-aula-block').value;
+      const targetBlock = (valorSelecionado === '__abertura__')
+        ? blocoAberturaNovo
+        : newBlockByOldSelectValue[+valorSelecionado];
       if(newNum===null || !newTitle){ alert('Toda aula precisa de um número inteiro positivo (sem letras, pontos ou romanos) e um título.'); return; }
       if(seenAulaNums.has(newNum)){ alert(`Número de aula repetido: ${newNum}. Corrija antes de salvar.`); return; }
       if(!targetBlock){ alert('Uma aula está apontando para um bloco que foi excluído. Corrija antes de salvar.'); return; }
@@ -9083,17 +9226,27 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     auth.signOut();
     return;
   }
+  // Atalho que ja abre a gestao num grupo E numa aba especifica.
+  if(action==='gestao-ir'){
+    abrirGestaoGlobal('gestao', btn.dataset.grupo, btn.dataset.aba);
+    return;
+  }
   if(action==='gestao-grupo'){
     const g = btn.dataset.grupo;
-    // Trocar de grupo volta para "Ativos": manter a aba anterior faria voce
-    // cair, por exemplo, em Estatisticas de um grupo que nem tem estatistica.
-    editState = {kind:'gestao', grupo:g, aba:'ativos'};
-    if(g === 'materias' && !allSubjects){ fetchAllSubjects().then(()=>render()).catch(()=>{}); }
+    // Cada grupo tem as suas abas, entao trocar de grupo cai na primeira dele.
+    // Manter a aba anterior levaria a combinacoes que nao existem.
+    editState = {kind:'gestao', grupo:g, aba:gestaoAbaPadrao(g)};
+    if(!allSubjects){ fetchAllSubjects().then(()=>{ if(editState && editState.kind==='gestao') render(); }).catch(()=>{}); }
     render();
     return;
   }
   if(action==='gestao-aba'){
-    editState = {kind:'gestao', grupo:(editState && editState.grupo) || 'alunos', aba:btn.dataset.aba};
+    const g = (editState && editState.grupo) || 'alunos';
+    editState = {kind:'gestao', grupo:g, aba:btn.dataset.aba, turmaId:(editState && editState.turmaId) || null};
+    // Cada aba come com dados diferentes — limpa o cache do que ela vai buscar.
+    if(btn.dataset.aba === 'boletim'){ ATV_BOLETIM_DATA = null; ATV_BOLETIM_SCHEDULES = null; }
+    if(btn.dataset.aba === 'frequencia'){ DIARIO_TODOS = null; }
+    if(btn.dataset.aba === 'avaliacao'){ AVAL_RESPOSTAS = null; }
     render();
     return;
   }
@@ -9210,7 +9363,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
   if(action==='edit-aula-header'){ editState={kind:'aulaHeader'}; render(); return; }
-  if(action==='open-aula-code'){ editState={kind:'aulaCode'}; render(); document.getElementById('content').scrollIntoView({behavior:'smooth'}); return; }
+  if(action==='open-aula-code'){ editState={kind:'aulaCode'}; render(); focarConteudo(); return; }
   if(action==='copy-aula-code'){
     const ta = document.getElementById('ef-aula-code');
     navigator.clipboard.writeText(ta.value).then(()=>{
@@ -10121,12 +10274,17 @@ const TELAS = {
 const TELAS_GLOBAIS = ['gestao','usersScreen','professorsScreen','turmasScreen','classStats','userDetail','configScreen'];
 let MODO_GLOBAL = false;
 
-function abrirGestaoGlobal(kind, grupo){
+function abrirGestaoGlobal(kind, grupo, aba){
   if(!isAdmin) return;
   if(grupo === 'professores' && !isMaster) return;
   MODO_GLOBAL = true;
-  editState = (kind === 'gestao') ? {kind:'gestao', grupo:grupo||'alunos', aba:'ativos'} : {kind};
-  if(kind === 'gestao') cachedUsersList = null;
+  editState = (kind === 'gestao')
+    ? {kind:'gestao', grupo:grupo||'alunos', aba: aba || gestaoAbaPadrao(grupo||'alunos'), turmaId:null}
+    : {kind};
+  if(kind === 'gestao'){
+    cachedUsersList = null;
+    ATV_BOLETIM_DATA = null; ATV_BOLETIM_SCHEDULES = null; DIARIO_TODOS = null; AVAL_RESPOSTAS = null;
+  }
   document.body.classList.add('modo-global');
   showOnly(['site-header','app-body-wrap','combined-footer','ai-credit','version-tag']);
   document.getElementById('edit-status-bar').classList.add('hidden'); // barra da MATERIA nao vale aqui
@@ -10185,7 +10343,7 @@ function irParaTela(kind){
     case 'myNotes':
       editState = {kind:'myNotes'}; break;
     case 'configScreen':
-      editState = {kind:'configScreen'}; break;
+      editState = {kind:'gestao', grupo:'config', aba:'geral'}; break;
     case 'iaScreen':
       editState = {kind:'iaScreen'}; break;
     case 'avaliacao':
@@ -10195,15 +10353,15 @@ function irParaTela(kind){
     case 'orgScreen':
       editState = {kind:'orgScreen'}; break;
     case 'atividadesCentral':
-      editState = {kind:'atividadesCentral'};
+      editState = {kind:'gestao', grupo:'materias', aba:'atividades'};
       cachedUsersList = null; ATV_MANAGE_RESPONSES = null; ATV_MANAGE_SCHEDULES = {}; ATV_MANAGE_DRAFTS = null;
       break;
     case 'atividadesBoletim':
-      editState = {kind:'atividadesBoletim', turmaId:(editState && editState.turmaId) || null};
+      editState = {kind:'gestao', grupo:'alunos', aba:'boletim', turmaId:(editState && editState.turmaId) || null};
       ATV_BOLETIM_DATA = null; ATV_BOLETIM_SCHEDULES = null;
       break;
     case 'diarioFrequencia':
-      editState = {kind:'diarioFrequencia', turmaId:(editState && editState.turmaId) || null};
+      editState = {kind:'gestao', grupo:'alunos', aba:'frequencia', turmaId:(editState && editState.turmaId) || null};
       DIARIO_TODOS = null;
       break;
     case 'diarioAula':
@@ -10214,8 +10372,7 @@ function irParaTela(kind){
       return;
   }
   render();
-  const c = document.getElementById('content');
-  if(c) c.scrollIntoView({behavior:'smooth'});
+  focarConteudo();
 }
 
 // Cabecalho identico em toda tela: onde voce esta, o que e, para onde da
@@ -10311,6 +10468,20 @@ try{
     }).catch(()=>{});
   }
 }catch(e){ /* navegador antigo: segue com emoji */ }
+
+// Rolagem so quando faz falta (v4.1.0).
+// Antes, TODO clique chamava scrollIntoView — entao trocar de aba na gestao
+// jogava a pagina para baixo mesmo com o conteudo ja na tela. Agora so rola
+// se o conteudo estiver de fato fora de vista (caso do celular, onde o menu
+// ocupa a tela inteira, ou de quem estava no meio de uma aula longa).
+function focarConteudo(){
+  const c = document.getElementById('content');
+  if(!c) return;
+  const r = c.getBoundingClientRect();
+  const jaVisivel = r.top >= -40 && r.top < window.innerHeight * 0.5;
+  if(jaVisivel) return;
+  c.scrollIntoView({behavior:'smooth'});
+}
 
 // Deep-link support
 function initFromHash(){
@@ -10585,6 +10756,8 @@ document.getElementById('download-pdf-btn').addEventListener('click', ()=>{
 const barraMateriaEl = document.getElementById('edit-status-bar');
 if(barraMateriaEl){
   barraMateriaEl.addEventListener('click', (e)=>{
+    const bg = e.target.closest('[data-action="gestao-ir"]');
+    if(bg){ abrirGestaoGlobal('gestao', bg.dataset.grupo, bg.dataset.aba); return; }
     const b = e.target.closest('[data-action="ir-para-tela"]');
     if(!b) return;
     irParaTela(b.dataset.tela);
@@ -10745,10 +10918,19 @@ function renderSubjectPicker(){
   const ativas = minhas.filter(s=>!s.archived);
   const arquivadas = minhas.filter(s=>s.archived);
   // Etiqueta do dono (só o master precisa se organizar por professor)
+  // O nome do dono identifica de quem e a materia. So aparece para materia de
+  // OUTRO professor — a sua leva a etiqueta "Sua".
+  const nomeDoDono = (s)=>{
+    if(s.ownerName) return s.ownerName;
+    const u = (cachedUsersList||[]).find(x=>x.id===s.ownerUid);
+    return (u && (u.name || u.email)) || 'Professor';
+  };
   const donoTag = (s)=>{
     if(!isMaster) return '';
     const minha = !s.ownerUid || (currentUser && s.ownerUid===currentUser.uid);
-    return `<span class="subject-owner-tag ${minha?'owner-master':''}">${minha ? '👑 Sua' : '🧑‍🏫 ' + esc(s.ownerName || 'Professor')}</span>`;
+    return minha
+      ? `<span class="subject-owner-tag owner-master">Sua</span>`
+      : `<span class="subject-owner-tag owner-outro"><span class="mi">person</span>${esc(nomeDoDono(s))}</span>`;
   };
   // Cabecalho do painel
   const sauda = document.getElementById('painel-saudacao');
@@ -10763,8 +10945,7 @@ function renderSubjectPicker(){
   const atalhosGlobais = Object.entries(GESTAO_GRUPOS)
     .filter(([,g]) => !g.soMaster || isMaster)
     .map(([id,g]) => `<button type="button" class="painel-atalho" data-painel-grupo="${id}"><span class="mi">${g.icone}</span>${esc(g.rotulo)}</button>`)
-    .join('')
-    + `<button type="button" class="painel-atalho" data-painel-tela="configScreen"><span class="mi">${TELAS.configScreen.icone}</span>${esc(TELAS.configScreen.rotulo)}</button>`;
+    .join('');
 
   let html = `<div class="painel-secao">Matérias ativas</div>`;
   html += ativas.map(s => `
@@ -10774,13 +10955,10 @@ function renderSubjectPicker(){
       </button>
       <button class="btn-tiny subject-op-btn" style="background:#6b6b6b;" data-sid="${s.id}" data-subject-op="archive" title="Arquivar esta matéria (some das listas, mas nada é apagado — pode restaurar quando quiser)">📦</button>
     </div>`).join('') || '<p class="painel-vazio">Nenhuma matéria ativa. Crie a primeira abaixo.</p>';
+  // As arquivadas NAO aparecem aqui: o painel e a tela do dia a dia. Elas
+  // moram em Matérias > Arquivadas, com restaurar e excluir.
   if(arquivadas.length){
-    html += `<div class="painel-secao">Matérias arquivadas (${arquivadas.length})</div>` + arquivadas.map(s => `
-    <div class="subject-picker-row archived">
-      <div class="subject-picker-item disabled"><span>${esc(s.name)}</span>${donoTag(s)}</div>
-      <button class="btn-tiny btn-approve subject-op-btn" data-sid="${s.id}" data-subject-op="unarchive">♻️ Restaurar</button>
-      <button class="btn-tiny subject-op-btn" style="background:var(--terracotta);" data-sid="${s.id}" data-subject-op="delete-forever">🗑️ Excluir</button>
-    </div>`).join('');
+    html += `<p class="painel-vazio" style="margin-top:10px;">${arquivadas.length} matéria(s) arquivada(s) — veja em Matérias.</p>`;
   }
   html += `<div class="painel-secao">Gestão e configurações</div>
     <div class="painel-atalhos">${atalhosGlobais}</div>`;
