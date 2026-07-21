@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.8.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -419,12 +419,12 @@
   }
   .painel-secao:first-child{margin-top:0;}
   .painel-atalhos{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    display:flex;flex-wrap:wrap;justify-content:center;
     gap:8px;
   }
   .painel-atalho{
     display:flex;align-items:center;gap:9px;
+    flex:0 1 150px;
     background:var(--tint-soft);
     border:0.5px solid var(--hairline);
     border-radius:var(--radius);
@@ -899,6 +899,12 @@
     color:#AEB7DD;
     margin:0;
   }
+  .site-subtitle-curso{
+    font-size:12.5px;
+    color:#AEB7DD;
+    opacity:0.85;
+    margin:2px 0 0 0;
+  }
   .site-subtitle-prof{
     font-size:11.5px;
     color:#AEB7DD;
@@ -1308,7 +1314,8 @@
   }
   .auth-box h2{font-family:'Source Serif 4',serif;color:var(--navy);font-size:22px;margin-bottom:4px;}
   .auth-professor-name{font-size:14px;color:var(--muted);margin-bottom:10px;}
-  .auth-subtitle{font-size:12.5px;color:var(--muted);margin-bottom:20px;line-height:1.5;}
+  .auth-subtitle{font-size:12.5px;color:var(--muted);margin-bottom:4px;line-height:1.5;}
+  .auth-subtitle-prof{font-size:11px;color:var(--muted);opacity:0.8;margin-bottom:20px;line-height:1.5;}
   .auth-tabs{display:flex;gap:4px;background:rgba(61,62,119,0.06);border-radius:12px;padding:4px;margin-bottom:20px;}
   .auth-tab{
     flex:1;background:none;border:none;padding:9px;border-radius:9px;
@@ -1608,20 +1615,19 @@
   .editor-form div.rich-text p:last-child{margin-bottom:0;}
   .editor-form div.rich-text:focus{outline:2px solid var(--navy);outline-offset:-1px;}
   .editor-form .hint{font-size:11.5px;color:var(--muted);margin-top:3px;}
-  /* ===== HINTS COMPACTOS (v3.0.0) =====
-     As explicacoes continuam existindo — so param de ocupar a tela inteira.
-     Uma linha, reticencias no fim, texto completo ao parar o mouse.
-     Hints curtos (que ja cabem numa linha) ficam como estavam. */
+  /* ===== HINTS (v4.9.0) =====
+     Removida a truncagem em reticencias (v3.0.0): texto comprido nunca pode
+     ficar cortado — sempre quebra em mais linhas, completo, sem precisar
+     passar o mouse. Regra mantida so por seguranca: se a classe aparecer
+     de algum jeito, ela tambem nao trunca mais nada. */
   .hint.hint-compact{
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    cursor:help;
-    border-bottom:1px dotted var(--hairline-strong);
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+    overflow-wrap:break-word;
     display:block;
     max-width:100%;
   }
-  .hint.hint-compact:hover{color:var(--navy);}
   .type-description-box{
     background:var(--ice-tint);
     border-left:3px solid var(--gold);
@@ -2698,7 +2704,8 @@
       <div class="logo-badge"><img id="header-logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjM0QzRTc3IiBkPSJNNTAsMTIgQzYyLDI4IDY4LDQyIDYzLDU1IEM3MCw1MCA3NCw0MiA3MiwzMiBDODAsNDQgODQsNjAgNzIsNzQgQzY0LDg0IDM2LDg0IDI4LDc0IEMxNiw2MCAyMCw0NCAyOCwzMiBDMjYsNDIgMzAsNTAgMzcsNTUgQzMyLDQyIDM4LDI4IDUwLDEyIFoiLz48L3N2Zz4=" alt="Logo Lume"></div>
       <div>
         <h1 class="site-title" id="site-title-text">Gestão de Projetos</h1>
-        <p class="site-subtitle" id="header-inst-subtitle">Administração de Empresas — Faculdade da Fundação Educacional de Araçatuba</p>
+        <p class="site-subtitle" id="header-inst-subtitle">Faculdade da Fundação Educacional de Araçatuba</p>
+        <p class="site-subtitle site-subtitle-curso" id="header-curso-line">Administração de Empresas</p>
         <p class="site-subtitle site-subtitle-prof" id="header-prof-line">Prof. Guilherme Laluce</p>
       </div>
     </div>
@@ -2725,8 +2732,9 @@
   <div class="auth-box">
     <div class="logo-badge" style="margin:0 auto 14px auto;"><img id="login-logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjM0QzRTc3IiBkPSJNNTAsMTIgQzYyLDI4IDY4LDQyIDYzLDU1IEM3MCw1MCA3NCw0MiA3MiwzMiBDODAsNDQgODQsNjAgNzIsNzQgQzY0LDg0IDM2LDg0IDI4LDc0IEMxNiw2MCAyMCw0NCAyOCwzMiBDMjYsNDIgMzAsNTAgMzcsNTUgQzMyLDQyIDM4LDI4IDUwLDEyIFoiLz48L3N2Zz4=" alt="Logo Lume"></div>
     <h2>Gestão de Aulas</h2>
-    <div class="auth-professor-name" id="login-prof-name">Lume</div>
-    <p class="auth-subtitle" id="login-inst-subtitle">Plataforma de gestão de aulas e projetos</p>
+    <div class="auth-professor-name" id="login-inst-name">Faculdade da Fundação Educacional de Araçatuba</div>
+    <p class="auth-subtitle" id="login-curso-line">Administração de Empresas</p>
+    <p class="auth-subtitle auth-subtitle-prof" id="login-prof-name">Prof. Guilherme Laluce</p>
     <div class="auth-tabs">
       <button class="auth-tab active" id="auth-tab-login" data-auth-tab="login">Entrar</button>
       <button class="auth-tab" id="auth-tab-register" data-auth-tab="register">Criar conta</button>
@@ -2927,7 +2935,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.8.0</div>
+<div class="version-tag hidden" id="version-tag">v4.9.0</div>
 
 
 <script>
@@ -4772,7 +4780,6 @@ function relatorioFaltasHtml(){
     ${blocos}
     <div class="editor-actions">
       <button class="btn-secondary" data-action="relatorio-faltas-csv">⬇ Exportar tudo em CSV</button>
-      <button class="btn-secondary" data-action="back-to-users">← Voltar para o painel de alunos</button>
     </div>
   </div>`;
 }
@@ -6704,9 +6711,6 @@ function classStatsHtml(){
     <label style="margin-top:20px;">Acessos por aula <span style="text-transform:none;font-weight:400;color:var(--muted);">(das menos vistas para as mais vistas — destacadas: nenhuma visita)</span></label>
     <table class="session-log-table"><thead><tr><th>Aula</th><th>Visitas</th></tr></thead><tbody>${aulaRows || '<tr><td colspan="2">Sem aulas ou sem visitas registradas ainda.</td></tr>'}</tbody></table>
 
-    <div class="editor-actions">
-      <button class="btn-secondary" data-action="back-to-users">← Voltar para o painel de alunos</button>
-    </div>
   </div>`;
 }
 
@@ -6888,7 +6892,7 @@ function gestaoAbaPadrao(grupo){
   return Object.keys(g.abas).find(abaVisivelPara) || Object.keys(g.abas)[0];
 }
 
-function gestaoNavHtml(grupo, aba, acoesHtml){
+function gestaoNavHtml(grupo, aba){
   const grupos = Object.entries(GESTAO_GRUPOS)
     .filter(([,g]) => !g.soMaster || isMaster)
     .map(([id,g]) => `<button type="button" class="gestao-grupo ${id===grupo?'is-ativo':''}" data-action="gestao-grupo" data-grupo="${id}"><span class="mi">${g.icone}</span>${esc(g.rotulo)}</button>`)
@@ -6903,12 +6907,7 @@ function gestaoNavHtml(grupo, aba, acoesHtml){
         .map(([id,rot]) => `<button type="button" class="gestao-aba ${id===aba?'is-ativa':''}" data-action="gestao-aba" data-aba="${id}">${esc(rot)}</button>`)
         .join('')
     : '';
-  // Salvar/Cancelar de cada aba sobem para ca (ver hoistAcaoTopo), em vez de
-  // ficarem so no rodape do formulario — assim nao precisa rolar a tela para
-  // salvar. So acontece quando a aba tem UM UNICO bloco de acao (sem
-  // ambiguidade sobre qual botao e "o" botao da tela).
-  const acoes = acoesHtml ? `<div class="gestao-acoes-topo">${acoesHtml}</div>` : '';
-  return `<div class="gestao-grupos">${grupos}</div><div class="gestao-abas-linha"><div class="gestao-abas">${abas}</div>${acoes}</div>`;
+  return `<div class="gestao-grupos">${grupos}</div><div class="gestao-abas">${abas}</div>`;
 }
 
 // Extrai o UNICO bloco .editor-actions do fim de um HTML de aba (se houver
@@ -7010,8 +7009,10 @@ function gestaoScreenForm(){
     corpo = configScreenForm(aba);
   }
   const {corpo: corpoSemAcao, acoes} = hoistAcaoTopo(corpo);
-  return gestaoNavHtml(grupo, aba, acoes) + corpoSemAcao;
+  gestaoAcoesTopo = acoes; // o call-site (comCabecalho) leva isso pra linha do "Voltar"
+  return gestaoNavHtml(grupo, aba) + corpoSemAcao;
 }
+let gestaoAcoesTopo = '';
 
 // Grupo novo: as materias arquivadas saem do painel inicial (onde poluiam a
 // lista do dia a dia) e ganham lugar proprio, com restaurar e excluir.
@@ -7131,9 +7132,6 @@ function professorsScreenForm(){
       <button class="btn-primary" data-action="invite-professor">✉ Convidar</button>
     </div>
     ${invitesRows}
-    <div class="editor-actions">
-      <button class="btn-secondary" data-action="back-to-users">← Voltar para o painel de alunos</button>
-    </div>
   </div>`;
 }
 
@@ -7154,9 +7152,6 @@ function mastersScreenForm(){
   return `<div class="editor-form">
     <div class="hint">Master vê e altera tudo no sistema. Não existe promoção a master por aqui — isso é feito diretamente no banco de dados, por segurança. Você pode rebaixar outro master a professor (nunca a si mesmo).</div>
     <div class="turmas-list">${rows}</div>
-    <div class="editor-actions">
-      <button class="btn-secondary" data-action="back-to-users">← Voltar para o painel de alunos</button>
-    </div>
   </div>`;
 }
 
@@ -7177,9 +7172,6 @@ function turmasScreenForm(){
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <input type="text" id="ef-new-turma-name" placeholder='Ex.: ADM 8º Semestre — 2026/2' style="flex:1;min-width:220px;">
       <button class="btn-primary" data-action="create-turma">+ Criar turma</button>
-    </div>
-    <div class="editor-actions">
-      <button class="btn-secondary" data-action="back-to-users">← Voltar para o painel de alunos</button>
     </div>
   </div>`;
 }
@@ -7224,9 +7216,6 @@ function turmasEstatisticasHtml(){
       <tr><th class="atv-bol-name">Turma</th><th>Alunos</th><th>Aprovados</th><th>Aulas registradas</th><th>Frequência média</th><th>Em risco por falta</th></tr>
       ${linhas}
     </table></div>
-    <div class="editor-actions">
-      <button class="btn-secondary" data-action="back-to-users">← Voltar para o painel de alunos</button>
-    </div>
   </div>`;
 }
 
@@ -7286,8 +7275,8 @@ function orgScreenForm(){
       <input type="file" id="restore-backup-input" accept=".json" style="display:none;">
     </div>
     <div class="editor-actions">
-      <button class="btn-primary" data-action="save-org-screen">Salvar todas as alterações</button>
-      <button class="btn-secondary" data-action="cancel-edit">Cancelar (descarta tudo que mudou aqui)</button>
+      <button class="btn-primary" data-action="save-org-screen">Salvar</button>
+      <button class="btn-secondary" data-action="cancel-edit">Cancelar</button>
     </div>
   </div>`;
 }
@@ -7322,8 +7311,8 @@ function configGeralForm(){
     </div>
 
     <div class="editor-actions">
-      ${isMaster?'<button class="btn-primary" data-action="save-config">Salvar configurações</button>':''}
-      <button class="btn-secondary" data-action="cancel-edit">Fechar</button>
+      ${isMaster?'<button class="btn-primary" data-action="save-config">Salvar</button>':''}
+      <button class="btn-secondary" data-action="cancel-edit">Cancelar</button>
     </div>
   </div>`;
 }
@@ -7351,8 +7340,8 @@ function contaScreenForm(){
       <div class="palette-grid" id="cfgc-palette-grid"></div>
     </div>
     <div class="editor-actions">
-      <button class="btn-primary" data-action="save-minha-conta">💾 Salvar minha conta</button>
-      <button class="btn-secondary" data-action="cancel-edit">Fechar</button>
+      <button class="btn-primary" data-action="save-minha-conta">Salvar</button>
+      <button class="btn-secondary" data-action="cancel-edit">Cancelar</button>
     </div>
     <p class="modal-error hidden" id="cfgc-error"></p>
   </div>`;
@@ -7381,8 +7370,8 @@ function instituicaoScreenForm(){
       <label>Professor(a) responsável (aparece na tela de login)</label><input type="text" spellcheck="true" lang="pt-BR" id="cfgi-prof-nome" value="${escAttr(instConfig.profNome)}" placeholder="Prof. Guilherme Laluce">
     </div>
     <div class="editor-actions">
-      <button class="btn-primary" data-action="save-instituicao">💾 Salvar identidade institucional</button>
-      <button class="btn-secondary" data-action="cancel-edit">Fechar</button>
+      <button class="btn-primary" data-action="save-instituicao">Salvar</button>
+      <button class="btn-secondary" data-action="cancel-edit">Cancelar</button>
     </div>
     <p class="modal-error hidden" id="cfgi-error"></p>
   </div>`;
@@ -7586,6 +7575,7 @@ function blankSection(type){
 }
 
 function render(){
+  updateViewAsButtonLabel();
   // Safety net: if the current state points to a block/aula that no longer exists
   // (e.g., just deleted), or to a hidden aula while not in admin mode, fall back
   // to the first available (visible) aula in the course.
@@ -7653,7 +7643,7 @@ function render(){
     return;
   }
   if(editState && editState.kind==='gestao'){
-    content.innerHTML = comCabecalho('gestao', gestaoScreenForm());
+    content.innerHTML = comCabecalho('gestao', gestaoScreenForm(), gestaoAcoesTopo);
     // Cada aba busca so o que ela usa — carregar tudo sempre deixaria as
     // abas simples (listas) lentas sem motivo.
     const abaAtual = editState.aba;
@@ -10903,21 +10893,15 @@ function resizeImageFile(file, maxW=1000, quality=0.82){
   });
 }
 
-// ===================== HINTS COMPACTOS (v3.0.0) =====================
-// Em vez de editar 52 textos de ajuda um a um pelo arquivo (e errar em
-// algum), um observador cuida disso sozinho: todo .hint comprido que
-// aparecer na tela vira uma linha com reticencias, e o texto inteiro passa
-// para o balao de hover. Nenhuma explicacao se perde — elas so saem da
-// frente. Vale para telas que ainda nem existem.
-const HINT_LIMITE = 85; // abaixo disso ja cabe numa linha, deixa quieto
+// ===================== HINTS (v4.9.0) =====================
+// ATE v4.8.0 este observador cortava todo .hint comprido numa linha com
+// reticencias (texto completo só no hover). Pedido explícito: nunca deixar
+// texto cortado — sempre quebrar em mais linhas, completo, direto na tela.
+// Por isso virou no-op: os .hint já quebram linha sozinhos (CSS padrão),
+// então não há mais nada pra fazer aqui. Função mantida (não removida) só
+// pra não quebrar a chamada logo abaixo, dentro do MutationObserver.
 function compactarHints(raiz){
-  const escopo = raiz || document;
-  escopo.querySelectorAll('.hint:not([data-tip])').forEach(el=>{
-    const texto = (el.textContent || '').trim();
-    if(texto.length <= HINT_LIMITE) return;
-    el.setAttribute('data-tip', texto);
-    el.classList.add('hint-compact', 'has-tip');
-  });
+  /* desativado de propósito — ver comentário acima */
 }
 try{
   const alvoHints = document.getElementById('content');
@@ -11384,7 +11368,7 @@ function irParaTela(kind){
 // de atalho para Configurações (já é um dos 5 grupos, sempre visível na
 // linha de baixo) nem de Sair (já existe fixo no cabeçalho do site).
 function telaEhGlobalDeConta(kind){ return kind==='gestao' || kind==='userDetail'; }
-function telaCabecalho(kind){
+function telaCabecalho(kind, acoesExtras){
   const t = TELAS[kind];
   if(!t) return '';
   if(telaEhGlobalDeConta(kind)){
@@ -11397,6 +11381,7 @@ function telaCabecalho(kind){
         </span>
       </div>
       <div class="tela-acoes">
+        ${acoesExtras || ''}
         <button type="button" class="btn-tiny tela-fechar" data-action="tela-voltar" title="Voltar para onde você estava antes"><span class="mi">arrow_back</span>Voltar</button>
       </div>
     </div>`;
@@ -11422,8 +11407,8 @@ function telaCabecalho(kind){
 
 // Envolve o HTML que a tela ja produzia. Nenhuma das 15 funcoes de tela
 // precisou ser reescrita — elas continuam devolvendo o que sempre devolveram.
-function comCabecalho(kind, html){
-  return `<div class="tela tela-nivel-${(TELAS[kind]||{}).nivel||'materia'}">${telaCabecalho(kind)}${html}</div>`;
+function comCabecalho(kind, html, acoesExtras){
+  return `<div class="tela tela-nivel-${(TELAS[kind]||{}).nivel||'materia'}">${telaCabecalho(kind, acoesExtras)}${html}</div>`;
 }
 
 // ===================== ICONES NA INTERFACE (v3.0.0) =====================
@@ -11983,7 +11968,7 @@ async function handleSubjectOp(op, sid){
     try{
       await db.collection('subjects').doc(sid).update({archived: true});
       s.archived = true;
-      renderSubjectPicker();
+      refreshAposSubjectOp();
     }catch(e){ alert('Não foi possível arquivar: ' + (e && e.message ? e.message : String(e))); }
     return;
   }
@@ -11991,7 +11976,7 @@ async function handleSubjectOp(op, sid){
     try{
       await db.collection('subjects').doc(sid).update({archived: false});
       s.archived = false;
-      renderSubjectPicker();
+      refreshAposSubjectOp();
     }catch(e){ alert('Não foi possível restaurar: ' + (e && e.message ? e.message : String(e))); }
     return;
   }
@@ -12013,10 +11998,18 @@ async function handleSubjectOp(op, sid){
       await db.collection('subjects').doc(sid).delete();
       allSubjects = allSubjects.filter(x=>x.id!==sid);
       alert('Matéria excluída definitivamente.');
-      renderSubjectPicker();
+      refreshAposSubjectOp();
     }catch(e){ alert('Não foi possível excluir tudo: ' + (e && e.message ? e.message : String(e)) + '\n\nTente de novo — a exclusão pode ser retomada do ponto em que parou.'); }
     return;
   }
+}
+// handleSubjectOp roda tanto a partir do painel (dashboard) quanto de dentro
+// da Gestao > Materias — cada um mostra a lista de um jeito diferente. Sem
+// isso, a acao salvava certo no Firestore mas a tela em Gestao continuava
+// mostrando a materia como se nada tivesse mudado, ate um F5.
+function refreshAposSubjectOp(){
+  if(editState && editState.kind==='gestao') render();
+  else renderSubjectPicker();
 }
 async function openSubject(subjectId){
   activeSubjectId = subjectId;
@@ -12339,7 +12332,7 @@ function updateViewAsButtonLabel(){
     if(realIsAdmin){
       profBtn.textContent = '✎ Editor';
       profBtn.title = 'Voltar para a visão de edição (sai do "ver como aluno", se estiver ativo)';
-      profBtn.classList.toggle('active', isAdmin);
+      profBtn.classList.toggle('active', isAdmin && !MODO_GLOBAL);
     } else {
       profBtn.textContent = '⚙️ Configurações';
       profBtn.title = 'Meus dados e aparência';
@@ -12434,19 +12427,24 @@ function aplicarInstConfig(){
       if(el) el.src = instConfig.logoUrl;
     });
   }
-  const sub = document.getElementById('login-inst-subtitle');
-  if(sub && (instConfig.instNome || instConfig.cursoNome)){
-    sub.textContent = (instConfig.cursoNome || 'Gestão de Aulas') + ' — ' + (instConfig.instNome || 'Lume');
-  }
+  // Ordem (cabeçalho E login, sempre a mesma): Faculdade > Curso > Professor.
+  const loginInst = document.getElementById('login-inst-name');
+  if(loginInst) loginInst.textContent = instConfig.instNome || 'Faculdade da Fundação Educacional de Araçatuba';
+  const loginCurso = document.getElementById('login-curso-line');
+  if(loginCurso) loginCurso.textContent = instConfig.cursoNome || 'Administração de Empresas';
   const pNome = document.getElementById('login-prof-name');
-  if(pNome && instConfig.profNome) pNome.textContent = instConfig.profNome;
+  if(pNome) pNome.textContent = instConfig.profNome || 'Prof. Guilherme Laluce';
   // Cabecalho de dentro do app (acima da lista de aulas): mostra a
   // identidade da instituicao/curso/professor — informacao do SITE INTEIRO,
   // igual em toda materia. O nome da materia (h1) continua por conta de
   // openSubject/openStudentSubject, que nao mexem mais nesta legenda.
   const headerSub = document.getElementById('header-inst-subtitle');
   if(headerSub){
-    headerSub.textContent = (instConfig.cursoNome || 'Administração de Empresas') + ' — ' + (instConfig.instNome || 'Faculdade da Fundação Educacional de Araçatuba');
+    headerSub.textContent = instConfig.instNome || 'Faculdade da Fundação Educacional de Araçatuba';
+  }
+  const headerCurso = document.getElementById('header-curso-line');
+  if(headerCurso){
+    headerCurso.textContent = instConfig.cursoNome || 'Administração de Empresas';
   }
   const headerProf = document.getElementById('header-prof-line');
   if(headerProf){
