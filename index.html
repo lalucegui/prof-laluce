@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v2.6.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v2.7.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -309,8 +309,10 @@
     font-size:11px;
     background:var(--ice-tint);
     color:var(--navy);
+    visibility:hidden; opacity:0; transition:opacity .12s ease;
   }
-  body.admin-mode .block-edit-btn.block-edit-grid-on{display:flex !important;}
+  body.admin-mode .block-edit-btn{display:flex !important;}
+  body.admin-mode .nav-block-row:hover .block-edit-btn{visibility:visible; opacity:1;}
   .side-nav.collapsed .block-edit-btn{display:none !important;}
   .nav-block-header{
     display:flex;
@@ -409,6 +411,41 @@
   .add-block-btn:hover{background:var(--navy-dark);}
   body.admin-mode .add-block-btn{display:block !important;}
   .side-nav.collapsed .add-block-btn{display:none !important;}
+  .add-standalone-aula-btn{
+    display:none !important;
+    width:calc(100% - 16px);
+    margin:10px 8px 0 8px;
+    background:var(--gold);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:9px 8px;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .add-standalone-aula-btn:hover{opacity:0.9;}
+  body.admin-mode .add-standalone-aula-btn{display:block !important;}
+  .side-nav.collapsed .add-standalone-aula-btn{display:none !important;}
+  .nav-standalone{
+    border:1px dashed rgba(247,156,49,0.5);
+    border-radius:8px;
+    margin:8px 8px 4px 8px;
+    background:rgba(247,156,49,0.06);
+  }
+  .nav-standalone-empty{
+    display:block;
+    width:calc(100% - 16px);
+    margin:8px 8px 4px 8px;
+    background:none;
+    border:1px dashed rgba(247,156,49,0.5);
+    border-radius:8px;
+    padding:9px 8px;
+    font-size:12px;
+    color:var(--muted);
+    cursor:pointer;
+    text-align:left;
+  }
   .organize-sidebar-btn{
     display:none !important;
     width:calc(100% - 16px);
@@ -531,6 +568,10 @@
     padding:20px;
   }
   .auth-gate.hidden{display:none;}
+  .auth-version-tag{
+    position:absolute;left:0;right:0;bottom:14px;
+    text-align:center;font-size:10.5px;color:rgba(255,255,255,0.55);
+  }
   .auth-box{
     background:#fff;border-radius:16px;padding:36px 32px;
     max-width:380px;width:100%;
@@ -761,9 +802,23 @@
   }
   .editor-form textarea{min-height:70px;line-height:1.5;}
   .editor-form div.rich-text{min-height:60px;line-height:1.6;background:#fff;}
+  .spacer-block{width:100%;}
+  body.admin-mode .spacer-block.spacer-admin{
+    display:flex;align-items:center;justify-content:center;
+    border:1px dashed rgba(61,62,119,0.35);
+    border-radius:8px;
+    color:var(--muted);
+    font-size:10.5px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+  }
   .bullets-preview p{position:relative;}
   .bullets-preview p::before{
-    content:attr(data-marker-char);
+    /* Antes dependia de um atributo (data-marker-char) que nunca era escrito em
+       lugar nenhum — o marcador nunca aparecia enquanto editava, só depois de
+       publicado. Agora mostra um marcador padrão de verdade nos parágrafos
+       ainda não convertidos em lista, pra edição bater com o resultado final. */
+    content:'•';
     position:absolute;left:0;margin-left:-16px;
     color:var(--navy);font-weight:600;font-size:13px;
   }
@@ -1841,6 +1896,7 @@
       <p class="auth-error hidden" id="auth-register-error"></p>
     </div>
   </div>
+  <div class="auth-version-tag" id="auth-version-tag"></div>
 </div>
 
 <div class="auth-gate hidden" id="auth-pending-screen">
@@ -2001,7 +2057,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v2.6.0</div>
+<div class="version-tag hidden" id="version-tag">v2.7.0</div>
 
 
 <script>
@@ -2544,12 +2600,29 @@ document.addEventListener('click', (e)=>{
 
 function renderSideNav(){
   const el = document.getElementById('nav-list');
-  el.innerHTML = COURSE.filter(b=>isAdmin || !b.hidden).map(b => `
-    <div class="nav-block ${b.hidden?'is-hidden':''}">
+  // O bloco de abertura (isIntro) é só um contêiner técnico interno — para o
+  // professor ele aparece como UMA aula avulsa, sem cabeçalho de bloco, antes
+  // do Bloco I (garantido pelo num:0, que sempre ordena primeiro).
+  el.innerHTML = COURSE.filter(b=>isAdmin || !b.hidden).map(b => {
+    if(blocoEhAbertura(b)){
+      const a = b.aulas[0];
+      if(!a){
+        return isAdmin ? `<button type="button" class="nav-standalone-empty" data-add-standalone-aula-block="${b.num}">★ Aula de abertura — clique para criar o conteúdo</button>` : '';
+      }
+      if(!isAdmin && a.hidden) return '';
+      return `<div class="nav-aula-row nav-standalone ${(a.num===state.aula&&b.num===state.block)?'active':''} ${a.hidden?'is-hidden':''}" data-nav-aula-block="${b.num}" data-nav-aula-num="${a.num}">
+        <input type="checkbox" class="nav-aula-visible-cb" data-vis-block="${b.num}" data-vis-aula="${a.num}" ${a.hidden?'':'checked'} title="Visível para os alunos">
+        <button class="nav-aula" data-block="${b.num}" data-aula="${a.num}">
+          <span class="num">★</span><span class="label">${esc(a.title)}${a.hidden?' <em>(oculta)</em>':''}</span>
+        </button>
+        <button class="edit-chip nav-aula-edit-btn" data-edit-block="${b.num}" data-edit-aula="${a.num}" title="Editar informações da aula">✎</button>
+      </div>`;
+    }
+    return `<div class="nav-block ${b.hidden?'is-hidden':''}">
       <div class="nav-block-row">
         <input type="checkbox" class="nav-block-visible-cb" data-vis-block="${b.num}" ${b.hidden?'':'checked'} title="Bloco visível para os alunos">
         <button class="nav-block-header ${b.num===state.block?'active':''}" data-block="${b.num}">
-          <span class="num">${blocoEhAbertura(b)?'★':toRoman(b.num)}</span><span class="label" data-block-label="${b.num}">${esc(b.title)}${b.hidden?' <em>(oculto)</em>':''}</span>
+          <span class="num">${toRoman(b.num)}</span><span class="label" data-block-label="${b.num}">${esc(b.title)}${b.hidden?' <em>(oculto)</em>':''}</span>
         </button>
         <button class="edit-chip block-edit-btn ${(isAdmin&&sectionGridMode)?'block-edit-grid-on':''}" data-block-edit="${b.num}" title="Editar este bloco (organizar curso)">✎</button>
       </div>
@@ -2565,7 +2638,8 @@ function renderSideNav(){
           </div>`).join('')}
         <button class="add-aula-btn" data-add-aula-block="${b.num}">+ Adicionar aula</button>
       </div>
-    </div>`).join('') + `<button class="add-block-btn" id="add-block-btn">+ Adicionar bloco</button><button class="organize-sidebar-btn" id="organize-btn">🗂 Organizar curso</button>`;
+    </div>`;
+  }).join('') + (existeBlocoAbertura() ? '' : `<button class="add-standalone-aula-btn" id="add-standalone-aula-btn">★ + Adicionar aula de abertura (antes do Bloco I)</button>`) + `<button class="add-block-btn" id="add-block-btn">+ Adicionar bloco</button><button class="organize-sidebar-btn" id="organize-btn">🗂 Organizar curso</button>`;
 
   el.querySelectorAll('.nav-block-header').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -2644,11 +2718,38 @@ function renderSideNav(){
       document.getElementById('content').scrollIntoView({behavior:'smooth'});
     });
   });
+  el.querySelectorAll('.nav-standalone-empty').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(!isAdmin) return;
+      const bn = parseInt(btn.dataset.addStandaloneAulaBlock,10);
+      editState = {kind:'newAula', blockNum: bn, suggestedNum: 0};
+      state.block = bn;
+      render();
+      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    });
+  });
+  const addStandaloneAulaBtn = document.getElementById('add-standalone-aula-btn');
+  if(addStandaloneAulaBtn){
+    addStandaloneAulaBtn.addEventListener('click', async ()=>{
+      if(!isAdmin) return;
+      if(existeBlocoAbertura()){ render(); return; }
+      // Cria só o contêiner técnico (bloco isIntro), na hora — o professor nunca
+      // vê "bloco": o próximo passo já é o formulário normal de criar aula.
+      const blocoAbertura = {num:0, title:'Abertura', isIntro:true, aulaRange:'', sources:'', aulas:[]};
+      COURSE.push(blocoAbertura);
+      COURSE.sort((x,y)=>x.num-y.num);
+      await saveCourseToStorage();
+      editState = {kind:'newAula', blockNum: 0, suggestedNum: 0};
+      state.block = 0;
+      render();
+      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    });
+  }
   const addBlockBtn = document.getElementById('add-block-btn');
   if(addBlockBtn){
     addBlockBtn.addEventListener('click', ()=>{
       if(!isAdmin) return;
-      const maxBlockNum = Math.max(0, ...COURSE.map(bb=>bb.num));
+      const maxBlockNum = Math.max(0, ...COURSE.map(bb=>bb.num).filter(n=>n>0));
       editState = {kind:'newBlock', suggestedNum: maxBlockNum+1};
       render();
       document.getElementById('content').scrollIntoView({behavior:'smooth'});
@@ -2975,6 +3076,14 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       }
       break;
     }
+    case 'spacer': {
+      const sizePx = {sm:28, md:56, lg:96, xl:140}[sec.size] || 56;
+      const sizeLabel = {sm:'pequeno', md:'médio', lg:'grande', xl:'extra grande'}[sec.size] || 'médio';
+      body = isAdmin
+        ? `<div class="spacer-block spacer-admin" style="height:${sizePx}px;">↕ espaçamento (${sizeLabel})</div>`
+        : `<div class="spacer-block" style="height:${sizePx}px;"></div>`;
+      break;
+    }
   }
   const gridClass = (isAdmin && sectionGridMode) ? ' section-grid-on' : '';
   return `<section class="section${gridClass}" data-section-id="${esc(sec.id||'')}" data-section-idx="${idx}"${draggableAttr}${dropTargetAttr}>${editbar}${kicker}${title}${body}</section>`;
@@ -2998,6 +3107,73 @@ let atvSaveTimer = null;
 // 'corrigido' se o professor já lançou nota/comentário; 'enviado' se o prazo da
 // turma já passou (fica travado, aguardando correção); senão 'rascunho' (editável,
 // salva sozinho). Sem prazo configurado, fica sempre em 'rascunho' até ser corrigida.
+// Uma atividade é "100% fechada" quando TODAS as questões são de tipo com
+// gabarito (múltipla escolha / checklist / verdadeiro-falso) e o gabarito foi
+// de fato cadastrado em cada uma. Questões abertas (dissertativa, curta, lista,
+// tabela, associação) nunca são corrigidas sozinhas — sempre esperam o professor.
+function atvSectionFullyAutoGradable(sec){
+  return !!(sec && sec.items && sec.items.length) && sec.items.every(it=>{
+    if(it.type==='multipla_escolha') return !!it.correctOption;
+    if(it.type==='checklist') return !!(it.correctOptions && it.correctOptions.length);
+    if(it.type==='verdadeiro_falso') return !!(it.correctAnswers && it.correctAnswers.length);
+    return false;
+  });
+}
+// Corrige e PUBLICA sozinha as atividades 100% fechadas (todas as questões com
+// gabarito) cujo prazo da turma já venceu — sem o professor precisar clicar em
+// nada. Atividades com alguma questão aberta nunca são publicadas por aqui;
+// continuam esperando a correção manual, como sempre. Roda ao abrir a matéria
+// (só para professor/master), então "automático" aqui quer dizer: assim que
+// alguém da equipe abrir o sistema depois do prazo vencido — não existe servidor
+// rodando sozinho 24h neste projeto (é um site estático), então este é o gatilho
+// mais próximo de "automático" que dá pra ter.
+async function autoPublicarAtividadesVencidas(){
+  if(!isAdmin || !activeSubjectId) return;
+  try{
+    const schedules = await fetchAllActivitySchedules();
+    const now = Date.now();
+    const vencidos = schedules.filter(s=>s.closesAt && s.closesAt<now);
+    if(!vencidos.length) return;
+    const secIndex = {};
+    COURSE.forEach(b=>(b.aulas||[]).forEach(a=>(a.sections||[]).forEach(s=>{ if(s.type==='atividade') secIndex[s.id] = s; })));
+    for(const agenda of vencidos){
+      const sec = secIndex[agenda.sectionId];
+      if(!sec || !atvSectionFullyAutoGradable(sec)) continue;
+      let responses;
+      try{ responses = await fetchActivityResponsesForSection(agenda.sectionId); }catch(e){ continue; }
+      const pendentes = responses.filter(r=> r.turmaId===agenda.turmaId && r.submittedAt && (!r.grading || !r.grading.published));
+      if(!pendentes.length) continue;
+      const maxScore = atvMaxScore(sec);
+      for(const resp of pendentes){
+        const answers = resp.answers || {};
+        const perItem = {};
+        let total = 0;
+        sec.items.forEach(it=>{
+          const auto = autoGradeClosedItem(it, answers[it.itemId]);
+          const pts = auto ? auto.points : 0;
+          perItem[it.itemId] = {verdict: auto ? (auto.correct?'certo':((auto.partial&&auto.partial.ok>0)?'parcial':'errado')) : 'errado', points: pts, feedback: null};
+          total += pts;
+        });
+        total = Math.round(total*100)/100;
+        const docId = `${resp.aulaNum}_${agenda.sectionId}_${resp.studentUid}`;
+        const payload = {
+          subjectId: activeSubjectId, aulaNum: resp.aulaNum, sectionId: agenda.sectionId,
+          studentUid: resp.studentUid, turmaId: resp.turmaId || agenda.turmaId,
+          studentName: resp.studentName || '',
+          answers,
+          grading: {score: total, maxScore, perItem, commentParas: [],
+                    gradedBy: 'sistema', gradedAt: Date.now(), published: true, autoPublished: true},
+          updatedAt: Date.now(),
+        };
+        try{
+          await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId).set(payload, {merge:true});
+          await db.collection(`subjects/${activeSubjectId}/activity_grading_drafts`).doc(docId).delete().catch(()=>{});
+        }catch(e){ console.error('Auto-publicação falhou para', resp.studentUid, e); }
+      }
+    }
+  }catch(e){ console.error('autoPublicarAtividadesVencidas falhou:', e); }
+}
+
 function autoGradeClosedItem(item, studentValue){
   // Retorna null quando o professor não cadastrou gabarito (ou o tipo não é fechado) —
   // nesses casos a correção continua manual. Quando retorna algo, é 100% calculado.
@@ -3598,7 +3774,8 @@ function atvPrazoHtml(sec, ctx){
       <div><label>Fecha em (opcional)</label><input type="datetime-local" id="atv-closes-at" value="${s&&s.closesAt?toDatetimeLocal(s.closesAt):''}"></div>
       <button type="button" class="btn-secondary" data-action="save-atv-schedule" data-turma="${escAttr(ctx.turmaId)}">Salvar prazo desta turma</button>
     </div>
-    <div class="hint">Deixe os dois campos em branco para a atividade ficar sempre aberta (sem prazo). Quando o prazo fecha, o aluno não consegue mais editar — mas você continua podendo corrigir e reabrir individualmente.</div>`;
+    <div class="hint">Deixe os dois campos em branco para a atividade ficar sempre aberta (sem prazo). Quando o prazo fecha, o aluno não consegue mais editar — mas você continua podendo corrigir e reabrir individualmente.</div>
+    <div class="hint">✨ Se TODAS as questões desta atividade forem de múltipla escolha / verdadeiro-falso / checklist e tiverem gabarito cadastrado, a correção é aplicada e publicada sozinha assim que o prazo desta turma vencer e alguém da equipe abrir a matéria — você não precisa clicar em nada. Atividades com alguma questão dissertativa (ou outra aberta) continuam esperando sua correção manual.</div>`;
 }
 
 // Lê os controles de correção dentro de um escopo (painel do aluno ou linha da
@@ -4193,6 +4370,18 @@ document.addEventListener('input', (e)=>{
   }
 });
 
+// Acha o nó que é filho DIRETO do campo de edição (o "parágrafo" da vez), a
+// partir de onde o cursor está. É nele que o recuo (indent/outdent) é aplicado.
+function findTopLevelBlock(field){
+  const sel = window.getSelection();
+  if(!sel || sel.rangeCount===0) return null;
+  let node = sel.getRangeAt(0).startContainer;
+  if(node.nodeType===3) node = node.parentElement;
+  while(node && node.parentElement && node.parentElement!==field){
+    node = node.parentElement;
+  }
+  return (node && node.parentElement===field) ? node : null;
+}
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest('[data-rt]');
   if(!btn || btn.tagName !== 'BUTTON') return;
@@ -4229,8 +4418,19 @@ document.addEventListener('click', (e)=>{
   else if(cmd==='aligncenter') document.execCommand('justifyCenter');
   else if(cmd==='alignright') document.execCommand('justifyRight');
   else if(cmd==='alignjustify') document.execCommand('justifyFull');
-  else if(cmd==='indent') document.execCommand('indent');
-  else if(cmd==='outdent') document.execCommand('outdent');
+  else if(cmd==='indent' || cmd==='outdent'){
+    // Recuo só do texto — não cria lista nem marcador nenhum. Feito à mão
+    // (em vez do "indent" nativo do navegador, que ora embrulha o texto num
+    // <blockquote> e ora se comporta diferente em cada navegador) ajustando
+    // direto a margem esquerda do parágrafo, de um jeito previsível.
+    const blk = findTopLevelBlock(field);
+    if(blk){
+      const passo = 24, maxRecuo = 168;
+      const atual = parseInt(blk.style.marginLeft) || 0;
+      const novo = cmd==='indent' ? Math.min(atual + passo, maxRecuo) : Math.max(atual - passo, 0);
+      blk.style.marginLeft = novo ? novo + 'px' : '';
+    }
+  }
   else if(cmd==='paint') togglePaintMode(btn);
 });
 
@@ -4382,29 +4582,46 @@ function richFieldToArray(el){
     if(html) items.push(esc(html));
     strayBuffer = '';
   }
-  el.childNodes.forEach(node=>{
-    if(node.nodeType===1 && (node.tagName==='P' || node.tagName==='DIV' || node.tagName==='UL' || node.tagName==='OL')){
-      flushStray();
-      sawBlock = true;
-      if(node.tagName==='UL' || node.tagName==='OL'){
-        const html = node.outerHTML;
-        if(html) items.push(html);
-      } else {
+  function processNodes(nodes){
+    nodes.forEach(node=>{
+      if(node.nodeType===1 && (node.tagName==='P' || node.tagName==='DIV')){
+        flushStray();
+        sawBlock = true;
         let html = node.innerHTML.trim();
         const align = node.style && node.style.textAlign;
+        const indent = node.style && node.style.marginLeft;
         if(html && html.toLowerCase()!=='<br>'){
-          if(align) html = `<span style="display:block;text-align:${align};">${html}</span>`;
+          if(align || indent){
+            let styleStr = 'display:block';
+            if(align) styleStr += `;text-align:${align}`;
+            if(indent) styleStr += `;margin-left:${indent}`;
+            html = `<span style="${styleStr};">${html}</span>`;
+          }
           items.push(html);
         }
+      } else if(node.nodeType===1 && (node.tagName==='UL' || node.tagName==='OL')){
+        flushStray();
+        sawBlock = true;
+        const html = node.outerHTML;
+        if(html) items.push(html);
+      } else if(node.nodeType===3){
+        // Texto digitado que, por algum motivo do navegador, ficou fora de um <p>/<div>
+        // (em vez de sumir, vira seu próprio parágrafo).
+        strayBuffer += node.textContent;
+      } else if(node.nodeType===1 && node.tagName==='BR'){
+        flushStray();
+      } else if(node.nodeType===1){
+        // Qualquer outra tag de bloco (ex.: <blockquote>, que o "Aumentar recuo"
+        // nativo do navegador cria quando o texto ainda não é uma lista de
+        // verdade). Em vez de descartar — como acontecia antes e apagava texto
+        // do usuário ao salvar — processa o conteúdo de dentro dela normalmente.
+        flushStray();
+        sawBlock = true;
+        processNodes([...node.childNodes]);
       }
-    } else if(node.nodeType===3){
-      // Texto digitado que, por algum motivo do navegador, ficou fora de um <p>/<div>
-      // (em vez de sumir, vira seu próprio parágrafo).
-      strayBuffer += node.textContent;
-    } else if(node.nodeType===1 && node.tagName==='BR'){
-      flushStray();
-    }
-  });
+    });
+  }
+  processNodes([...el.childNodes]);
   flushStray();
   if(!sawBlock && items.length===0){
     const html = el.innerHTML.trim();
@@ -4454,11 +4671,12 @@ const TYPE_LABELS = {
   figure:'Imagem', video:'Vídeo (YouTube)',
   grid:'Grade de cards', compare:'Comparação (2 colunas)',
   timeline:'Linha do tempo', axes:'Eixos/cards', hierarchy:'Cadeia hierárquica', chips:'Lista de chips',
+  spacer:'↕ Espaçamento (linha em branco)',
   activity:'🛠 Roteiro de Atividade (roteiro do professor para a aula presencial, sem resposta do aluno)',
   atividade:'📝 Atividade (respondível pelo aluno dentro do sistema, com nota)',
 };
 const FRIENDLY_TYPES = ['prose','table','figure','video','activity','atividade'];
-const ADVANCED_TYPES = ['grid','compare','timeline','axes','hierarchy','chips'];
+const ADVANCED_TYPES = ['grid','compare','timeline','axes','hierarchy','chips','spacer'];
 const FUTURE_TYPES = [];
 // Tipos de questão suportados dentro de um bloco "Atividade" — cada questão da
 // atividade pode ter um tipo diferente. Sem upload de arquivo/imagem nesta versão.
@@ -4859,6 +5077,16 @@ function sectionEditorForm(sec, idx){
       </div>
       <label style="margin-top:14px;">Nota final (opcional)</label>
       <input type="text" spellcheck="true" lang="pt-BR" id="ef-cmp-footer" value="${escAttr(sec.footerNote||'')}">`;
+  } else if(type==='spacer'){
+    fields = `
+      <label>Tamanho do espaçamento</label>
+      <select id="ef-spacer-size">
+        <option value="sm" ${sec.size==='sm'?'selected':''}>Pequeno</option>
+        <option value="md" ${(!sec.size||sec.size==='md')?'selected':''}>Médio</option>
+        <option value="lg" ${sec.size==='lg'?'selected':''}>Grande</option>
+        <option value="xl" ${sec.size==='xl'?'selected':''}>Extra grande</option>
+      </select>
+      <div class="hint">Não aparece nenhum texto nem card para o aluno — é só um respiro visual entre duas seções. No modo edição, aparece uma marcação tracejada só pra você achar e ajustar.</div>`;
   } else {
     fields = `
       <label>Dados desta seção — JSON avançado</label>
@@ -5426,10 +5654,7 @@ function orgScreenForm(){
 }
 
 function newBlockForm(suggestedNum){
-  const jaTemAbertura = existeBlocoAbertura();
   return `<div class="editor-form" data-kind="newBlock">
-    ${jaTemAbertura?'':`<label class="org-hidden-label" style="margin-bottom:10px;"><input type="checkbox" id="ef-new-b-intro"> Este é um bloco de <strong>abertura</strong> (fica antes do Bloco I, sem numeração)</label>
-    <div class="hint" style="margin-bottom:12px;">Use para a aula de apresentação da disciplina: professor, ementa, avaliação. Só pode existir um bloco de abertura.</div>`}
     <label>Número do bloco (algarismo romano)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-b-num" value="${toRoman(suggestedNum)}" placeholder="Ex.: IV">
     <label>Título do bloco</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-b-title" placeholder="Título do novo bloco" value="">
     <div class="hint">O bloco é criado sem nenhuma aula — use "+ Adicionar aula" dentro dele depois.</div>
@@ -5452,6 +5677,7 @@ const TYPE_DESCRIPTIONS = {
   axes: 'Cartões organizados ao longo de eixos ou categorias. Use para classificações ou modelos com múltiplas dimensões.',
   hierarchy: 'Uma cadeia de itens conectados em sequência hierárquica (do geral ao específico, ou de uma etapa para a próxima). Use para mostrar dependências ou fluxos.',
   chips: 'Uma lista de palavras ou termos curtos exibidos como "etiquetas" (chips) lado a lado. Use para listar palavras-chave, tags ou categorias soltas.',
+  spacer: 'Um espaço em branco vertical entre duas seções — sem texto, sem card. Use só quando duas seções ficarem visualmente "coladas" e você quiser um respiro. Escolha o tamanho (pequeno a extra grande).',
   activity: 'Um roteiro de atividade prática para conduzir em sala (objetivo, método, materiais, resultados esperados). É só um roteiro do professor — o aluno não responde nada aqui.',
   atividade: 'Uma atividade que o aluno responde dentro do sistema (uma ou mais questões, de vários tipos), com nota e comentário do professor. Use ao final da aula para fixação/avaliação contínua.',
 };
@@ -5507,6 +5733,7 @@ function blankSection(type){
     case 'axes': return {type, id, axes:[{title:'', desc:''}]};
     case 'hierarchy': return {type, id, chain:[{label:'', desc:''}]};
     case 'chips': return {type, id, chips:[{label:''}]};
+    case 'spacer': return {type, id, size:'md'};
     case 'atividade': return {type, id, title:'', statement:'', required:true,
       items:[{itemId:genItemId(), type:'dissertativa', prompt:''}]};
     default: return {type, id};
@@ -7414,19 +7641,15 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
 
   if(action==='confirm-new-block'){
-    const introCb = document.getElementById('ef-new-b-intro');
-    const ehAbertura = !!(introCb && introCb.checked);
-    const newNum = ehAbertura ? 0 : fromRoman(document.getElementById('ef-new-b-num').value);
+    const newNum = fromRoman(document.getElementById('ef-new-b-num').value);
     const newTitle = document.getElementById('ef-new-b-title').value.trim();
-    if(!ehAbertura && newNum===null){ alert('Número do bloco inválido — digite um algarismo romano válido (ex.: IV, VII, XII).'); return; }
+    if(newNum===null){ alert('Número do bloco inválido — digite um algarismo romano válido (ex.: IV, VII, XII).'); return; }
     if(!newTitle){ alert('Digite um título para o bloco.'); return; }
-    if(ehAbertura && existeBlocoAbertura()){ alert('Já existe um bloco de abertura neste curso.'); return; }
     if(COURSE.some(bb=>bb.num===newNum)){
-      alert(ehAbertura ? 'Já existe um bloco ocupando a posição de abertura.' : `Já existe um bloco com o número ${newNum}. Escolha outro número.`);
+      alert(`Já existe um bloco com o número ${newNum}. Escolha outro número.`);
       return;
     }
     const novoBloco = {num:newNum, title:newTitle, aulaRange:'', sources:'', aulas:[]};
-    if(ehAbertura) novoBloco.isIntro = true;
     COURSE.push(novoBloco);
     COURSE.sort((x,y)=>x.num-y.num);
     state.block = newNum;
@@ -7816,6 +8039,8 @@ document.getElementById('content').addEventListener('click', async (e)=>{
           leftItems, rightTitle: document.getElementById('ef-cmp-right-title').value.trim(),
           rightColor: document.getElementById('ef-cmp-right-color').value,
           rightItems, footerNote: document.getElementById('ef-cmp-footer').value.trim()||undefined };
+      } else if(type==='spacer'){
+        newSec = { type, size: document.getElementById('ef-spacer-size').value };
       } else {
         newSec = JSON.parse(document.getElementById('ef-json').value);
       }
@@ -8524,7 +8749,7 @@ async function openSubject(subjectId){
   document.getElementById('presentation-btn').classList.remove('hidden');
   applySubjectBranding(allSubjects && allSubjects.find(x=>x.id===subjectId));
   AULA_TEMPLATE_CACHE = undefined; // matéria pode ter mudado — rebusca o modelo quando precisar
-  if(isAdmin){ checkLocalDraft(); updateCapacityIndicator(); }
+  if(isAdmin){ checkLocalDraft(); updateCapacityIndicator(); autoPublicarAtividadesVencidas(); }
 }
 
 async function openStudentSubject(subjectId){
@@ -8898,6 +9123,11 @@ function stopInactivityWatch(){
   if(inactivityCheckHandle){ clearInterval(inactivityCheckHandle); inactivityCheckHandle = null; }
 }
 
+{
+  const avt = document.getElementById('auth-version-tag');
+  const vt = document.getElementById('version-tag');
+  if(avt && vt) avt.textContent = vt.textContent;
+}
 if(!firebaseReady || !auth){
   document.getElementById('auth-gate').classList.remove('hidden');
   const errEl = document.getElementById('auth-login-error');
