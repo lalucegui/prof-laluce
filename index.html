@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.1.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.2.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -513,7 +513,9 @@
   .gestao-grupo:hover{background:var(--tint-medium);}
   .gestao-grupo.is-ativo{background:var(--navy);color:#fff;border-color:var(--navy);}
   .gestao-grupo .mi{font-size:17px;}
-  .gestao-abas{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;}
+  /* Altura fixa: sem isso, ir de Matérias (7 abas) para Configurações (1) fazia
+     a tela inteira pular para cima. */
+  .gestao-abas{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;min-height:34px;align-items:center;}
   .gestao-aba{
     background:none;border:none;
     border-bottom:2px solid transparent;
@@ -893,9 +895,9 @@
   }
   .progress-pill{
     font-size:13px;
-    background:rgba(255,255,255,0.08);
-    border:1px solid rgba(255,255,255,0.18);
-    color:var(--ice);
+    background:var(--header-tint);
+    border:0.5px solid var(--header-line);
+    color:var(--header-fg);
     padding:7px 14px;
     border-radius:999px;
     white-space:nowrap;
@@ -904,10 +906,10 @@
     align-items:center;
     gap:8px;
   }
-  .progress-pill:hover{background:rgba(255,255,255,0.14);}
+  .progress-pill:hover{background:var(--header-line);}
   .progress-pill .chev{font-size:10px;transition:transform .15s ease;}
   .progress-pill[aria-expanded="true"] .chev{transform:rotate(180deg);}
-  .progress-pill[aria-expanded="true"]{background:rgba(255,255,255,0.16);}
+  .progress-pill[aria-expanded="true"]{background:var(--header-line);}
 
   .aula-picker-wrap{position:relative;}
   .aula-picker{
@@ -915,8 +917,9 @@
     width:360px;
     max-height:70vh;
     overflow-y:auto;
-    background:var(--white);
+    background:var(--surface-raised);
     color:var(--charcoal);
+    border:0.5px solid var(--hairline);
     border-radius:12px;
     box-shadow:0 12px 40px rgba(0,0,0,0.28);
     z-index:200;
@@ -945,8 +948,8 @@
     color:var(--charcoal);
     cursor:pointer;
   }
-  .picker-item:hover{background:var(--ice-tint);}
-  .picker-item.current{background:var(--ice-tint);font-weight:600;}
+  .picker-item:hover{background:var(--tint-soft);}
+  .picker-item.current{background:var(--tint-medium);font-weight:600;}
   .picker-item .n{
     font-family:'Source Serif 4',serif;
     font-weight:700;
@@ -1533,7 +1536,7 @@
     font-size:13.5px;font-family:inherit;resize:vertical;
   }
   .editor-form textarea{min-height:70px;line-height:1.5;}
-  .editor-form div.rich-text{min-height:60px;line-height:1.6;background:#fff;}
+  .editor-form div.rich-text{min-height:60px;line-height:1.6;background:var(--surface-raised);}
   .spacer-block{width:100%;}
   body.admin-mode .spacer-block.spacer-admin{
     display:flex;align-items:center;justify-content:center;
@@ -1558,7 +1561,7 @@
   .nav-search-row{padding:8px 12px 4px 12px;}
   #nav-search-input{
     width:100%;padding:7px 10px;font-size:12.5px;border:1px solid var(--line);
-    border-radius:8px;font-family:inherit;background:#fff;
+    border-radius:8px;font-family:inherit;background:var(--surface-raised);
   }
   #nav-search-input:focus{outline:none;border-color:var(--navy);}
   .side-nav.collapsed .nav-search-row, .side-nav.collapsed .nav-search-results{display:none;}
@@ -1579,7 +1582,7 @@
     display:flex;align-items:center;justify-content:center;padding:20px;
   }
   .draft-recovery-box{
-    background:#fff;border-radius:14px;max-width:640px;width:100%;
+    background:var(--surface-raised);border-radius:14px;max-width:640px;width:100%;
     padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.3);
   }
   .draft-recovery-box h3{margin:0 0 10px 0;color:var(--navy);font-size:17px;}
@@ -1677,7 +1680,7 @@
      mas fica "invisível" (some no fundo da página). */
   .atv-item input[type=text], .atv-item textarea, .atv-item div.rich-text{
     width:100%;padding:8px 10px;border:1.5px solid #D8A857;border-radius:6px;
-    font-size:13.5px;font-family:inherit;resize:vertical;background:#fff;box-sizing:border-box;
+    font-size:13.5px;font-family:inherit;resize:vertical;background:var(--surface-raised);box-sizing:border-box;
   }
   .atv-item textarea{min-height:70px;line-height:1.5;}
   .atv-item div.rich-text{min-height:90px;line-height:1.6;}
@@ -1685,7 +1688,7 @@
   .atv-item div.rich-text p:last-child{margin-bottom:0;}
   .atv-item div.rich-text:focus{outline:2px solid #8A5A0F;outline-offset:-1px;}
   .atv-item input[type=text]:focus, .atv-item textarea:focus{outline:none;border-color:#8A5A0F;}
-  .atv-option-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;margin:6px 0;cursor:pointer;background:#fff;}
+  .atv-option-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;margin:6px 0;cursor:pointer;background:var(--surface-raised);}
   .atv-option-row:hover{border-color:#D8A857;}
   .atv-option-row input{width:auto;margin:0;flex:0 0 auto;}
   .atv-option-letter{flex:0 0 22px;height:22px;border-radius:50%;background:#F2DFB8;color:#8A5A0F;font-weight:800;font-size:11.5px;display:flex;align-items:center;justify-content:center;}
@@ -1716,7 +1719,7 @@
   .atv-grading-section-label{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:2px 0 8px 0;}
   .atv-grading-divider{margin-top:18px;padding-top:14px;border-top:1.5px solid var(--line);}
   .atv-grade-answer-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-top:2px;}
-  .atv-grade-answer{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:4px;}
+  .atv-grade-answer{background:var(--surface-raised);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:4px;}
   .atv-manage-prazo{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:10px 0 16px 0;}
   .atv-manage-prazo label{margin:0;font-size:11px;}
   .atv-student-row{margin-bottom:2px;}
@@ -1730,7 +1733,7 @@
   .diario-lista{display:flex;flex-direction:column;gap:4px;max-height:420px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px;}
   .diario-aluno-row{
     display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;
-    font-size:13.5px;background:#fff;transition:background .12s;
+    font-size:13.5px;background:var(--surface-raised);transition:background .12s;
   }
   .diario-aluno-row:hover{background:var(--ice-tint);}
   .diario-aluno-row .diario-aluno-nome{flex:1;}
@@ -1772,7 +1775,7 @@
   /* botões de veredito */
   .atv-verdict-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;}
   .atv-verdict-btn{
-    border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;
+    border:1.5px solid var(--line);background:var(--surface-raised);border-radius:8px;padding:6px 12px;
     font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .12s;
   }
   .atv-verdict-btn:hover{border-color:var(--navy);color:var(--navy);}
@@ -1790,7 +1793,7 @@
   /* banco de comentários rápidos */
   .atv-fb-bank{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;align-items:center;}
   .atv-fb-chip{
-    border:1px dashed var(--line);background:#fff;border-radius:20px;padding:3px 10px;
+    border:1px dashed var(--line);background:var(--surface-raised);border-radius:20px;padding:3px 10px;
     font-size:11px;color:var(--muted);cursor:pointer;max-width:100%;
   }
   .atv-fb-chip:hover{border-color:var(--navy);color:var(--navy);border-style:solid;}
@@ -1801,7 +1804,7 @@
   .atv-q-head label{margin-top:0;}
   .atv-q-prompt{font-size:14px;font-weight:600;color:var(--charcoal);margin:8px 0 6px 0;}
   .atv-q-list{display:flex;flex-direction:column;gap:10px;}
-  .atv-q-row{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff;}
+  .atv-q-row{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface-raised);}
   .atv-q-student{font-weight:700;color:var(--navy);font-size:13.5px;margin-bottom:6px;}
   .atv-q-feedback{min-height:40px;}
   /* boletim */
@@ -1809,7 +1812,7 @@
   .atv-bol-table{border-collapse:collapse;font-size:12.5px;width:100%;}
   .atv-bol-table th, .atv-bol-table td{border:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap;}
   .atv-bol-table th{background:var(--ice-tint);color:var(--navy);font-size:11.5px;}
-  .atv-bol-name{text-align:left !important;font-weight:600;position:sticky;left:0;background:#fff;}
+  .atv-bol-name{text-align:left !important;font-weight:600;position:sticky;left:0;background:var(--surface-raised);}
   .atv-bol-table th.atv-bol-name{background:var(--ice-tint);}
   .atv-bol-empty{color:#C8C8D0;}
   .atv-bol-ok{background:#E9F6EE;color:#1C7C4C;font-weight:700;}
@@ -1834,16 +1837,16 @@
   .student-notes{margin-top:26px;background:#FFFDF2;border:1.5px dashed #D9C97A;border-radius:12px;padding:16px 18px;}
   .student-notes-head{font-size:13.5px;font-weight:800;color:#7A6716;margin-bottom:10px;}
   .student-notes-head span{font-weight:400;font-size:11.5px;color:#A8944A;}
-  .student-notes textarea{width:100%;min-height:110px;border:1px solid #E4D9A8;border-radius:8px;padding:10px 12px;font-size:13.5px;font-family:inherit;line-height:1.55;background:#fff;resize:vertical;}
+  .student-notes textarea{width:100%;min-height:110px;border:1px solid #E4D9A8;border-radius:8px;padding:10px 12px;font-size:13.5px;font-family:inherit;line-height:1.55;background:var(--surface-raised);resize:vertical;}
   .student-notes textarea:focus{outline:none;border-color:#B8A54E;}
   .student-notes-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:8px;}
   #student-note-status{font-size:12px;font-weight:700;}
   .ai-import-box{margin-top:18px;background:var(--ice-tint);border-radius:12px;padding:14px 16px;}
   .ai-import-title{font-size:13.5px;font-weight:800;color:var(--navy);}
-  .turma-assign-select{font-size:11.5px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--charcoal);max-width:230px;margin-top:4px;}
+  .turma-assign-select{font-size:11.5px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-raised);color:var(--charcoal);max-width:230px;margin-top:4px;}
   .turma-badge{font-size:11px;color:var(--navy);font-weight:700;}
   .turma-filter-row{display:flex;align-items:center;gap:8px;margin-top:12px;}
-  .turma-filter-row select{font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;}
+  .turma-filter-row select{font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-raised);}
   .turmas-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
   .turma-row{display:flex;align-items:center;gap:10px;background:var(--ice-tint);border-radius:10px;padding:10px 14px;flex-wrap:wrap;}
   .turma-row-name{flex:1;min-width:180px;display:flex;flex-direction:column;}
@@ -1947,7 +1950,7 @@
   .org-hidden-label{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);white-space:nowrap;flex:0 0 auto;}
   .org-hidden-label input{width:auto;}
   .org-aula-rows{margin-top:10px;padding-left:20px;display:flex;flex-direction:column;gap:6px;}
-  .org-aula-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#fff;border-radius:8px;padding:6px 8px;border:1px solid var(--line);}
+  .org-aula-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface-raised);border-radius:8px;padding:6px 8px;border:1px solid var(--line);}
   .org-aula-row .org-aula-num{width:48px;flex:0 0 auto;text-align:center;}
   .org-aula-row .org-aula-block{flex:0 0 auto;max-width:170px;font-size:12px;}
   .org-aula-row .org-aula-title{flex:1 1 180px;}
@@ -1976,7 +1979,7 @@
   .cmp-items{width:100%;min-height:100px;padding:8px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;margin-bottom:8px;}
   .rich-toolbar{
     display:flex;flex-wrap:wrap;gap:4px;align-items:center;
-    background:#fff;border:1px solid var(--line);border-radius:8px 8px 0 0;
+    background:var(--surface-raised);border:1px solid var(--line);border-radius:8px 8px 0 0;
     padding:6px;margin-top:4px;
   }
   .rich-toolbar button{
@@ -1994,7 +1997,7 @@
   .rich-toolbar button.align-btn img{width:100%;height:100%;object-fit:contain;}
   .rich-toolbar select{
     border:1px solid var(--line);border-radius:5px;font-size:12px;padding:4px 6px;
-    background:#fff;max-width:110px;
+    background:var(--surface-raised);max-width:110px;
   }
   .rich-toolbar input[type=color]{width:28px;height:28px;border:1px solid var(--line);border-radius:5px;padding:2px;cursor:pointer;}
   .editor-form input[type=color]{width:34px;height:32px;border:1px solid var(--line);border-radius:6px;padding:2px;cursor:pointer;flex:0 0 auto;}
@@ -2016,7 +2019,7 @@
   .highlight-menu-btn:hover{background:var(--ice);}
   .highlight-menu-panel{
     position:absolute;top:32px;left:0;z-index:50;
-    background:#fff;border:1px solid var(--line);border-radius:8px;
+    background:var(--surface-raised);border:1px solid var(--line);border-radius:8px;
     box-shadow:0 6px 20px rgba(0,0,0,0.15);
     padding:10px;min-width:170px;
   }
@@ -2038,7 +2041,7 @@
   .marker-menu-btn:hover{background:var(--ice);}
   .marker-menu-panel{
     position:absolute;top:32px;left:0;z-index:50;
-    background:#fff;border:1px solid var(--line);border-radius:8px;
+    background:var(--surface-raised);border:1px solid var(--line);border-radius:8px;
     box-shadow:0 6px 20px rgba(0,0,0,0.15);
     padding:10px;min-width:170px;
   }
@@ -2215,7 +2218,7 @@
   .aula-seen-toggle-row{margin-top:10px;text-align:right;}
   .aula-seen-toggle{
     font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;cursor:pointer;
-    border:1.5px solid var(--line);background:#fff;color:var(--muted);font-family:inherit;
+    border:1.5px solid var(--line);background:var(--surface-raised);color:var(--muted);font-family:inherit;
   }
   .aula-seen-toggle.is-seen{border-color:#2E7D32;background:#EAF5EB;color:#2E7D32;}
   .aula-updated-at{
@@ -2892,7 +2895,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.1.0</div>
+<div class="version-tag hidden" id="version-tag">v4.2.0</div>
 
 
 <script>
@@ -6603,9 +6606,14 @@ function gestaoNavHtml(grupo, aba){
     .map(([id,g]) => `<button type="button" class="gestao-grupo ${id===grupo?'is-ativo':''}" data-action="gestao-grupo" data-grupo="${id}"><span class="mi">${g.icone}</span>${esc(g.rotulo)}</button>`)
     .join('');
   const abasDoGrupo = (GESTAO_GRUPOS[grupo]||{}).abas || {};
-  const abas = Object.entries(abasDoGrupo)
-    .map(([id,rot]) => `<button type="button" class="gestao-aba ${id===aba?'is-ativa':''}" data-action="gestao-aba" data-aba="${id}">${esc(rot)}</button>`)
-    .join('');
+  // Grupo com uma aba so nao mostra aba nenhuma — nao ha escolha a fazer, e
+  // uma aba solitaria so confunde. A faixa continua ocupando a mesma altura,
+  // para a tela nao pular quando voce troca de grupo.
+  const abas = Object.keys(abasDoGrupo).length > 1
+    ? Object.entries(abasDoGrupo)
+        .map(([id,rot]) => `<button type="button" class="gestao-aba ${id===aba?'is-ativa':''}" data-action="gestao-aba" data-aba="${id}">${esc(rot)}</button>`)
+        .join('')
+    : '';
   return `<div class="gestao-grupos">${grupos}</div><div class="gestao-abas">${abas}</div>`;
 }
 
@@ -6916,7 +6924,7 @@ function configScreenForm(){
       <div class="config-grupo-titulo">Aparência</div>
       <div class="config-linha">
         <span>Tema de cores: <strong>${esc(nomePaleta)}</strong></span>
-        <button type="button" class="btn-secondary" id="cfg-abrir-cadastro">Trocar tema</button>
+        <button type="button" class="btn-secondary" data-action="abrir-meu-cadastro">Trocar tema</button>
       </div>
       <div class="hint">O tema vale só para você. O conteúdo das aulas que o professor montou não muda de cor.</div>
     </div>
@@ -7196,8 +7204,6 @@ function render(){
       if(cachedUsersList===null){
         fetchAllUsers().then(()=>{ if(editState && editState.kind==='avaliacao') render(); }).catch(()=>{});
       }
-      const sel = document.getElementById('aval-turma-select');
-      if(sel) sel.addEventListener('change', ()=>{ editState.turmaId = sel.value; render(); });
     }
     return;
   }
@@ -7205,10 +7211,10 @@ function render(){
     content.innerHTML = comCabecalho('iaScreen', iaScreenForm());
     return;
   }
+  // Compatibilidade: Configuracoes virou grupo da gestao.
   if(editState && editState.kind==='configScreen'){
-    content.innerHTML = comCabecalho('configScreen', configScreenForm());
-    const bAbrir = document.getElementById('cfg-abrir-cadastro');
-    if(bAbrir) bAbrir.addEventListener('click', openProfileModal);
+    editState = {kind:'gestao', grupo:'config', aba:'geral'};
+    render();
     return;
   }
   if(editState && editState.kind==='orgScreen'){
@@ -9341,6 +9347,10 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
 
+  if(action==='abrir-meu-cadastro'){
+    openProfileModal();
+    return;
+  }
   if(action==='save-config'){
     if(!isMaster){ alert('Só o administrador altera as configurações do sistema.'); return; }
     const min = parseInt(document.getElementById('cfg-inactivity-minutes').value, 10);
@@ -9793,6 +9803,11 @@ document.getElementById('content').addEventListener('change', async (e)=>{
     return;
   }
   if(e.target.id==='atv-boletim-turma-select'){
+    editState.turmaId = e.target.value;
+    render();
+    return;
+  }
+  if(e.target.id==='aval-turma-select'){
     editState.turmaId = e.target.value;
     render();
     return;
