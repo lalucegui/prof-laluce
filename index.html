@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v3.3.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v3.6.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -483,6 +483,155 @@
     font-size:11px;line-height:1.5;max-height:280px;overflow:auto;
     white-space:pre-wrap;word-break:break-word;
   }
+
+  .gestao-grupos{
+    display:flex;gap:6px;flex-wrap:wrap;
+    padding-bottom:12px;
+    border-bottom:0.5px solid var(--hairline);
+    margin-bottom:12px;
+  }
+  .gestao-grupo{
+    display:inline-flex;align-items:center;gap:7px;
+    background:var(--tint-soft);
+    border:0.5px solid var(--hairline);
+    border-radius:var(--radius);
+    padding:9px 15px;
+    font-family:inherit;font-size:13px;font-weight:600;
+    color:var(--navy);cursor:pointer;
+    transition:background-color .13s ease,border-color .13s ease;
+  }
+  .gestao-grupo:hover{background:var(--tint-medium);}
+  .gestao-grupo.is-ativo{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .gestao-grupo .mi{font-size:17px;}
+  .gestao-abas{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;}
+  .gestao-aba{
+    background:none;border:none;
+    border-bottom:2px solid transparent;
+    padding:7px 12px;
+    font-family:inherit;font-size:12.5px;font-weight:600;
+    color:var(--muted);cursor:pointer;
+  }
+  .gestao-aba:hover{color:var(--navy);}
+  .gestao-aba.is-ativa{color:var(--navy);border-bottom-color:var(--gold);}
+
+  .aval-aviso, .aval-obrigado{
+    display:flex;align-items:flex-start;gap:11px;
+    background:var(--tint-soft);
+    border:0.5px solid var(--hairline);
+    border-radius:var(--radius);
+    padding:13px 15px;margin-bottom:20px;
+    font-size:13px;line-height:1.6;
+  }
+  .aval-aviso .mi, .aval-obrigado .mi{font-size:20px;color:var(--navy);flex:0 0 auto;}
+  .aval-obrigado{background:var(--ok-tint);border-color:var(--ok);}
+  .aval-obrigado .mi{color:var(--ok);}
+  .aval-obrigado p{margin:3px 0 0;color:var(--muted);font-size:12.5px;}
+  .aval-pergunta{margin-bottom:20px;}
+  .aval-texto{font-size:14px;color:var(--charcoal);margin-bottom:9px;line-height:1.5;}
+  .aval-escala{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .aval-extremo{font-size:11px;color:var(--muted);}
+  .aval-escala-item{position:relative;cursor:pointer;}
+  .aval-escala-item input{position:absolute;opacity:0;width:0;height:0;}
+  .aval-escala-item span{
+    display:flex;align-items:center;justify-content:center;
+    width:38px;height:38px;border-radius:50%;
+    border:1px solid var(--hairline);
+    background:var(--surface-raised);
+    font-size:13.5px;font-weight:600;color:var(--muted);
+    transition:all .12s ease;
+  }
+  .aval-escala-item:hover span{border-color:var(--hairline-strong);}
+  .aval-escala-item input:checked + span{
+    background:var(--navy);color:#fff;border-color:var(--navy);
+  }
+  .aval-opcoes{display:grid;gap:6px;}
+  .aval-opcao{
+    display:flex;align-items:center;gap:9px;cursor:pointer;
+    border:0.5px solid var(--hairline);border-radius:var(--radius);
+    padding:10px 13px;font-size:13.5px;
+    transition:border-color .12s ease,background-color .12s ease;
+  }
+  .aval-opcao:hover{border-color:var(--hairline-strong);}
+  .aval-opcao input{accent-color:var(--navy);}
+  .aval-opcao:has(input:checked){background:var(--tint-soft);border-color:var(--navy);}
+  .aval-bloco{
+    background:var(--surface-card);
+    border:0.5px solid var(--hairline);
+    border-radius:var(--radius-lg);
+    padding:15px 17px;margin-bottom:12px;
+  }
+  .aval-bloco-titulo{font-size:13.5px;font-weight:600;color:var(--navy);margin-bottom:10px;}
+  .aval-bloco-titulo em{font-style:normal;color:var(--muted);font-weight:400;}
+  .aval-media{
+    font-family:'Source Serif 4',Georgia,serif;
+    font-size:26px;color:var(--navy);margin-bottom:10px;
+  }
+  .aval-media em{font-style:normal;font-size:12px;color:var(--muted);font-family:'Inter',sans-serif;}
+  .aval-barras{display:flex;align-items:flex-end;gap:10px;height:74px;}
+  .aval-barra-col{display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .aval-barra{width:30px;background:var(--navy);border-radius:4px 4px 0 0;opacity:.75;}
+  .aval-barra-col span{font-size:11px;color:var(--muted);}
+  .aval-escolha-linha{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12.5px;}
+  .aval-escolha-rot{flex:0 0 190px;color:var(--charcoal);}
+  .aval-escolha-barra{flex:1;height:9px;background:var(--tint-soft);border-radius:5px;overflow:hidden;}
+  .aval-escolha-barra i{display:block;height:100%;background:var(--navy);opacity:.75;}
+  .aval-escolha-num{flex:0 0 42px;text-align:right;color:var(--muted);}
+  .aval-comentarios{display:grid;gap:7px;}
+  .aval-comentario{
+    background:var(--surface-raised);
+    border-left:2px solid var(--gold);
+    border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+    padding:9px 12px;font-size:13px;line-height:1.6;
+  }
+  @media(max-width:620px){
+    .aval-escolha-rot{flex:0 0 120px;}
+  }
+
+  .an-questao{
+    border:0.5px solid var(--hairline);
+    border-left:3px solid var(--hairline-strong);
+    border-radius:0 var(--radius) var(--radius) 0;
+    padding:13px 15px;margin-bottom:10px;
+    background:var(--surface-card);
+  }
+  .an-ok{border-left-color:var(--ok);}
+  .an-meio{border-left-color:var(--warn);}
+  .an-ruim{border-left-color:var(--err);}
+  .an-topo{display:flex;align-items:flex-start;gap:11px;}
+  .an-num{
+    flex:0 0 auto;width:26px;height:26px;border-radius:50%;
+    background:var(--tint-medium);color:var(--navy);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12.5px;font-weight:600;
+  }
+  .an-enunciado{flex:1;min-width:0;font-size:13.5px;line-height:1.5;color:var(--charcoal);}
+  .an-enunciado em{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:2px;}
+  .an-pct{
+    flex:0 0 auto;text-align:right;
+    font-family:'Source Serif 4',Georgia,serif;font-size:22px;color:var(--navy);
+    line-height:1.1;
+  }
+  .an-pct span{
+    display:block;font-family:'Inter',sans-serif;
+    font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;
+  }
+  .an-ok .an-pct span{color:var(--ok);}
+  .an-meio .an-pct span{color:var(--warn);}
+  .an-ruim .an-pct span{color:var(--err);}
+  .an-opcoes{margin-top:11px;display:grid;gap:5px;}
+  .an-opcao{display:flex;align-items:center;gap:9px;font-size:12.5px;}
+  .an-opcao-rot{flex:0 0 210px;color:var(--muted);display:flex;align-items:center;gap:5px;}
+  .an-opcao-rot .mi{font-size:15px;color:var(--ok);}
+  .an-opcao.is-certa .an-opcao-rot{color:var(--ok);font-weight:600;}
+  .an-opcao-barra{flex:1;height:8px;background:var(--tint-soft);border-radius:4px;overflow:hidden;}
+  .an-opcao-barra i{display:block;height:100%;background:var(--muted);opacity:.5;}
+  .an-opcao.is-certa .an-opcao-barra i{background:var(--ok);opacity:.7;}
+  .an-opcao-num{flex:0 0 26px;text-align:right;color:var(--muted);font-size:11.5px;}
+  .an-distrator{
+    margin-top:9px;font-size:12.5px;color:var(--warn);
+    background:var(--warn-tint);border-radius:var(--radius-sm);padding:8px 11px;
+  }
+  @media(max-width:620px){ .an-opcao-rot{flex:0 0 120px;} }
 
   .has-tip{position:relative;}
   .has-tip::after{
@@ -2522,6 +2671,7 @@
     <button class="btn-tiny" data-action="ir-para-tela" data-tela="atividadesBoletim" title="Boletim: notas e entregas no prazo da turma">📊 Boletim</button>
     <button class="btn-tiny" data-action="ir-para-tela" data-tela="diarioFrequencia" title="Frequência consolidada de todas as aulas">✅ Frequência</button>
     <button class="btn-tiny" data-action="ir-para-tela" data-tela="iaScreen" title="Criar ou melhorar aulas com ajuda de IA">✨ Criar com IA</button>
+    <button class="btn-tiny" data-action="ir-para-tela" data-tela="avaliacao" title="O que a turma achou das aulas e da plataforma">💬 Avaliação da turma</button>
     <button class="btn-tiny" id="grid-mode-toggle-btn" title="Mostrar/esconder as bordas pontilhadas e a alça de arrastar seções">🔲 Grade: ligada</button>
   </span>
 </div>
@@ -2562,6 +2712,7 @@
     </div>
     <div class="nav-search-results hidden" id="nav-search-results"></div>
     <button class="my-notes-btn hidden" id="my-notes-btn" data-action="open-my-notes">📝 Minhas anotações</button>
+    <button class="my-notes-btn hidden" id="avaliar-btn" data-action="ir-para-tela" data-tela="avaliacao">💬 Avaliar as aulas</button>
     <nav class="nav-list" id="nav-list"></nav>
   </aside>
   <div class="nav-backdrop" id="nav-backdrop"></div>
@@ -2640,7 +2791,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v3.3.0</div>
+<div class="version-tag hidden" id="version-tag">v3.6.0</div>
 
 
 <script>
@@ -4348,6 +4499,98 @@ function atvPorQuestaoHtml(sec, ctx){
     </div>`;
 }
 
+// ---------- ABA: ANALISE (v3.6.0) ----------
+// A estatistica mais util de todas, e a que costuma faltar: em vez de dizer
+// quanto CADA ALUNO tirou, diz quanto a TURMA acertou EM CADA QUESTAO.
+//
+// A pergunta que ela responde nao e "quem vai mal" — e "o que eu ensinei
+// mal". Se 80% erraram a questao 3, o problema nao esta na turma.
+//
+// Em multipla escolha vai um passo alem: mostra QUAL alternativa errada
+// atraiu mais gente. Isso revela a confusao especifica que existe na cabeca
+// deles, e nao so que existe alguma.
+function atvAnaliseHtml(sec, ctx){
+  const respondidas = ctx.alunos
+    .map(u=>({u, resp: ctx.responsesByUid[u.id], draft: ctx.draftsByUid[u.id]}))
+    .filter(x=> x.resp && x.resp.answers);
+  if(!respondidas.length){
+    return '<p class="hint">Ninguém desta turma respondeu ainda — sem respostas não há o que analisar.</p>';
+  }
+
+  const blocos = (sec.items||[]).map((it, idx)=>{
+    const maxPts = atvItemMaxPoints(it);
+    let comNota = 0, somaPts = 0, semCorrecao = 0;
+    const escolhas = {};   // para questoes fechadas: o que a turma marcou
+
+    respondidas.forEach(({resp, draft})=>{
+      const eff = atvEffectiveGrading(resp, draft);
+      const saved = (eff.perItem||{})[it.itemId] || {};
+      let pts = (saved.points!=null && saved.points!=='') ? Number(saved.points) : null;
+      if(pts === null){
+        const auto = autoGradeClosedItem(it, (resp.answers||{})[it.itemId]);
+        if(auto) pts = auto.points;
+      }
+      if(pts === null){ semCorrecao++; }
+      else { comNota++; somaPts += pts; }
+
+      const val = (resp.answers||{})[it.itemId];
+      if(it.type==='multipla_escolha' && val){ escolhas[val] = (escolhas[val]||0)+1; }
+      else if(it.type==='checklist' && Array.isArray(val)){ val.forEach(v=>{ escolhas[v] = (escolhas[v]||0)+1; }); }
+    });
+
+    const pctAcerto = comNota && maxPts ? Math.round((somaPts/(comNota*maxPts))*100) : null;
+    // Faixas pensadas para ENSINO, nao para nota: abaixo de 50% a turma nao
+    // aprendeu aquilo, e vale reensinar antes de seguir.
+    const faixa = pctAcerto===null ? 'sem'
+                : pctAcerto >= 75 ? 'ok'
+                : pctAcerto >= 50 ? 'meio'
+                : 'ruim';
+    const rotuloFaixa = {ok:'A turma domina', meio:'Metade não pegou', ruim:'Reensinar', sem:'Sem correção ainda'}[faixa];
+
+    let detalhe = '';
+    if((it.type==='multipla_escolha' || it.type==='checklist') && (it.options||[]).length){
+      const totalMarcacoes = Object.values(escolhas).reduce((a,b)=>a+b,0) || 1;
+      const corretas = it.type==='multipla_escolha'
+        ? [it.correctOption].filter(Boolean)
+        : (it.correctOptions||[]);
+      detalhe = `<div class="an-opcoes">` + (it.options||[]).map(o=>{
+        const c = escolhas[o] || 0;
+        const pct = Math.round((c/totalMarcacoes)*100);
+        const ehCorreta = corretas.map(x=>String(x).trim()).includes(String(o).trim());
+        return `<div class="an-opcao ${ehCorreta?'is-certa':''}">
+          <span class="an-opcao-rot">${ehCorreta?'<span class="mi">check</span>':''}${esc(o)}</span>
+          <span class="an-opcao-barra"><i style="width:${pct}%"></i></span>
+          <span class="an-opcao-num">${c}</span>
+        </div>`;
+      }).join('') + `</div>`;
+      // O distrator que mais funcionou: a alternativa errada mais escolhida.
+      const erradas = (it.options||[]).filter(o=>!corretas.map(x=>String(x).trim()).includes(String(o).trim()));
+      let pior = null;
+      erradas.forEach(o=>{ if((escolhas[o]||0) > (pior ? escolhas[pior]||0 : 0)) pior = o; });
+      if(pior && (escolhas[pior]||0) > 0){
+        detalhe += `<div class="an-distrator">Confusão mais comum: <strong>${esc(pior)}</strong> — marcada por ${escolhas[pior]} aluno(s).</div>`;
+      }
+    }
+
+    return `<div class="an-questao an-${faixa}">
+      <div class="an-topo">
+        <div class="an-num">${idx+1}</div>
+        <div class="an-enunciado">${esc(it.prompt||'(sem enunciado)')}
+          <em>${esc((ATV_ITEM_TYPES.find(([v])=>v===it.type)||[,it.type])[1])}</em>
+        </div>
+        <div class="an-pct">${pctAcerto===null?'—':pctAcerto+'%'}<span>${esc(rotuloFaixa)}</span></div>
+      </div>
+      ${semCorrecao ? `<div class="hint">${semCorrecao} resposta(s) ainda sem correção — o percentual considera só as ${comNota} já corrigidas.</div>` : ''}
+      ${detalhe}
+    </div>`;
+  }).join('');
+
+  const piores = (sec.items||[]).length;
+  return `<div class="hint">Percentual de acerto da turma <strong>em cada questão</strong>, entre os ${respondidas.length} que responderam. Serve para achar o que precisa ser reensinado — não para comparar alunos.</div>
+    ${blocos}
+    <div class="editor-actions"><button class="btn-secondary" data-action="atv-exportar-analise">Exportar análise (CSV)</button></div>`;
+}
+
 // ---------- ABA: PRAZO ----------
 function atvPrazoHtml(sec, ctx){
   if(!ctx.turmaId) return '<p class="hint">Esta matéria ainda não tem turmas cadastradas (crie turmas no Painel de alunos).</p>';
@@ -4679,6 +4922,7 @@ function atividadeManageForm(){
   if(tab==='painel') body = atvPainelHtml(sec, ctx);
   else if(tab==='aluno') body = atvPorAlunoHtml(sec, ctx);
   else if(tab==='questao') body = atvPorQuestaoHtml(sec, ctx);
+  else if(tab==='analise') body = atvAnaliseHtml(sec, ctx);
   else body = atvPrazoHtml(sec, ctx);
 
   return `<div class="editor-form">
@@ -4689,7 +4933,7 @@ function atividadeManageForm(){
       <select id="atv-manage-turma-select">${turmaOptions}</select>
     </div>
     <div class="users-tabs">
-      ${tabBtn('painel','📊 Painel')}${tabBtn('aluno','👤 Por aluno')}${tabBtn('questao','📝 Por questão')}${tabBtn('prazo','⏰ Prazo')}
+      ${tabBtn('painel','📊 Painel')}${tabBtn('aluno','👤 Por aluno')}${tabBtn('questao','📝 Por questão')}${tabBtn('analise','📈 Análise')}${tabBtn('prazo','⏰ Prazo')}
     </div>
     <div class="atv-tab-body">${body}</div>
     <div class="editor-actions">
@@ -5925,12 +6169,13 @@ function classStatsHtml(){
   const now = Date.now();
 
   // ---- Visão geral de sessões ----
-  let totalSessions = 0, totalMin = 0, completedSessions = 0;
-  students.forEach(u=>(u.sessions||[]).forEach(s=>{
-    totalSessions++;
-    if(typeof s.durationMin === 'number'){ totalMin += s.durationMin; completedSessions++; }
-  }));
-  const avgMin = completedSessions ? Math.round(totalMin/completedSessions) : 0;
+  // A DURAÇÃO média de sessão foi removida na v3.6.0: ela contava do login ao
+  // logout, então aluno que deixou a aba aberta durante o almoço registrava
+  // duas horas. Media tempo de aba aberta, não tempo de estudo — e era pior
+  // que inútil, porque parecia medir. Continua valendo contar quantas vezes
+  // a turma entrou, que é um sinal honesto.
+  let totalSessions = 0;
+  students.forEach(u=>{ totalSessions += (u.sessions||[]).length; });
 
   // ---- Alunos por último acesso (mais "sumidos" primeiro) ----
   const lastAccess = students.map(u=>{
@@ -5967,13 +6212,12 @@ function classStatsHtml(){
 
   return `<div class="editor-form">
     <div class="editing-type-banner">📊 Estatísticas da turma</div>
-    ${usersTabsHtml('stats')}
     <div class="hint">Números calculados a partir do log de acesso dos alunos ativos (arquivados ficam de fora). Suas próprias navegações como professor nunca entram na conta — nem no modo "ver como aluno".</div>
 
     <div class="stats-cards">
       <div class="stat-card"><div class="stat-big">${approved.length}</div><div class="stat-label">alunos aprovados<br>(${students.length} cadastrados)</div></div>
       <div class="stat-card"><div class="stat-big">${totalSessions}</div><div class="stat-label">sessões registradas</div></div>
-      <div class="stat-card"><div class="stat-big">${avgMin} min</div><div class="stat-label">duração média<br>de sessão</div></div>
+
     </div>
 
     <label style="margin-top:20px;">Último acesso de cada aluno <span style="text-transform:none;font-weight:400;color:var(--muted);">(destacados: nunca acessou, ou há 14+ dias)</span></label>
@@ -6062,13 +6306,82 @@ function userDetailForm(u){
 let usersViewMode = 'active'; // 'active' ou 'archived'
 // Abas do painel de alunos — fixas em TODAS as telas (Ativos, Arquivados,
 // Estatísticas e Turmas), com a atual destacada.
-function usersTabsHtml(current){
-  return `<div class="users-tabs">
-    <button class="users-tab ${current==='active'?'active':''}" data-action="set-users-view" data-view="active">Ativos</button>
-    <button class="users-tab ${current==='archived'?'active':''}" data-action="set-users-view" data-view="archived">📦 Arquivados</button>
-    <button class="users-tab ${current==='stats'?'active':''}" data-action="open-class-stats">📊 Estatísticas</button>
-    <button class="users-tab ${current==='turmas'?'active':''}" data-action="open-turmas-screen">🎓 Turmas</button>
-    ${isMaster ? `<button class="users-tab ${current==='profs'?'active':''}" data-action="open-professors-screen">🧑‍🏫 Professores</button>` : ''}
+// ===================== GESTAO EM DOIS NIVEIS (v3.4.0) =====================
+// Linha de cima = GRUPO (o que voce esta gerenciando).
+// Linha de baixo = ABA dentro daquele grupo.
+// Antes as duas coisas dividiam a mesma linha, o que fazia "Arquivados"
+// trocar o filtro de ALUNOS mesmo quando voce estava em Professores.
+const GESTAO_GRUPOS = {
+  alunos:      {rotulo:'Alunos',      icone:'group'},
+  turmas:      {rotulo:'Turmas',      icone:'groups'},
+  professores: {rotulo:'Professores', icone:'school',  soMaster:true},
+  materias:    {rotulo:'Matérias',    icone:'folder'},
+};
+const GESTAO_ABAS = {
+  ativos:       'Ativos',
+  arquivados:   'Arquivados',
+  estatisticas: 'Estatísticas',
+};
+
+function gestaoNavHtml(grupo, aba){
+  const grupos = Object.entries(GESTAO_GRUPOS)
+    .filter(([,g]) => !g.soMaster || isMaster)
+    .map(([id,g]) => `<button type="button" class="gestao-grupo ${id===grupo?'is-ativo':''}" data-action="gestao-grupo" data-grupo="${id}"><span class="mi">${g.icone}</span>${esc(g.rotulo)}</button>`)
+    .join('');
+  const abas = Object.entries(GESTAO_ABAS)
+    .map(([id,rot]) => `<button type="button" class="gestao-aba ${id===aba?'is-ativa':''}" data-action="gestao-aba" data-aba="${id}">${esc(rot)}</button>`)
+    .join('');
+  return `<div class="gestao-grupos">${grupos}</div><div class="gestao-abas">${abas}</div>`;
+}
+
+// Uma tela so, com grupo e aba — em vez de quatro telas com barras diferentes
+// (que era o motivo de os botoes do cabecalho mudarem conforme voce navegava).
+function gestaoScreenForm(){
+  const grupo = (editState && editState.grupo) || 'alunos';
+  const aba = (editState && editState.aba) || 'ativos';
+  let corpo = '';
+
+  if(aba === 'estatisticas'){
+    corpo = (grupo === 'alunos')
+      ? classStatsHtml()
+      : `<div class="editor-form"><p class="painel-vazio">As estatísticas de ${esc(GESTAO_GRUPOS[grupo].rotulo.toLowerCase())} ainda não foram desenhadas — vamos definir juntos quais fazem sentido aqui.</p></div>`;
+  } else if(grupo === 'alunos'){
+    usersViewMode = (aba === 'arquivados') ? 'archived' : 'active';
+    corpo = usersScreenForm();
+  } else if(grupo === 'turmas'){
+    corpo = turmasScreenForm();
+  } else if(grupo === 'professores'){
+    corpo = professorsScreenForm();
+  } else if(grupo === 'materias'){
+    corpo = materiasScreenForm(aba);
+  }
+  return gestaoNavHtml(grupo, aba) + corpo;
+}
+
+// Grupo novo: as materias arquivadas saem do painel inicial (onde poluiam a
+// lista do dia a dia) e ganham lugar proprio, com restaurar e excluir.
+function materiasScreenForm(aba){
+  const minhas = (allSubjects||[]).filter(s=> isMaster || (s.ownerUid && currentUser && s.ownerUid===currentUser.uid));
+  const lista = minhas.filter(s => aba === 'arquivados' ? s.archived : !s.archived);
+  const donoTag = (s)=>{
+    if(!isMaster) return '';
+    const minha = !s.ownerUid || (currentUser && s.ownerUid===currentUser.uid);
+    return `<span class="subject-owner-tag ${minha?'owner-master':''}">${minha ? 'Sua' : esc(s.ownerName || 'Professor')}</span>`;
+  };
+  const rows = lista.map(s=>`
+    <div class="turma-row">
+      <div class="turma-row-name"><strong>${esc(s.name)}</strong><span>${esc(s.description||'')}</span></div>
+      ${donoTag(s)}
+      ${aba === 'arquivados'
+        ? `<button class="btn-tiny" data-subject-op="unarchive" data-sid="${s.id}">♻️ Restaurar</button>
+           <button class="btn-tiny btn-danger" data-subject-op="delete-forever" data-sid="${s.id}">🗑️ Excluir</button>`
+        : `<button class="btn-tiny" data-subject-op="archive" data-sid="${s.id}">📦 Arquivar</button>`}
+    </div>`).join('') || `<p class="painel-vazio">Nenhuma matéria ${aba === 'arquivados' ? 'arquivada' : 'ativa'}.</p>`;
+  return `<div class="editor-form">
+    <div class="hint">${aba === 'arquivados'
+      ? 'Matérias arquivadas somem das listas (inclusive da dos alunos), mas nada foi apagado. Restaurar devolve tudo como estava.'
+      : 'Arquivar tira a matéria do dia a dia sem apagar nada — todo o conteúdo, imagens e modelo ficam guardados.'}</div>
+    <div class="turmas-list">${rows}</div>
   </div>`;
 }
 function usersScreenForm(){
@@ -6101,8 +6414,6 @@ function usersScreenForm(){
       `) : '<span></span><span></span>'}
     </div>`).join('') || `<p style="color:var(--muted);font-size:13px;">Nenhum aluno ${usersViewMode==='archived'?'arquivado':'ativo'} no momento.</p>`;
   return `<div class="editor-form users-screen">
-    <div class="editing-type-banner">Painel de alunos</div>
-    ${usersTabsHtml(usersViewMode==='archived' ? 'archived' : 'active')}
     ${usersViewMode==='active' ? `<div class="turma-filter-row">
       <label style="margin:0;font-size:11px;">Filtrar por turma:</label>
       <select id="users-turma-filter">
@@ -6147,8 +6458,6 @@ function professorsScreenForm(){
   }).join('') || '<p style="color:var(--muted);font-size:13px;">Nenhum professor ainda. Peça para a pessoa se cadastrar como aluno e promova-a abaixo.</p>';
   const options = alunos.map(u=>`<option value="${u.id}">${esc(u.name||u.email||'')}</option>`).join('');
   return `<div class="editor-form">
-    <div class="editing-type-banner">🧑‍🏫 Professores</div>
-    ${usersTabsHtml('profs')}
     <div class="hint">Cada professor gerencia SÓ as próprias matérias, turmas e alunos. Você (master) vê e gerencia tudo. Para criar um professor: a pessoa se cadastra normalmente (como aluno) e você a promove aqui.</div>
     <div class="turmas-list">${rows}</div>
     <label style="margin-top:18px;">Promover um cadastro a professor</label>
@@ -6173,8 +6482,6 @@ function turmasScreenForm(){
       <button class="btn-tiny" style="background:var(--terracotta);" data-action="delete-turma" data-tid="${t.id}">🗑️ Excluir</button>
     </div>`).join('') || '<p style="color:var(--muted);font-size:13px;">Nenhuma turma criada ainda. Crie a primeira abaixo — ex.: "ADM 8º Semestre — 2026/2".</p>';
   return `<div class="editor-form">
-    <div class="editing-type-banner">🎓 Turmas</div>
-    ${usersTabsHtml('turmas')}
     <div class="hint">Turmas organizam seus alunos por grupo/semestre (ex.: "ADM 8º Sem — 2026/2"). Atribua a turma de cada aluno direto na lista do painel — a troca salva na hora. Excluir uma turma só é possível quando nenhum aluno está nela. ${semTurma?`Hoje há <strong>${semTurma}</strong> aluno(s) sem turma.`:''}</div>
     <div class="turmas-list">${rows}</div>
     <label style="margin-top:18px;">Criar nova turma</label>
@@ -6473,6 +6780,40 @@ function render(){
     content.innerHTML = comCabecalho('newBlock', newBlockForm(editState.suggestedNum));
     return;
   }
+  if(editState && editState.kind==='gestao'){
+    content.innerHTML = comCabecalho('gestao', gestaoScreenForm());
+    if(!cachedUsersList){
+      fetchAllUsers().then(()=>{ if(editState && editState.kind==='gestao') render(); });
+    }
+    if(allTurmas===null){
+      fetchTurmas().then(()=>{ if(editState && editState.kind==='gestao') render(); }).catch(()=>{ allTurmas = []; });
+    }
+    if(!allSubjects){
+      fetchAllSubjects().then(()=>{ if(editState && editState.kind==='gestao') render(); }).catch(()=>{});
+    }
+    content.querySelectorAll('[data-subject-op]').forEach(bt=>{
+      bt.addEventListener('click', ()=>handleSubjectOp(bt.dataset.subjectOp, bt.dataset.sid));
+    });
+    return;
+  }
+  if(editState && editState.kind==='avaliacao'){
+    content.innerHTML = comCabecalho('avaliacao', avaliacaoScreenForm());
+    if(isAdmin){
+      if(AVAL_RESPOSTAS===null){
+        fetchAvaliacoes().then(l=>{ AVAL_RESPOSTAS = l; if(editState && editState.kind==='avaliacao') render(); })
+          .catch(()=>{ AVAL_RESPOSTAS = []; });
+      }
+      if(allTurmas===null){
+        fetchTurmas().then(()=>{ if(editState && editState.kind==='avaliacao') render(); }).catch(()=>{ allTurmas = []; });
+      }
+      if(cachedUsersList===null){
+        fetchAllUsers().then(()=>{ if(editState && editState.kind==='avaliacao') render(); }).catch(()=>{});
+      }
+      const sel = document.getElementById('aval-turma-select');
+      if(sel) sel.addEventListener('change', ()=>{ editState.turmaId = sel.value; render(); });
+    }
+    return;
+  }
   if(editState && editState.kind==='iaScreen'){
     content.innerHTML = comCabecalho('iaScreen', iaScreenForm());
     return;
@@ -6492,14 +6833,13 @@ function render(){
     content.innerHTML = comCabecalho('orgScreen', orgScreenForm());
     return;
   }
-  if(editState && editState.kind==='usersScreen'){
-    content.innerHTML = comCabecalho('usersScreen', usersScreenForm());
-    if(!cachedUsersList){
-      fetchAllUsers().then(()=>{ if(editState && editState.kind==='usersScreen') render(); });
-    }
-    if(allTurmas===null){
-      fetchTurmas().then(()=>{ if(editState && editState.kind==='usersScreen') render(); }).catch(()=>{ allTurmas = []; });
-    }
+  // Compatibilidade: os kinds antigos agora caem na gestao unificada.
+  if(editState && ['usersScreen','turmasScreen','professorsScreen','classStats'].includes(editState.kind)){
+    const paraGrupo = {usersScreen:['alunos','ativos'], turmasScreen:['turmas','ativos'],
+                       professorsScreen:['professores','ativos'], classStats:['alunos','estatisticas']};
+    const [g, ab] = paraGrupo[editState.kind];
+    editState = {kind:'gestao', grupo:g, aba:ab};
+    render();
     return;
   }
   if(editState && editState.kind==='atividadesCentral'){
@@ -6648,29 +6988,9 @@ function render(){
     </div>`);
     return;
   }
-  if(editState && editState.kind==='professorsScreen'){
-    if(!isMaster || !cachedUsersList){ editState = {kind:'usersScreen'}; render(); return; }
-    content.innerHTML = comCabecalho('professorsScreen', professorsScreenForm());
-    return;
-  }
-  if(editState && editState.kind==='turmasScreen'){
-    if(!cachedUsersList){ editState = {kind:'usersScreen'}; render(); return; }
-    if(allTurmas===null){
-      content.innerHTML = '<div class="editor-form"><p>Carregando turmas…</p></div>';
-      fetchTurmas().then(()=>{ if(editState && editState.kind==='turmasScreen') render(); }).catch(()=>{ allTurmas = []; render(); });
-      return;
-    }
-    content.innerHTML = comCabecalho('turmasScreen', turmasScreenForm());
-    return;
-  }
-  if(editState && editState.kind==='classStats'){
-    if(!cachedUsersList){ editState = {kind:'usersScreen'}; render(); return; }
-    content.innerHTML = comCabecalho('classStats', classStatsHtml());
-    return;
-  }
   if(editState && editState.kind==='userDetail'){
     const u = cachedUsersList && cachedUsersList.find(x=>x.id===editState.uid);
-    if(!u){ editState = {kind:'usersScreen'}; cachedUsersList = null; render(); return; }
+    if(!u){ editState = {kind:'gestao', grupo:'alunos', aba:'ativos'}; cachedUsersList = null; render(); return; }
     if(!allSubjects){
       content.innerHTML = '<div class="editor-form"><p>Carregando…</p></div>';
       fetchAllSubjects().then(()=>{ if(editState && editState.kind==='userDetail') render(); });
@@ -7321,6 +7641,12 @@ document.getElementById('my-notes-btn').addEventListener('click', ()=>{
   render();
   document.getElementById('content').scrollIntoView({behavior:'smooth'});
 });
+document.getElementById('avaliar-btn').addEventListener('click', ()=>{
+  if(realIsAdmin) return;
+  editState = {kind:'avaliacao', turmaId:'all'};
+  render();
+  document.getElementById('content').scrollIntoView({behavior:'smooth'});
+});
 
 document.getElementById('content').addEventListener('click', async (e)=>{
   const btn = e.target.closest('[data-action]');
@@ -7952,7 +8278,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='back-to-users-screen'){
-    editState = {kind:'usersScreen'};
+    editState = {kind:'gestao', grupo:'alunos', aba:'ativos'};
     render();
     return;
   }
@@ -8046,7 +8372,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
   if(action==='set-users-view'){
     usersViewMode = btn.dataset.view;
-    editState = {kind:'usersScreen'}; // funciona vindo de Estatísticas/Turmas também
+    editState = {kind:'gestao', grupo:'alunos', aba:'ativos'}; // funciona vindo de Estatísticas/Turmas também
     render();
     return;
   }
@@ -8067,7 +8393,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='open-class-stats'){
-    editState = {kind:'classStats'};
+    editState = {kind:'gestao', grupo:'alunos', aba:'estatisticas'};
     render();
     return;
   }
@@ -8096,7 +8422,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
   if(action==='open-professors-screen'){
     if(!isMaster) return;
-    editState = {kind:'professorsScreen'};
+    editState = {kind:'gestao', grupo:'professores', aba:'ativos'};
     render();
     return;
   }
@@ -8149,7 +8475,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='open-turmas-screen'){
-    editState = {kind:'turmasScreen'};
+    editState = {kind:'gestao', grupo:'turmas', aba:'ativos'};
     render();
     return;
   }
@@ -8202,7 +8528,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='back-to-users'){
-    editState = {kind:'usersScreen'};
+    editState = {kind:'gestao', grupo:'alunos', aba:'ativos'};
     render();
     return;
   }
@@ -8403,6 +8729,99 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   // e o mesmo do botao "oficial" daquela tela — nunca uma segunda versao.
   if(action==='ir-para-tela'){
     irParaTela(btn.dataset.tela);
+    return;
+  }
+
+  if(action==='atv-exportar-analise'){
+    const ctxA = atvManageContext();
+    const bA = COURSE.find(x=>x.num===editState.blockNum);
+    const aA = bA && bA.aulas.find(x=>x.num===editState.aulaNum);
+    const secA = aA && (aA.sections||[]).find(s=>s.id===editState.sectionId);
+    if(!secA) return;
+    const respondidas = ctxA.alunos
+      .map(u=>({resp: ctxA.responsesByUid[u.id], draft: ctxA.draftsByUid[u.id]}))
+      .filter(x=> x.resp && x.resp.answers);
+    const linhas = [['Questao','Enunciado','Tipo','Respostas corrigidas','Acerto medio (%)','Vale']];
+    (secA.items||[]).forEach((it,i)=>{
+      const maxPts = atvItemMaxPoints(it);
+      let comNota=0, soma=0;
+      respondidas.forEach(({resp,draft})=>{
+        const eff = atvEffectiveGrading(resp, draft);
+        const saved = (eff.perItem||{})[it.itemId] || {};
+        let pts = (saved.points!=null && saved.points!=='') ? Number(saved.points) : null;
+        if(pts===null){ const au = autoGradeClosedItem(it, (resp.answers||{})[it.itemId]); if(au) pts = au.points; }
+        if(pts!==null){ comNota++; soma += pts; }
+      });
+      const pct = comNota && maxPts ? Math.round((soma/(comNota*maxPts))*100) : '';
+      linhas.push([String(i+1), (it.prompt||'').replace(/\n/g,' '),
+                   (ATV_ITEM_TYPES.find(([v])=>v===it.type)||[,it.type])[1],
+                   String(comNota), String(pct), String(maxPts)]);
+    });
+    baixarCsv(linhas, 'analise-por-questao.csv');
+    return;
+  }
+
+  if(action==='aval-enviar'){
+    const respostas = {};
+    let faltando = null;
+    for(const p of AVAL_PERGUNTAS){
+      if(p.tipo === 'aberta'){
+        const el = document.getElementById('aval-'+p.id);
+        const v = el ? el.value.trim() : '';
+        if(v) respostas[p.id] = v;
+      } else {
+        const marcado = document.querySelector(`input[name="aval-${p.id}"]:checked`);
+        if(!marcado){ if(!faltando) faltando = p.texto; continue; }
+        respostas[p.id] = p.tipo === 'escala' ? Number(marcado.value) : marcado.value;
+      }
+    }
+    if(faltando){ alert('Falta responder: ' + faltando); return; }
+    try{
+      await enviarAvaliacao(respostas);
+      AVAL_ENVIADA = true;
+      render();
+    }catch(err){
+      alert('Não consegui enviar sua avaliação: ' + (err && err.message ? err.message : String(err)));
+    }
+    return;
+  }
+  if(action==='aval-exportar'){
+    const turmaSel = (editState && editState.turmaId) || 'all';
+    const lista = (AVAL_RESPOSTAS||[]).filter(r => turmaSel === 'all' || r.turmaId === turmaSel);
+    const cab = ['Data', 'Turma', ...AVAL_PERGUNTAS.map(p=>p.texto)];
+    const linhas = [cab];
+    lista.forEach(r=>{
+      linhas.push([
+        new Date(r.createdAt||0).toLocaleDateString('pt-BR'),
+        turmaNameById(r.turmaId) || '(sem turma)',
+        ...AVAL_PERGUNTAS.map(p=>{
+          const v = (r.respostas||{})[p.id];
+          return v===undefined || v===null ? '' : String(v).replace(/\n/g,' ');
+        }),
+      ]);
+    });
+    baixarCsv(linhas, 'avaliacao-da-turma.csv');
+    return;
+  }
+
+  if(action==='sair-do-sistema'){
+    await logSessionEnd();
+    limparUltimaAtividade();
+    auth.signOut();
+    return;
+  }
+  if(action==='gestao-grupo'){
+    const g = btn.dataset.grupo;
+    // Trocar de grupo volta para "Ativos": manter a aba anterior faria voce
+    // cair, por exemplo, em Estatisticas de um grupo que nem tem estatistica.
+    editState = {kind:'gestao', grupo:g, aba:'ativos'};
+    if(g === 'materias' && !allSubjects){ fetchAllSubjects().then(()=>render()).catch(()=>{}); }
+    render();
+    return;
+  }
+  if(action==='gestao-aba'){
+    editState = {kind:'gestao', grupo:(editState && editState.grupo) || 'alunos', aba:btn.dataset.aba};
+    render();
     return;
   }
 
@@ -9089,6 +9508,204 @@ try{
   }
 }catch(e){ /* sem observador, os hints so ficam como eram antes */ }
 
+// ===================== AVALIACAO PELO ALUNO (v3.5.0) =====================
+// A pergunta pedagogica que originou isto: a plataforma esta ajudando, ou o
+// aluno preferiria lousa e projecao tradicional?
+//
+// DECISAO IMPORTANTE — a avaliacao e ANONIMA. O documento gravado nao carrega
+// o uid de quem respondeu. Sem isso, ninguem diz de verdade que a aula esta
+// ruim para o proprio professor que vai dar a nota dele. E o padrao das
+// avaliacoes de disciplina na universidade, e e o que torna o dado util.
+//
+// RESSALVA HONESTA: anonimato aqui e do dado, nao do contexto. Numa turma
+// muito pequena, ou se so uma pessoa responder num dia, da para deduzir quem
+// foi pelo horario. Vale avisar a turma que a leitura e feita em conjunto.
+//
+// Quem ja respondeu fica marcado no PROPRIO progresso do aluno
+// (progress[subjectId].feedbackAt) — campo que ele ja tem permissao de
+// gravar. Assim da para saber quantos responderam sem ligar resposta a pessoa,
+// e sem mexer em nenhuma regra de seguranca por causa disso.
+const AVAL_PERGUNTAS = [
+  {id:'aprendizado', tipo:'escala', texto:'A plataforma te ajudou a aprender?',
+   extremos:['Atrapalhou','Ajudou muito']},
+  {id:'formato', tipo:'escolha', texto:'Você prefere as aulas de que jeito?',
+   opcoes:['Com a plataforma','Com lousa e projeção tradicional','Os dois juntos, como está hoje','Tanto faz']},
+  {id:'clareza', tipo:'escala', texto:'O material das aulas está claro?',
+   extremos:['Confuso','Muito claro']},
+  {id:'atividades', tipo:'escala', texto:'As atividades ajudaram a fixar o conteúdo?',
+   extremos:['Não ajudaram','Ajudaram muito']},
+  {id:'ritmo', tipo:'escolha', texto:'O ritmo das aulas está…',
+   opcoes:['Rápido demais','Bom','Devagar demais']},
+  {id:'mudaria', tipo:'aberta', texto:'O que você mudaria?'},
+  {id:'funciona', tipo:'aberta', texto:'O que está funcionando bem?'},
+];
+
+let AVAL_RESPOSTAS = null;   // cache do professor: todas as respostas da materia
+let AVAL_ENVIADA = false;    // aluno: acabou de enviar nesta sessao
+
+function alunoJaAvaliou(){
+  return !!(STUDENT_PROGRESS && STUDENT_PROGRESS.feedbackAt);
+}
+
+async function enviarAvaliacao(respostas){
+  const payload = {
+    turmaId: (currentUserDoc && currentUserDoc.turmaId) || null,
+    respostas,
+    createdAt: Date.now(),
+    // De proposito: nenhum campo identifica quem respondeu.
+  };
+  await db.collection(`subjects/${activeSubjectId}/feedback`).add(payload);
+  if(!STUDENT_PROGRESS) STUDENT_PROGRESS = {seen:{}, actDone:{}, lastBlock:null, lastAula:null};
+  STUDENT_PROGRESS.feedbackAt = Date.now();
+  try{
+    await db.collection('users').doc(currentUser.uid)
+      .update({ ['progress.'+activeSubjectId]: STUDENT_PROGRESS });
+  }catch(e){ /* a resposta ja foi gravada; a marcacao e so para nao repetir */ }
+}
+
+async function fetchAvaliacoes(){
+  const snap = await db.collection(`subjects/${activeSubjectId}/feedback`).get();
+  return snap.docs.map(d=>({id:d.id, ...d.data()}));
+}
+
+// ---------- ALUNO: o formulario ----------
+function avaliacaoAlunoForm(){
+  if(AVAL_ENVIADA || alunoJaAvaliou()){
+    return `<div class="editor-form">
+      <div class="aval-obrigado">
+        <span class="mi">check_circle</span>
+        <div>
+          <strong>Obrigado pela avaliação.</strong>
+          <p>Sua resposta foi registrada sem identificação. Ela ajuda a ajustar o jeito das aulas.</p>
+        </div>
+      </div>
+      <div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">Voltar</button></div>
+    </div>`;
+  }
+  const campos = AVAL_PERGUNTAS.map((p,i)=>{
+    if(p.tipo === 'escala'){
+      const bolas = [1,2,3,4,5].map(n=>`<label class="aval-escala-item">
+        <input type="radio" name="aval-${p.id}" value="${n}">
+        <span>${n}</span>
+      </label>`).join('');
+      return `<div class="aval-pergunta">
+        <div class="aval-texto">${i+1}. ${esc(p.texto)}</div>
+        <div class="aval-escala">
+          <span class="aval-extremo">${esc(p.extremos[0])}</span>
+          ${bolas}
+          <span class="aval-extremo">${esc(p.extremos[1])}</span>
+        </div>
+      </div>`;
+    }
+    if(p.tipo === 'escolha'){
+      const ops = p.opcoes.map(o=>`<label class="aval-opcao">
+        <input type="radio" name="aval-${p.id}" value="${escAttr(o)}"><span>${esc(o)}</span>
+      </label>`).join('');
+      return `<div class="aval-pergunta">
+        <div class="aval-texto">${i+1}. ${esc(p.texto)}</div>
+        <div class="aval-opcoes">${ops}</div>
+      </div>`;
+    }
+    return `<div class="aval-pergunta">
+      <div class="aval-texto">${i+1}. ${esc(p.texto)}</div>
+      <textarea id="aval-${p.id}" placeholder="Escreva à vontade — ou deixe em branco."></textarea>
+    </div>`;
+  }).join('');
+
+  return `<div class="editor-form">
+    <div class="aval-aviso">
+      <span class="mi">visibility_off</span>
+      <div>Esta avaliação é <strong>anônima</strong>. O professor vê as respostas em conjunto, sem saber quem escreveu o quê. Responda com sinceridade — é assim que a aula melhora.</div>
+    </div>
+    ${campos}
+    <div class="editor-actions">
+      <button class="btn-primary" data-action="aval-enviar">Enviar avaliação</button>
+      <button class="btn-secondary" data-action="cancel-edit">Agora não</button>
+    </div>
+  </div>`;
+}
+
+// ---------- PROFESSOR: a leitura ----------
+function avaliacaoResultadoForm(){
+  if(AVAL_RESPOSTAS === null){
+    return `<div class="editor-form"><p class="painel-vazio">Carregando respostas…</p></div>`;
+  }
+  const turmaSel = (editState && editState.turmaId) || 'all';
+  const lista = AVAL_RESPOSTAS.filter(r => turmaSel === 'all' || r.turmaId === turmaSel);
+  const turmaOpts = `<option value="all">Todas as turmas</option>` +
+    (allTurmas||[]).map(t=>`<option value="${t.id}" ${turmaSel===t.id?'selected':''}>${esc(t.name)}</option>`).join('');
+
+  if(!lista.length){
+    return `<div class="editor-form">
+      <div class="atv-turma-row"><label>Turma</label><select id="aval-turma-select">${turmaOpts}</select></div>
+      <p class="painel-vazio">Nenhuma resposta ainda${turmaSel!=='all'?' nesta turma':''}.</p>
+    </div>`;
+  }
+
+  const blocos = AVAL_PERGUNTAS.map(p=>{
+    const vals = lista.map(r=>(r.respostas||{})[p.id]).filter(v=>v!==undefined && v!==null && v!=='');
+    if(p.tipo === 'escala'){
+      const nums = vals.map(Number).filter(n=>!isNaN(n));
+      if(!nums.length) return '';
+      const media = nums.reduce((a,b)=>a+b,0)/nums.length;
+      const dist = [1,2,3,4,5].map(n=>nums.filter(x=>x===n).length);
+      const maxD = Math.max(...dist,1);
+      const barras = dist.map((c,i)=>`<div class="aval-barra-col" title="${c} resposta(s) deram ${i+1}">
+        <div class="aval-barra" style="height:${Math.round((c/maxD)*54)+2}px"></div>
+        <span>${i+1}</span>
+      </div>`).join('');
+      return `<div class="aval-bloco">
+        <div class="aval-bloco-titulo">${esc(p.texto)}</div>
+        <div class="aval-media">${media.toFixed(1).replace('.',',')} <em>de 5 · ${nums.length} resposta(s)</em></div>
+        <div class="aval-barras">${barras}</div>
+      </div>`;
+    }
+    if(p.tipo === 'escolha'){
+      const cont = {};
+      vals.forEach(v=>{ cont[v] = (cont[v]||0)+1; });
+      const total = vals.length || 1;
+      const linhas = p.opcoes.map(o=>{
+        const c = cont[o]||0;
+        const pct = Math.round((c/total)*100);
+        return `<div class="aval-escolha-linha">
+          <span class="aval-escolha-rot">${esc(o)}</span>
+          <span class="aval-escolha-barra"><i style="width:${pct}%"></i></span>
+          <span class="aval-escolha-num">${pct}%</span>
+        </div>`;
+      }).join('');
+      return `<div class="aval-bloco">
+        <div class="aval-bloco-titulo">${esc(p.texto)}</div>
+        ${linhas}
+      </div>`;
+    }
+    const textos = vals.filter(v=>String(v).trim());
+    if(!textos.length) return '';
+    return `<div class="aval-bloco">
+      <div class="aval-bloco-titulo">${esc(p.texto)} <em>(${textos.length})</em></div>
+      <div class="aval-comentarios">${textos.map(t=>`<div class="aval-comentario">${esc(t)}</div>`).join('')}</div>
+    </div>`;
+  }).join('');
+
+  const totalAlunos = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived &&
+    (turmaSel==='all' || u.turmaId===turmaSel)).length;
+
+  return `<div class="editor-form">
+    <div class="atv-turma-row">
+      <label>Turma</label><select id="aval-turma-select">${turmaOpts}</select>
+      <span class="hint" style="margin:0;">${lista.length} resposta(s)${totalAlunos?` de ${totalAlunos} aluno(s)`:''}</span>
+    </div>
+    <div class="hint">As respostas são anônimas — não há como saber quem escreveu o quê. Em turma pequena, evite tirar conclusões sobre pessoas: leia o conjunto.</div>
+    ${blocos}
+    <div class="editor-actions">
+      <button class="btn-secondary" data-action="aval-exportar">Exportar respostas (CSV)</button>
+    </div>
+  </div>`;
+}
+
+function avaliacaoScreenForm(){
+  return isAdmin ? avaliacaoResultadoForm() : avaliacaoAlunoForm();
+}
+
 // ===================== PAINEL UNICO DE IA (v3.3.0) =====================
 // Ate a v3.2.0 havia TRES fluxos de IA, em tres telas, com tres nomes para a
 // mesma ideia: "Importar aula gerada" (criar aula), "Aplicar programacao"
@@ -9196,11 +9813,12 @@ function iaResumirMudanca(dados){
 // nivel segue a regra do lugar: conta -> materia -> aula -> secao.
 // relacionadas sao as telas que viram atalho no cabecalho desta.
 const TELAS = {
-  usersScreen:       {rotulo:'Alunos',              icone:'group',                nivel:'conta',   relacionadas:['turmasScreen','professorsScreen','classStats']},
-  professorsScreen:  {rotulo:'Professores',         icone:'school',               nivel:'conta',   relacionadas:['usersScreen','turmasScreen']},
-  turmasScreen:      {rotulo:'Turmas',              icone:'groups',               nivel:'conta',   relacionadas:['usersScreen','classStats']},
-  classStats:        {rotulo:'Estatísticas',        icone:'bar_chart',            nivel:'conta',   relacionadas:['usersScreen','turmasScreen']},
-  userDetail:        {rotulo:'Ficha do aluno',      icone:'person',               nivel:'conta',   relacionadas:['usersScreen','classStats']},
+  gestao:            {rotulo:'Gestão',              icone:'manage_accounts',      nivel:'conta',   relacionadas:['configScreen']},
+  usersScreen:       {rotulo:'Alunos',              icone:'group',                nivel:'conta',   relacionadas:[]},
+  professorsScreen:  {rotulo:'Professores',         icone:'school',               nivel:'conta',   relacionadas:[]},
+  turmasScreen:      {rotulo:'Turmas',              icone:'groups',               nivel:'conta',   relacionadas:[]},
+  classStats:        {rotulo:'Estatísticas',        icone:'bar_chart',            nivel:'conta',   relacionadas:[]},
+  userDetail:        {rotulo:'Ficha do aluno',      icone:'person',               nivel:'conta',   relacionadas:['gestao']},
   myNotes:           {rotulo:'Minhas anotações',    icone:'bookmark',             nivel:'conta',   relacionadas:[]},
 
   orgScreen:         {rotulo:'Organizar curso',     icone:'folder',               nivel:'materia', relacionadas:['atividadesCentral','diarioFrequencia']},
@@ -9216,6 +9834,7 @@ const TELAS = {
 
   configScreen:      {rotulo:'Configurações',       icone:'settings',             nivel:'conta',   relacionadas:['usersScreen','turmasScreen']},
   iaScreen:          {rotulo:'Criar com IA',        icone:'auto_awesome',         nivel:'materia', relacionadas:['orgScreen','aulaCode']},
+  avaliacao:         {rotulo:'Avaliação da turma',  icone:'reviews',              nivel:'materia', relacionadas:['atividadesBoletim','diarioFrequencia']},
 };
 
 // ===================== GLOBAL x MATERIA (v3.2.0) =====================
@@ -9226,21 +9845,22 @@ const TELAS = {
 // le activeSubjectId). Ate a v3.1.0 elas SO abriam por dentro de uma materia,
 // o que obrigava a abrir "Gestao de Projetos" para cadastrar um aluno que nem
 // e daquela materia. Agora abrem direto do painel.
-const TELAS_GLOBAIS = ['usersScreen','professorsScreen','turmasScreen','classStats','userDetail','configScreen'];
+const TELAS_GLOBAIS = ['gestao','usersScreen','professorsScreen','turmasScreen','classStats','userDetail','configScreen'];
 let MODO_GLOBAL = false;
 
-function abrirGestaoGlobal(kind){
+function abrirGestaoGlobal(kind, grupo){
   if(!isAdmin) return;
-  if(kind === 'professorsScreen' && !isMaster) return;
+  if(grupo === 'professores' && !isMaster) return;
   MODO_GLOBAL = true;
-  editState = {kind};
-  if(kind === 'usersScreen') cachedUsersList = null;
+  editState = (kind === 'gestao') ? {kind:'gestao', grupo:grupo||'alunos', aba:'ativos'} : {kind};
+  if(kind === 'gestao') cachedUsersList = null;
   document.body.classList.add('modo-global');
   showOnly(['site-header','app-body-wrap','combined-footer','ai-credit','version-tag']);
   document.getElementById('edit-status-bar').classList.add('hidden'); // barra da MATERIA nao vale aqui
   document.getElementById('download-pdf-btn').classList.add('hidden');
   document.getElementById('presentation-btn').classList.add('hidden');
   document.getElementById('my-notes-btn').classList.add('hidden');
+  const avBtn0 = document.getElementById('avaliar-btn'); if(avBtn0) avBtn0.classList.add('hidden');
   render();
 }
 
@@ -9258,8 +9878,9 @@ const NIVEL_ROTULO = {conta:'Sua conta', materia:'Matéria', aula:'Aula', secao:
 // qualquer lugar. As que dependem de contexto (uma secao especifica, um aluno
 // especifico) ficam de fora — um atalho que abre vazio confunde mais do que ajuda.
 function telaAbrivelDireto(kind){
-  return ['usersScreen','professorsScreen','turmasScreen','classStats','myNotes','configScreen',
-          'orgScreen','atividadesCentral','atividadesBoletim','diarioFrequencia','diarioAula','iaScreen'].includes(kind);
+  return ['gestao','usersScreen','professorsScreen','turmasScreen','classStats','myNotes','configScreen',
+          'orgScreen','atividadesCentral','atividadesBoletim','diarioFrequencia','diarioAula','iaScreen',
+          'avaliacao'].includes(kind);
 }
 
 // Monta o editState de cada tela do mesmo jeito que o botao original ja fazia,
@@ -9270,26 +9891,34 @@ function irParaTela(kind){
   if(MODO_GLOBAL && TELAS_GLOBAIS.includes(kind)){ abrirGestaoGlobal(kind); return; }
   // Guardas de permissao que viviam espalhadas em cada botao. Agora ficam
   // num lugar so — e valem para qualquer atalho, presente ou futuro.
-  const soEquipe = ['usersScreen','professorsScreen','turmasScreen','classStats',
+  const soEquipe = ['gestao','usersScreen','professorsScreen','turmasScreen','classStats',
                     'orgScreen','atividadesCentral','atividadesBoletim',
                     'diarioFrequencia','diarioAula'];
   if(soEquipe.includes(kind) && !isAdmin) return;
   if(kind === 'professorsScreen' && !isMaster) return;
   switch(kind){
+    case 'gestao':
+      editState = {kind:'gestao', grupo:'alunos', aba:'ativos'}; cachedUsersList = null; break;
+    // Os destinos antigos continuam valendo — abrem a gestao ja no grupo certo,
+    // para nenhum atalho existente virar link quebrado.
     case 'usersScreen':
-      editState = {kind:'usersScreen'}; cachedUsersList = null; break;
+      editState = {kind:'gestao', grupo:'alunos', aba:'ativos'}; cachedUsersList = null; break;
     case 'professorsScreen':
-      editState = {kind:'professorsScreen'}; break;
+      editState = {kind:'gestao', grupo:'professores', aba:'ativos'}; break;
     case 'turmasScreen':
-      editState = {kind:'turmasScreen'}; break;
+      editState = {kind:'gestao', grupo:'turmas', aba:'ativos'}; break;
     case 'classStats':
-      editState = {kind:'classStats'}; break;
+      editState = {kind:'gestao', grupo:'alunos', aba:'estatisticas'}; break;
     case 'myNotes':
       editState = {kind:'myNotes'}; break;
     case 'configScreen':
       editState = {kind:'configScreen'}; break;
     case 'iaScreen':
       editState = {kind:'iaScreen'}; break;
+    case 'avaliacao':
+      editState = {kind:'avaliacao', turmaId:'all'};
+      if(isAdmin) AVAL_RESPOSTAS = null;
+      break;
     case 'orgScreen':
       editState = {kind:'orgScreen'}; break;
     case 'atividadesCentral':
@@ -9335,7 +9964,8 @@ function telaCabecalho(kind){
     </div>
     <div class="tela-acoes">
       ${atalhos}
-      <button type="button" class="btn-tiny tela-fechar" data-action="cancel-edit" title="Fechar e voltar para a aula"><span class="mi">close</span>Fechar</button>
+      ${MODO_GLOBAL ? '<button type="button" class="btn-tiny" data-action="sair-do-sistema" title="Encerrar a sessão"><span class="mi">logout</span>Sair</button>' : ''}
+      <button type="button" class="btn-tiny tela-fechar" data-action="cancel-edit" title="${MODO_GLOBAL ? 'Voltar para o painel' : 'Fechar e voltar para a aula'}"><span class="mi">close</span>${MODO_GLOBAL ? 'Voltar ao painel' : 'Fechar'}</button>
     </div>
   </div>`;
 }
@@ -9855,13 +10485,13 @@ function renderSubjectPicker(){
 
   // Atalhos globais montados a partir do MESMO registro de telas usado no
   // resto do sistema — nome e icone nunca divergem do que aparece la dentro.
-  const globais = ['usersScreen','turmasScreen','classStats']
-    .concat(isMaster ? ['professorsScreen'] : [])
-    .concat(['configScreen']);
-  const atalhosGlobais = globais
-    .filter(k => TELAS[k])
-    .map(k => `<button type="button" class="painel-atalho" data-painel-tela="${k}"><span class="mi">${TELAS[k].icone}</span>${esc(TELAS[k].rotulo)}</button>`)
-    .join('');
+  // Montado a partir dos MESMOS grupos que a tela de gestao usa no topo —
+  // por isso os dois lugares mostram sempre as mesmas opcoes.
+  const atalhosGlobais = Object.entries(GESTAO_GRUPOS)
+    .filter(([,g]) => !g.soMaster || isMaster)
+    .map(([id,g]) => `<button type="button" class="painel-atalho" data-painel-grupo="${id}"><span class="mi">${g.icone}</span>${esc(g.rotulo)}</button>`)
+    .join('')
+    + `<button type="button" class="painel-atalho" data-painel-tela="configScreen"><span class="mi">${TELAS.configScreen.icone}</span>${esc(TELAS.configScreen.rotulo)}</button>`;
 
   let html = `<div class="painel-secao">Matérias ativas</div>`;
   html += ativas.map(s => `
@@ -9885,6 +10515,9 @@ function renderSubjectPicker(){
   // Telas globais abrem sem materia nenhuma — nao dependem de activeSubjectId.
   list.querySelectorAll('[data-painel-tela]').forEach(btn=>{
     btn.addEventListener('click', ()=> abrirGestaoGlobal(btn.dataset.painelTela));
+  });
+  list.querySelectorAll('[data-painel-grupo]').forEach(btn=>{
+    btn.addEventListener('click', ()=> abrirGestaoGlobal('gestao', btn.dataset.painelGrupo));
   });
   list.querySelectorAll('[data-action="open-subject"]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
@@ -9952,6 +10585,7 @@ async function openSubject(subjectId){
   editState = null;
   render();
   document.getElementById('my-notes-btn').classList.add('hidden'); // botão do aluno, não do professor
+  document.getElementById('avaliar-btn').classList.add('hidden');
   document.getElementById('presentation-btn').classList.remove('hidden');
   applySubjectBranding(allSubjects && allSubjects.find(x=>x.id===subjectId));
   AULA_TEMPLATE_CACHE = undefined; // matéria pode ter mudado — rebusca o modelo quando precisar
@@ -9976,6 +10610,7 @@ async function openStudentSubject(subjectId){
   document.getElementById('download-pdf-btn').classList.remove('hidden'); // aluno também baixa PDF — sai com marca d'água pessoal
   document.getElementById('presentation-btn').classList.add('hidden'); // Modo Aula é ferramenta de projeção — só professor/master
   document.getElementById('my-notes-btn').classList.remove('hidden');
+  document.getElementById('avaliar-btn').classList.remove('hidden');
   applySubjectBranding(allSubjects && allSubjects.find(x=>x.id===subjectId));
   await loadCourseFromStorage();
   // Progresso: carrega o que este aluno já viu nesta matéria, e retoma de
