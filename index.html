@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v3.1.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v3.2.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -316,6 +316,78 @@
   @media(max-width:700px){
     .tela-topo{align-items:flex-start;}
     .tela-acoes{width:100%;}
+  }
+
+  /* Modo global: sem materia aberta, nao ha curso para navegar. */
+  body.modo-global .side-nav,
+  body.modo-global .nav-backdrop,
+  body.modo-global .aula-nav-footer-wrap{display:none !important;}
+  body.modo-global .app-body{display:block;}
+  body.modo-global #content{max-width:var(--maxw);margin:0 auto;padding:26px 28px;}
+
+  .config-grupo{
+    background:var(--surface-card);
+    border:0.5px solid var(--hairline);
+    border-radius:var(--radius-lg);
+    padding:16px 18px;
+    margin-bottom:14px;
+  }
+  .config-grupo-titulo{
+    font-family:'Source Serif 4',Georgia,serif;
+    font-size:15px;color:var(--navy);margin-bottom:10px;
+  }
+  .config-linha{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap;font-size:13.5px;
+  }
+
+  /* ===== PAINEL — o passo antes da materia (v3.2.0) =====
+     Deixou de ser "escolha uma materia" e virou a casa do usuario: as
+     materias dele e tudo que e global (alunos, turmas, configuracoes) sem
+     precisar entrar em materia nenhuma. */
+  .painel-box{
+    background:var(--surface-raised);
+    border-radius:18px;
+    padding:26px 28px 28px;
+    max-width:620px;width:100%;
+    max-height:88vh;overflow-y:auto;
+  }
+  .painel-topo{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    gap:14px;margin-bottom:20px;
+  }
+  .painel-saudacao{
+    font-family:'Source Serif 4',Georgia,serif;
+    font-size:21px;color:var(--navy);line-height:1.2;
+  }
+  .painel-sub{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .painel-sair{flex:0 0 auto;}
+  .painel-secao{
+    font-size:10.5px;font-weight:600;color:var(--gold);
+    text-transform:uppercase;letter-spacing:1.1px;
+    margin:20px 0 9px;
+  }
+  .painel-secao:first-child{margin-top:0;}
+  .painel-atalhos{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:8px;
+  }
+  .painel-atalho{
+    display:flex;align-items:center;gap:9px;
+    background:var(--tint-soft);
+    border:0.5px solid var(--hairline);
+    border-radius:var(--radius);
+    padding:11px 13px;
+    font-family:inherit;font-size:13px;font-weight:600;
+    color:var(--navy);cursor:pointer;text-align:left;
+    transition:background-color .13s ease,border-color .13s ease;
+  }
+  .painel-atalho:hover{background:var(--tint-medium);border-color:var(--hairline-strong);}
+  .painel-atalho .mi{font-size:18px;flex:0 0 auto;}
+  .painel-vazio{font-size:13px;color:var(--muted);padding:4px 0;}
+  @media(max-width:620px){
+    .painel-box{padding:20px 18px 22px;border-radius:14px;}
   }
 
   .has-tip{position:relative;}
@@ -2309,15 +2381,19 @@
 </div>
 
 <div class="auth-gate hidden" id="subject-picker-screen">
-  <div class="auth-box" style="max-width:480px;">
-    <h2>Escolha ou crie uma matéria</h2>
-    <p class="auth-subtitle">Cada matéria tem seu próprio conteúdo, aulas e alunos.</p>
+  <div class="painel-box">
+    <div class="painel-topo">
+      <div>
+        <div class="painel-saudacao" id="painel-saudacao">Painel</div>
+        <div class="painel-sub" id="painel-sub"></div>
+      </div>
+      <button class="btn-tiny painel-sair" id="subject-picker-logout-btn">Sair</button>
+    </div>
     <div id="subject-picker-list" class="subject-picker-list"></div>
     <div class="subject-picker-new" id="subject-picker-new">
       <input type="text" spellcheck="true" lang="pt-BR" id="new-subject-name" placeholder="Nome da nova matéria">
       <button class="btn-primary" id="create-subject-btn">Criar matéria</button>
     </div>
-    <button class="btn-secondary" id="subject-picker-logout-btn" style="width:100%;margin-top:14px;">Sair</button>
   </div>
 </div>
 
@@ -2464,7 +2540,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v3.1.0</div>
+<div class="version-tag hidden" id="version-tag">v3.2.0</div>
 
 
 <script>
@@ -6041,9 +6117,6 @@ function orgScreenForm(){
     <input type="text" spellcheck="true" lang="pt-BR" id="org-subject-name" value="${escAttr(currentSubject.name||'')}">
     <label>Descrição do cabeçalho (linha pequena abaixo do título)</label>
     <input type="text" spellcheck="true" lang="pt-BR" id="org-subject-description" value="${escAttr(currentSubject.description||'')}" placeholder="Ex.: Administração de Empresas · 8º Semestre · Faculdade da Fundação Educacional de Araçatuba">
-    <label>Tempo de inatividade até desconectar automaticamente (minutos)</label>
-    <input type="text" id="org-inactivity-minutes" value="${inactivityMinutes}" style="max-width:120px;">
-    <div class="hint">Vale para todo mundo (você e os alunos). Muda só depois de clicar em "Salvar todas as alterações".</div>
     <div class="hint">Mude números, títulos, blocos e visibilidade à vontade. Nada é salvo até você clicar em "Salvar todas as alterações" no final. Excluir aqui também é definitivo (use um backup se quiser voltar atrás).</div>
     <div class="org-blocks-list">${blockRows}</div>
     <label style="margin-top:22px;">Exportar o curso</label>
@@ -6056,6 +6129,46 @@ function orgScreenForm(){
     <div class="editor-actions">
       <button class="btn-primary" data-action="save-org-screen">Salvar todas as alterações</button>
       <button class="btn-secondary" data-action="cancel-edit">Cancelar (descarta tudo que mudou aqui)</button>
+    </div>
+  </div>`;
+}
+
+// ===================== CONFIGURACOES (v3.2.0) =====================
+// Tudo que NAO muda quando voce troca de materia mora aqui. Ate a v3.1.0 o
+// tempo de inatividade — que vale para o sistema inteiro — se configurava
+// dentro de "Organizar curso" de uma materia especifica.
+function configScreenForm(){
+  const paletaAtual = paletaDoUsuario(currentUserDoc);
+  const nomePaleta = (PALETAS.find(p=>p.id===paletaAtual)||{}).nome || 'Névoa';
+  const versao = (document.getElementById('version-tag')||{}).textContent || '';
+  return `<div class="editor-form" data-kind="configScreen">
+
+    <div class="config-grupo">
+      <div class="config-grupo-titulo">Sessão e segurança</div>
+      <label>Desconectar automaticamente após (minutos)
+        <span class="tip has-tip" data-tip="Vale para todo mundo — você e os alunos. Conta a partir da última vez que a pessoa mexeu no sistema, e continua contando com o navegador fechado.">?</span>
+      </label>
+      <input type="text" id="cfg-inactivity-minutes" value="${inactivityMinutes}" style="max-width:120px;" ${isMaster?'':'disabled'}>
+      ${isMaster?'':'<div class="hint">Só o administrador altera este tempo.</div>'}
+    </div>
+
+    <div class="config-grupo">
+      <div class="config-grupo-titulo">Aparência</div>
+      <div class="config-linha">
+        <span>Tema de cores: <strong>${esc(nomePaleta)}</strong></span>
+        <button type="button" class="btn-secondary" id="cfg-abrir-cadastro">Trocar tema</button>
+      </div>
+      <div class="hint">O tema vale só para você. O conteúdo das aulas que o professor montou não muda de cor.</div>
+    </div>
+
+    <div class="config-grupo">
+      <div class="config-grupo-titulo">Sobre</div>
+      <div class="config-linha"><span>Versão do sistema</span><strong>${esc(versao)}</strong></div>
+    </div>
+
+    <div class="editor-actions">
+      ${isMaster?'<button class="btn-primary" data-action="save-config">Salvar configurações</button>':''}
+      <button class="btn-secondary" data-action="cancel-edit">Fechar</button>
     </div>
   </div>`;
 }
@@ -6179,7 +6292,8 @@ function render(){
     if(!realIsAdmin) scheduleShortAulaCheck();
   }
 
-  if(editState && editState.kind!=='newBlock' && COURSE.length===0){
+  if(editState && editState.kind!=='newBlock' && COURSE.length===0
+     && !TELAS_GLOBAIS.includes(editState.kind)){
     content.innerHTML = '<div class="aula-header"><p>Esta matéria ainda não tem nenhum conteúdo. Use o modo de edição para adicionar o primeiro bloco.</p></div>';
     return;
   }
@@ -6194,6 +6308,12 @@ function render(){
   }
   if(editState && editState.kind==='newBlock'){
     content.innerHTML = comCabecalho('newBlock', newBlockForm(editState.suggestedNum));
+    return;
+  }
+  if(editState && editState.kind==='configScreen'){
+    content.innerHTML = comCabecalho('configScreen', configScreenForm());
+    const bAbrir = document.getElementById('cfg-abrir-cadastro');
+    if(bAbrir) bAbrir.addEventListener('click', openProfileModal);
     return;
   }
   if(editState && editState.kind==='orgScreen'){
@@ -8024,11 +8144,6 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         alert('Não foi possível salvar o nome/descrição da matéria: ' + (e && e.message ? e.message : String(e)));
       }
     }
-    const newMinutes = parseInt(document.getElementById('org-inactivity-minutes').value, 10);
-    if(!isNaN(newMinutes) && newMinutes > 0){
-      await saveInactivitySetting(newMinutes);
-      startInactivityWatch();
-    }
     const blockCards = [...document.querySelectorAll('.org-block-card')];
     const seenBlockNums = new Set();
     const seenAulaNums = new Set();
@@ -8121,6 +8236,24 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
 
+  if(action==='save-config'){
+    if(!isMaster){ alert('Só o administrador altera as configurações do sistema.'); return; }
+    const min = parseInt(document.getElementById('cfg-inactivity-minutes').value, 10);
+    if(isNaN(min) || min < 1){ alert('Digite um número de minutos maior que zero.'); return; }
+    try{
+      await saveInactivitySetting(min);
+      startInactivityWatch();
+      alert('Configurações salvas.');
+    }catch(err){ alert('Não foi possível salvar: ' + (err && err.message ? err.message : String(err))); }
+    return;
+  }
+
+  if(action==='cancel-edit' && MODO_GLOBAL){
+    // Veio do painel, volta para o painel — nao para uma materia qualquer.
+    cachedUsersList=null; ATV_MANAGE_RESPONSES=null; ATV_MANAGE_SCHEDULES={}; ATV_MANAGE_DRAFTS=null;
+    voltarAoPainel();
+    return;
+  }
   if(action==='cancel-edit'){ editState=null; cachedUsersList=null; ATV_MANAGE_RESPONSES=null; ATV_MANAGE_SCHEDULES={}; ATV_MANAGE_DRAFTS=null; ATV_BOLETIM_DATA=null; ATV_BOLETIM_SCHEDULES=null; DIARIO_REGISTROS=null; DIARIO_TODOS=null; render(); return; }
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
@@ -8724,14 +8857,51 @@ const TELAS = {
   diarioAula:        {rotulo:'Diário de classe',    icone:'menu_book',            nivel:'aula',    relacionadas:['diarioFrequencia']},
   atividadeManage:   {rotulo:'Gerenciar atividade', icone:'assignment_turned_in', nivel:'aula',    relacionadas:['atividadesCentral','atividadesBoletim']},
   aulaCode:          {rotulo:'Código da aula',      icone:'code',                 nivel:'aula',    relacionadas:[]},
+
+  configScreen:      {rotulo:'Configurações',       icone:'settings',             nivel:'conta',   relacionadas:['usersScreen','turmasScreen']},
 };
+
+// ===================== GLOBAL x MATERIA (v3.2.0) =====================
+// Regra do escopo: se a configuracao muda quando voce troca de materia, ela e
+// da materia; se nao muda, nao deveria estar la dentro.
+//
+// Estas telas nao dependem de materia nenhuma (foi verificado: nenhuma delas
+// le activeSubjectId). Ate a v3.1.0 elas SO abriam por dentro de uma materia,
+// o que obrigava a abrir "Gestao de Projetos" para cadastrar um aluno que nem
+// e daquela materia. Agora abrem direto do painel.
+const TELAS_GLOBAIS = ['usersScreen','professorsScreen','turmasScreen','classStats','userDetail','configScreen'];
+let MODO_GLOBAL = false;
+
+function abrirGestaoGlobal(kind){
+  if(!isAdmin) return;
+  if(kind === 'professorsScreen' && !isMaster) return;
+  MODO_GLOBAL = true;
+  editState = {kind};
+  if(kind === 'usersScreen') cachedUsersList = null;
+  document.body.classList.add('modo-global');
+  showOnly(['site-header','app-body-wrap','combined-footer','ai-credit','version-tag']);
+  document.getElementById('edit-status-bar').classList.add('hidden'); // barra da MATERIA nao vale aqui
+  document.getElementById('download-pdf-btn').classList.add('hidden');
+  document.getElementById('presentation-btn').classList.add('hidden');
+  document.getElementById('my-notes-btn').classList.add('hidden');
+  render();
+}
+
+function voltarAoPainel(){
+  MODO_GLOBAL = false;
+  editState = null;
+  activeSubjectId = null;
+  document.body.classList.remove('modo-global');
+  renderSubjectPicker();
+  showOnly(['subject-picker-screen']);
+}
 const NIVEL_ROTULO = {conta:'Sua conta', materia:'Matéria', aula:'Aula', secao:'Seção'};
 
 // Telas que abrem sem precisar de parametro nenhum podem virar atalho em
 // qualquer lugar. As que dependem de contexto (uma secao especifica, um aluno
 // especifico) ficam de fora — um atalho que abre vazio confunde mais do que ajuda.
 function telaAbrivelDireto(kind){
-  return ['usersScreen','professorsScreen','turmasScreen','classStats','myNotes',
+  return ['usersScreen','professorsScreen','turmasScreen','classStats','myNotes','configScreen',
           'orgScreen','atividadesCentral','atividadesBoletim','diarioFrequencia','diarioAula'].includes(kind);
 }
 
@@ -8739,6 +8909,8 @@ function telaAbrivelDireto(kind){
 // incluindo a limpeza de cache — senao a tela abriria com dado velho.
 function irParaTela(kind){
   if(!TELAS[kind]) return;
+  // Dentro do painel, atalho entre telas globais continua no painel.
+  if(MODO_GLOBAL && TELAS_GLOBAIS.includes(kind)){ abrirGestaoGlobal(kind); return; }
   // Guardas de permissao que viviam espalhadas em cada botao. Agora ficam
   // num lugar so — e valem para qualquer atalho, presente ou futuro.
   const soEquipe = ['usersScreen','professorsScreen','turmasScreen','classStats',
@@ -8757,6 +8929,8 @@ function irParaTela(kind){
       editState = {kind:'classStats'}; break;
     case 'myNotes':
       editState = {kind:'myNotes'}; break;
+    case 'configScreen':
+      editState = {kind:'configScreen'}; break;
     case 'orgScreen':
       editState = {kind:'orgScreen'}; break;
     case 'atividadesCentral':
@@ -9302,10 +9476,7 @@ document.getElementById('auth-register-btn').addEventListener('click', async ()=
 // ===================== ESCOLHA DE MATÉRIA (admin) =====================
 function renderSubjectPicker(){
   const list = document.getElementById('subject-picker-list');
-  if(!allSubjects || allSubjects.length===0){
-    list.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma matéria criada ainda.</p>';
-    return;
-  }
+  if(!allSubjects) { list.innerHTML = '<p class="painel-vazio">Carregando…</p>'; return; }
   // Professor vê SÓ as matérias dele; master vê todas (as antigas, sem dono,
   // pertencem ao master). O nome do dono aparece para o master se organizar.
   const minhas = allSubjects.filter(s=> isMaster || (s.ownerUid && currentUser && s.ownerUid===currentUser.uid));
@@ -9317,38 +9488,45 @@ function renderSubjectPicker(){
     const minha = !s.ownerUid || (currentUser && s.ownerUid===currentUser.uid);
     return `<span class="subject-owner-tag ${minha?'owner-master':''}">${minha ? '👑 Sua' : '🧑‍🏫 ' + esc(s.ownerName || 'Professor')}</span>`;
   };
-  let html = `<button class="picker-gestao-btn" id="picker-gestao-btn">🗂️ Gestão — alunos, turmas, estatísticas${isMaster?' e professores':''}</button>
-    <div class="picker-section-title">Matérias ativas</div>`;
+  // Cabecalho do painel
+  const sauda = document.getElementById('painel-saudacao');
+  const subEl = document.getElementById('painel-sub');
+  if(sauda) sauda.textContent = (currentUserDoc && currentUserDoc.name) ? `Olá, ${currentUserDoc.name.split(' ')[0]}` : 'Painel';
+  if(subEl) subEl.textContent = isMaster ? 'Administrador' : 'Professor';
+
+  // Atalhos globais montados a partir do MESMO registro de telas usado no
+  // resto do sistema — nome e icone nunca divergem do que aparece la dentro.
+  const globais = ['usersScreen','turmasScreen','classStats']
+    .concat(isMaster ? ['professorsScreen'] : [])
+    .concat(['configScreen']);
+  const atalhosGlobais = globais
+    .filter(k => TELAS[k])
+    .map(k => `<button type="button" class="painel-atalho" data-painel-tela="${k}"><span class="mi">${TELAS[k].icone}</span>${esc(TELAS[k].rotulo)}</button>`)
+    .join('');
+
+  let html = `<div class="painel-secao">Matérias ativas</div>`;
   html += ativas.map(s => `
     <div class="subject-picker-row">
       <button class="subject-picker-item" data-action="open-subject" data-sid="${s.id}">
         <span>${esc(s.name)}</span>${donoTag(s)}<span class="chev">→</span>
       </button>
       <button class="btn-tiny subject-op-btn" style="background:#6b6b6b;" data-sid="${s.id}" data-subject-op="archive" title="Arquivar esta matéria (some das listas, mas nada é apagado — pode restaurar quando quiser)">📦</button>
-    </div>`).join('') || '<p style="font-size:13px;color:var(--muted);">Nenhuma matéria ativa.</p>';
+    </div>`).join('') || '<p class="painel-vazio">Nenhuma matéria ativa. Crie a primeira abaixo.</p>';
   if(arquivadas.length){
-    html += `<div class="picker-section-title">📦 Matérias arquivadas (${arquivadas.length})</div>` + arquivadas.map(s => `
+    html += `<div class="painel-secao">Matérias arquivadas (${arquivadas.length})</div>` + arquivadas.map(s => `
     <div class="subject-picker-row archived">
       <div class="subject-picker-item disabled"><span>${esc(s.name)}</span>${donoTag(s)}</div>
       <button class="btn-tiny btn-approve subject-op-btn" data-sid="${s.id}" data-subject-op="unarchive">♻️ Restaurar</button>
       <button class="btn-tiny subject-op-btn" style="background:var(--terracotta);" data-sid="${s.id}" data-subject-op="delete-forever">🗑️ Excluir</button>
     </div>`).join('');
   }
+  html += `<div class="painel-secao">Gestão e configurações</div>
+    <div class="painel-atalhos">${atalhosGlobais}</div>`;
   list.innerHTML = html;
-  // Gestão direto do painel: abre a primeira matéria ativa já na tela de gestão
-  const gBtn = document.getElementById('picker-gestao-btn');
-  if(gBtn){
-    if(ativas.length){
-      gBtn.addEventListener('click', async ()=>{
-        await openSubject(ativas[0].id);
-        editState = {kind:'usersScreen'};
-        render();
-      });
-    } else {
-      gBtn.disabled = true;
-      gBtn.title = 'Crie uma matéria primeiro';
-    }
-  }
+  // Telas globais abrem sem materia nenhuma — nao dependem de activeSubjectId.
+  list.querySelectorAll('[data-painel-tela]').forEach(btn=>{
+    btn.addEventListener('click', ()=> abrirGestaoGlobal(btn.dataset.painelTela));
+  });
   list.querySelectorAll('[data-action="open-subject"]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       await openSubject(btn.dataset.sid);
@@ -9458,24 +9636,40 @@ async function openStudentSubject(subjectId){
 
 function renderStudentSubjectPicker(){
   const list = document.getElementById('subject-picker-list');
-  list.innerHTML = studentSubjectIds.map(id=>{
+  const sauda = document.getElementById('painel-saudacao');
+  const subEl = document.getElementById('painel-sub');
+  if(sauda) sauda.textContent = (currentUserDoc && currentUserDoc.name) ? `Olá, ${currentUserDoc.name.split(' ')[0]}` : 'Painel';
+  if(subEl) subEl.textContent = 'Aluno';
+
+  const materias = studentSubjectIds.map(id=>{
     const s = allSubjects.find(x=>x.id===id);
     return `<button class="subject-picker-item" data-action="open-student-subject" data-sid="${id}">
       <span>${esc(s ? s.name : 'Matéria')}</span><span class="chev">→</span>
     </button>`;
-  }).join('');
+  }).join('') || '<p class="painel-vazio">Nenhuma matéria atribuída a você ainda.</p>';
+
+  // O aluno tambem tem o que configurar: tema de cores e os proprios dados.
+  // "Minhas anotacoes" nao entra aqui porque as anotacoes sao por materia —
+  // um atalho que abrisse vazio confundiria mais do que ajudaria.
+  list.innerHTML = `<div class="painel-secao">Suas matérias</div>${materias}
+    <div class="painel-secao">Sua conta</div>
+    <div class="painel-atalhos">
+      <button type="button" class="painel-atalho" id="painel-aluno-cadastro"><span class="mi">palette</span>Tema e meus dados</button>
+    </div>`;
+
   list.querySelectorAll('[data-action="open-student-subject"]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       await openStudentSubject(btn.dataset.sid);
     });
   });
+  const bCad = document.getElementById('painel-aluno-cadastro');
+  if(bCad) bCad.addEventListener('click', openProfileModal);
 }
 document.getElementById('student-switch-subject-btn').addEventListener('click', async ()=>{
   if(isAdmin) return; // admin usa o próprio botão "Trocar de matéria" da barra lateral
   await fetchAllSubjects();
   renderStudentSubjectPicker();
   document.getElementById('subject-picker-new').classList.add('hidden'); // aluno não cria matéria
-  document.getElementById('subject-picker-screen').querySelector('h2').textContent = 'Escolha a matéria';
   showOnly(['subject-picker-screen']);
 });
 document.getElementById('create-subject-btn').addEventListener('click', async ()=>{
@@ -9496,7 +9690,8 @@ document.getElementById('switch-subject-btn').addEventListener('click', async ()
   document.getElementById('edit-status-bar').classList.add('hidden');
   document.getElementById('download-pdf-btn').classList.add('hidden');
   document.getElementById('subject-picker-new').classList.remove('hidden');
-  document.getElementById('subject-picker-screen').querySelector('h2').textContent = isMaster ? '🗂️ Painel de Gestão' : '🗂️ Painel do Professor';
+  document.body.classList.remove('modo-global');
+  MODO_GLOBAL = false;
   await fetchAllSubjects();
   renderSubjectPicker();
   showOnly(['subject-picker-screen']);
