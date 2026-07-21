@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.7.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.8.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -7,7 +7,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lume — Gestão de Projetos</title>
+<title>Lume — Gestão de Aulas</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjM0QzRTc3IiBkPSJNNTAsMTIgQzYyLDI4IDY4LDQyIDYzLDU1IEM3MCw1MCA3NCw0MiA3MiwzMiBDODAsNDQgODQsNjAgNzIsNzQgQzY0LDg0IDM2LDg0IDI4LDc0IEMxNiw2MCAyMCw0NCAyOCwzMiBDMjYsNDIgMzAsNTAgMzcsNTUgQzMyLDQyIDM4LDI4IDUwLDEyIFoiLz48L3N2Zz4=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -898,6 +898,12 @@
     font-size:14px;
     color:#AEB7DD;
     margin:0;
+  }
+  .site-subtitle-prof{
+    font-size:11.5px;
+    color:#AEB7DD;
+    opacity:0.75;
+    margin:2px 0 0 0;
   }
   .progress-pill{
     font-size:13px;
@@ -2689,10 +2695,11 @@
   <div class="site-header-inner">
     <div class="brand-row">
       <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Abrir menu de aulas">☰</button>
-      <div class="logo-badge"><img id="footer-logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjM0QzRTc3IiBkPSJNNTAsMTIgQzYyLDI4IDY4LDQyIDYzLDU1IEM3MCw1MCA3NCw0MiA3MiwzMiBDODAsNDQgODQsNjAgNzIsNzQgQzY0LDg0IDM2LDg0IDI4LDc0IEMxNiw2MCAyMCw0NCAyOCwzMiBDMjYsNDIgMzAsNTAgMzcsNTUgQzMyLDQyIDM4LDI4IDUwLDEyIFoiLz48L3N2Zz4=" alt="Logo Lume"></div>
+      <div class="logo-badge"><img id="header-logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjM0QzRTc3IiBkPSJNNTAsMTIgQzYyLDI4IDY4LDQyIDYzLDU1IEM3MCw1MCA3NCw0MiA3MiwzMiBDODAsNDQgODQsNjAgNzIsNzQgQzY0LDg0IDM2LDg0IDI4LDc0IEMxNiw2MCAyMCw0NCAyOCwzMiBDMjYsNDIgMzAsNTAgMzcsNTUgQzMyLDQyIDM4LDI4IDUwLDEyIFoiLz48L3N2Zz4=" alt="Logo Lume"></div>
       <div>
         <h1 class="site-title" id="site-title-text">Gestão de Projetos</h1>
-        <p class="site-subtitle">Administração de Empresas · 8º Semestre · Faculdade da Fundação Educacional de Araçatuba</p>
+        <p class="site-subtitle" id="header-inst-subtitle">Administração de Empresas — Faculdade da Fundação Educacional de Araçatuba</p>
+        <p class="site-subtitle site-subtitle-prof" id="header-prof-line">Prof. Guilherme Laluce</p>
       </div>
     </div>
     <div class="header-controls" style="display:flex;align-items:center;gap:10px;">
@@ -2790,6 +2797,7 @@
     <button class="btn-tiny" data-action="gestao-ir" data-grupo="turmas" data-aba="ativos" title="Turmas e estatísticas por turma"><span class="mi">groups</span> Turmas</button>
     <button class="btn-tiny" data-action="gestao-ir" data-grupo="materias" data-aba="ativos" title="Matéria: organizar curso, IA, atividades, avaliação"><span class="mi">folder</span> Matéria</button>
     <button class="btn-tiny hidden" id="bar-professores-btn" data-action="gestao-ir" data-grupo="professores" data-aba="ativos" title="Gerenciar professores (só o master)"><span class="mi">school</span> Professores</button>
+    <button class="btn-tiny hidden" id="bar-masters-btn" data-action="gestao-ir" data-grupo="masters" data-aba="ativos" title="Gerenciar masters (só o master)"><span class="mi">admin_panel_settings</span> Masters</button>
     <button class="btn-tiny" data-action="gestao-ir" data-grupo="config" data-aba="geral" title="Configurações"><span class="mi">settings</span> Configurações</button>
     <button class="btn-tiny" id="grid-mode-toggle-btn" title="Mostrar/esconder as bordas pontilhadas e a alça de arrastar seções"><span class="mi">grid_view</span> Grade: ligada</button>
   </span>
@@ -2859,8 +2867,8 @@
 
 <footer class="combined-footer hidden" id="combined-footer">
   <div class="footer-left">
-    <a href="https://feata.edu.br/" target="_blank" rel="noopener noreferrer" title="Site da FACFEA"><div class="logo-badge"><img id="header-logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjM0QzRTc3IiBkPSJNNTAsMTIgQzYyLDI4IDY4LDQyIDYzLDU1IEM3MCw1MCA3NCw0MiA3MiwzMiBDODAsNDQgODQsNjAgNzIsNzQgQzY0LDg0IDM2LDg0IDI4LDc0IEMxNiw2MCAyMCw0NCAyOCwzMiBDMjYsNDIgMzAsNTAgMzcsNTUgQzMyLDQyIDM4LDI4IDUwLDEyIFoiLz48L3N2Zz4=" alt="Logo Lume"></div></a>
-    <div class="footer-inst"><span class="l1" id="footer-inst-name">Lume</span><span class="l2" id="footer-curso-name">Gestão de aulas e projetos</span></div>
+    <div class="logo-badge"><img id="footer-logo-fixed-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjM0QzRTc3IiBkPSJNNTAsMTIgQzYyLDI4IDY4LDQyIDYzLDU1IEM3MCw1MCA3NCw0MiA3MiwzMiBDODAsNDQgODQsNjAgNzIsNzQgQzY0LDg0IDM2LDg0IDI4LDc0IEMxNiw2MCAyMCw0NCAyOCwzMiBDMjYsNDIgMzAsNTAgMzcsNTUgQzMyLDQyIDM4LDI4IDUwLDEyIFoiLz48L3N2Zz4=" alt="Logo Lume"></div>
+    <div class="footer-inst"><span class="l1">Lume</span><span class="l2">Gestão de Aulas</span></div>
   </div>
   <div class="footer-right">
     <div class="footer-author"><span class="l1" id="footer-author-l1">Prof. Me. Guilherme Laluce</span><span class="l2" id="footer-author-l2">Mestrado em Agronegócio e Desenvolvimento (UNESP Tupã, 2022)</span><span class="l3" id="footer-author-l3">Bacharelado em Administração (FAC-FEA, 2016)</span></div>
@@ -2919,7 +2927,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.7.0</div>
+<div class="version-tag hidden" id="version-tag">v4.8.0</div>
 
 
 <script>
@@ -9921,8 +9929,6 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         if(s){ s.name = newSubjectName; s.description = newSubjectDescription;
                if(patch.pontosAtividades) s.pontosAtividades = patch.pontosAtividades; }
         document.getElementById('site-title-text').textContent = newSubjectName;
-        const subtitleEl = document.querySelector('.site-subtitle');
-        if(subtitleEl) subtitleEl.textContent = newSubjectDescription;
       }catch(e){
         alert('Não foi possível salvar o nome/descrição da matéria: ' + (e && e.message ? e.message : String(e)));
       }
@@ -12016,8 +12022,6 @@ async function openSubject(subjectId){
   activeSubjectId = subjectId;
   const s = allSubjects.find(x=>x.id===subjectId);
   document.getElementById('site-title-text').textContent = s ? s.name : 'Matéria';
-  const subtitleEl = document.querySelector('.site-subtitle');
-  if(subtitleEl) subtitleEl.textContent = (s && s.description) || '';
   document.getElementById('edit-status-bar').classList.toggle('hidden', !isAdmin);
   document.getElementById('download-pdf-btn').classList.toggle('hidden', !isAdmin);
   showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit','version-tag']);
@@ -12028,6 +12032,7 @@ async function openSubject(subjectId){
   document.getElementById('avaliar-btn').classList.add('hidden');
   document.getElementById('presentation-btn').classList.remove('hidden');
   document.getElementById('bar-professores-btn').classList.toggle('hidden', !isMaster);
+  document.getElementById('bar-masters-btn').classList.toggle('hidden', !isMaster);
   document.getElementById('student-switch-subject-btn').classList.remove('hidden'); // admin sempre pode trocar/criar matéria
   applySubjectBranding(allSubjects && allSubjects.find(x=>x.id===subjectId));
   AULA_TEMPLATE_CACHE = undefined; // matéria pode ter mudado — rebusca o modelo quando precisar
@@ -12046,8 +12051,6 @@ async function openStudentSubject(subjectId){
     }
   }catch(e){}
   document.getElementById('site-title-text').textContent = subjectName;
-  const subtitleEl = document.querySelector('.site-subtitle');
-  if(subtitleEl) subtitleEl.textContent = subjectDescription;
   showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit','version-tag']);
   document.getElementById('download-pdf-btn').classList.remove('hidden'); // aluno também baixa PDF — sai com marca d'água pessoal
   document.getElementById('presentation-btn').classList.add('hidden'); // Modo Aula é ferramenta de projeção — só professor/master
@@ -12422,22 +12425,33 @@ async function loadInstConfig(){
   aplicarInstConfig();
 }
 function aplicarInstConfig(){
+  // O rodape (canto inferior esquerdo) NAO entra aqui de proposito: e a
+  // identidade fixa do sistema (Lume + "Gestão de Aulas"), sempre igual,
+  // nunca sobrescrita pela instituicao configurada.
   if(instConfig.logoUrl){
-    ['header-logo-img','login-logo-img','footer-logo-img'].forEach(id=>{
+    ['header-logo-img','login-logo-img'].forEach(id=>{
       const el = document.getElementById(id);
       if(el) el.src = instConfig.logoUrl;
     });
   }
-  const fInst = document.getElementById('footer-inst-name');
-  if(fInst && instConfig.instNome) fInst.textContent = instConfig.instNome;
-  const fCurso = document.getElementById('footer-curso-name');
-  if(fCurso && instConfig.cursoNome) fCurso.textContent = instConfig.cursoNome;
   const sub = document.getElementById('login-inst-subtitle');
   if(sub && (instConfig.instNome || instConfig.cursoNome)){
-    sub.textContent = (instConfig.cursoNome || 'Gestão de aulas e projetos') + ' — ' + (instConfig.instNome || 'Lume');
+    sub.textContent = (instConfig.cursoNome || 'Gestão de Aulas') + ' — ' + (instConfig.instNome || 'Lume');
   }
   const pNome = document.getElementById('login-prof-name');
   if(pNome && instConfig.profNome) pNome.textContent = instConfig.profNome;
+  // Cabecalho de dentro do app (acima da lista de aulas): mostra a
+  // identidade da instituicao/curso/professor — informacao do SITE INTEIRO,
+  // igual em toda materia. O nome da materia (h1) continua por conta de
+  // openSubject/openStudentSubject, que nao mexem mais nesta legenda.
+  const headerSub = document.getElementById('header-inst-subtitle');
+  if(headerSub){
+    headerSub.textContent = (instConfig.cursoNome || 'Administração de Empresas') + ' — ' + (instConfig.instNome || 'Faculdade da Fundação Educacional de Araçatuba');
+  }
+  const headerProf = document.getElementById('header-prof-line');
+  if(headerProf){
+    headerProf.textContent = instConfig.profNome || 'Prof. Guilherme Laluce';
+  }
 }
 async function saveInstConfig(campos){
   instConfig = Object.assign({}, instConfig, campos);
