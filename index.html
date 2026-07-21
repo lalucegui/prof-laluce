@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v3.0.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v3.1.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -260,6 +260,63 @@
   }
   .edit-chip .mi{font-size:16px;vertical-align:-2px;}
   .btn-tiny .mi{font-size:15px;vertical-align:-3px;}
+
+  /* ===== CABECALHO PADRAO DE TELA (v3.1.0) =====
+     Toda tela do sistema abre igual: a esquerda diz onde voce esta (nivel +
+     nome + icone), a direita concentra as acoes — atalhos para telas
+     relacionadas e o fechar, sempre no mesmo canto. */
+  .tela-topo{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap;
+    padding:0 0 14px 0;
+    margin-bottom:16px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  .tela-id{display:flex;align-items:center;gap:11px;min-width:0;}
+  .tela-icone{
+    font-size:20px;
+    width:38px;height:38px;
+    border-radius:var(--radius);
+    background:var(--tint-medium);
+    color:var(--navy);
+    display:flex;align-items:center;justify-content:center;
+    flex:0 0 auto;vertical-align:0;
+  }
+  .tela-textos{display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .tela-nivel{
+    font-size:10px;font-weight:600;color:var(--gold);
+    text-transform:uppercase;letter-spacing:1.1px;
+  }
+  .tela-titulo{
+    font-family:'Source Serif 4',Georgia,serif;
+    font-size:18px;color:var(--navy);line-height:1.2;
+  }
+  .tela-acoes{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  /* Atalhos e fechar vivem fora da barra laranja, entao usam o tingido
+     do tema em vez do branco translucido que o .btn-tiny tem la. */
+  .tela-acoes .btn-tiny{
+    background:var(--tint-soft);
+    color:var(--navy);
+    border:0.5px solid var(--hairline);
+  }
+  .tela-acoes .btn-tiny:hover{background:var(--tint-medium);border-color:var(--hairline-strong);}
+  .tela-acoes .tela-fechar{
+    background:rgba(184,80,66,0.08);
+    color:var(--terracotta);
+    border-color:rgba(184,80,66,0.2);
+  }
+  .tela-acoes .tela-fechar:hover{background:rgba(184,80,66,0.15);}
+  .tela-contexto{
+    font-size:12.5px;color:var(--muted);
+    margin-bottom:10px;
+  }
+  /* O cabecalho ja identifica a tela — o banner antigo virou repeticao. */
+  .tela .editing-type-banner{display:none;}
+  .tela > .editor-form{border:none;background:none;padding:0;}
+  @media(max-width:700px){
+    .tela-topo{align-items:flex-start;}
+    .tela-acoes{width:100%;}
+  }
 
   .has-tip{position:relative;}
   .has-tip::after{
@@ -2282,10 +2339,12 @@
     <button class="btn-tiny" id="restore-backup-btn" title="Restaura um arquivo de backup salvo antes">⬆ Restaurar backup</button>
     <input type="file" id="restore-backup-input" accept=".json" style="display:none;">
     <button class="btn-tiny" id="switch-subject-btn" title="Trocar para outra matéria, ou criar uma nova">🏠 Trocar de matéria</button>
-    <button class="btn-tiny" id="admin-users-btn" title="Gestão de alunos, turmas, estatísticas e professores">🗂️ Gestão</button>
-    <button class="btn-tiny" id="atividades-central-btn" title="Ver e corrigir todas as atividades do curso, de todas as aulas">📋 Central de Atividades</button>
-    <button class="btn-tiny" id="bar-organize-btn" title="Organizar curso: blocos, aulas, numeração e visibilidade">🗂 Organizar curso</button>
-    <button class="btn-tiny" id="bar-diario-btn" title="Diário de classe: chamada, conteúdo dado e observações">📒 Diário de classe</button>
+    <button class="btn-tiny" id="admin-users-btn" data-action="ir-para-tela" data-tela="usersScreen" title="Alunos, turmas, professores e estatísticas">👤 Alunos</button>
+    <button class="btn-tiny" id="atividades-central-btn" data-action="ir-para-tela" data-tela="atividadesCentral" title="Ver e corrigir todas as atividades do curso, de todas as aulas">📋 Central de Atividades</button>
+    <button class="btn-tiny" id="bar-organize-btn" data-action="ir-para-tela" data-tela="orgScreen" title="Organizar curso: blocos, aulas, numeração e visibilidade">🗂 Organizar curso</button>
+    <button class="btn-tiny" id="bar-diario-btn" data-action="ir-para-tela" data-tela="diarioAula" title="Diário de classe: chamada, conteúdo dado e observações">📒 Diário de classe</button>
+    <button class="btn-tiny" data-action="ir-para-tela" data-tela="atividadesBoletim" title="Boletim: notas e entregas no prazo da turma">📊 Boletim</button>
+    <button class="btn-tiny" data-action="ir-para-tela" data-tela="diarioFrequencia" title="Frequência consolidada de todas as aulas">✅ Frequência</button>
     <button class="btn-tiny" id="grid-mode-toggle-btn" title="Mostrar/esconder as bordas pontilhadas e a alça de arrastar seções">🔲 Grade: ligada</button>
   </span>
 </div>
@@ -2405,7 +2464,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v3.0.0</div>
+<div class="version-tag hidden" id="version-tag">v3.1.0</div>
 
 
 <script>
@@ -3099,29 +3158,6 @@ function renderSideNav(){
       if(!isAdmin) return;
       const maxBlockNum = Math.max(0, ...COURSE.map(bb=>bb.num).filter(n=>n>0));
       editState = {kind:'newBlock', suggestedNum: maxBlockNum+1};
-      render();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
-    });
-  }
-  // Atalhos da barra da materia — abrem exatamente as mesmas telas dos
-  // botoes que ja existiam no menu lateral e ao lado da aula.
-  const barOrganizeBtn = document.getElementById('bar-organize-btn');
-  if(barOrganizeBtn && !barOrganizeBtn.dataset.wired){
-    barOrganizeBtn.dataset.wired = '1';
-    barOrganizeBtn.addEventListener('click', ()=>{
-      if(!isAdmin) return;
-      editState = {kind:'orgScreen'};
-      render();
-      document.getElementById('content').scrollIntoView({behavior:'smooth'});
-    });
-  }
-  const barDiarioBtn = document.getElementById('bar-diario-btn');
-  if(barDiarioBtn && !barDiarioBtn.dataset.wired){
-    barDiarioBtn.dataset.wired = '1';
-    barDiarioBtn.addEventListener('click', ()=>{
-      if(!isAdmin) return;
-      editState = {kind:'diarioAula', blockNum: state.block, aulaNum: state.aula, date: hojeISO()};
-      DIARIO_REGISTROS = null;
       render();
       document.getElementById('content').scrollIntoView({behavior:'smooth'});
     });
@@ -6149,7 +6185,7 @@ function render(){
   }
 
   if(editState && editState.kind==='newAula'){
-    content.innerHTML = newAulaForm(editState.blockNum, editState.suggestedNum);
+    content.innerHTML = comCabecalho('newAula', newAulaForm(editState.blockNum, editState.suggestedNum));
     fetchAulaTemplate().then(t=>{
       const row = document.getElementById('ef-new-a-template-row');
       if(t && row) row.style.display = 'flex';
@@ -6157,7 +6193,7 @@ function render(){
     return;
   }
   if(editState && editState.kind==='newBlock'){
-    content.innerHTML = newBlockForm(editState.suggestedNum);
+    content.innerHTML = comCabecalho('newBlock', newBlockForm(editState.suggestedNum));
     return;
   }
   if(editState && editState.kind==='orgScreen'){
@@ -6166,11 +6202,11 @@ function render(){
       fetchAllSubjects().then(()=>{ if(editState && editState.kind==='orgScreen') render(); });
       return;
     }
-    content.innerHTML = orgScreenForm();
+    content.innerHTML = comCabecalho('orgScreen', orgScreenForm());
     return;
   }
   if(editState && editState.kind==='usersScreen'){
-    content.innerHTML = usersScreenForm();
+    content.innerHTML = comCabecalho('usersScreen', usersScreenForm());
     if(!cachedUsersList){
       fetchAllUsers().then(()=>{ if(editState && editState.kind==='usersScreen') render(); });
     }
@@ -6180,11 +6216,11 @@ function render(){
     return;
   }
   if(editState && editState.kind==='atividadesCentral'){
-    content.innerHTML = atividadesCentralForm();
+    content.innerHTML = comCabecalho('atividadesCentral', atividadesCentralForm());
     return;
   }
   if(editState && editState.kind==='diarioAula'){
-    content.innerHTML = diarioAulaForm();
+    content.innerHTML = comCabecalho('diarioAula', diarioAulaForm());
     if(allTurmas===null){
       fetchTurmas().then(()=>{ if(editState && editState.kind==='diarioAula') render(); }).catch(()=>{ allTurmas = []; });
     }
@@ -6200,7 +6236,7 @@ function render(){
     return;
   }
   if(editState && editState.kind==='diarioFrequencia'){
-    content.innerHTML = diarioFrequenciaForm();
+    content.innerHTML = comCabecalho('diarioFrequencia', diarioFrequenciaForm());
     if(allTurmas===null){
       fetchTurmas().then(()=>{ if(editState && editState.kind==='diarioFrequencia') render(); }).catch(()=>{ allTurmas = []; });
     }
@@ -6216,7 +6252,7 @@ function render(){
     return;
   }
   if(editState && editState.kind==='atividadesBoletim'){
-    content.innerHTML = atividadesBoletimForm();
+    content.innerHTML = comCabecalho('atividadesBoletim', atividadesBoletimForm());
     if(allTurmas===null){
       fetchTurmas().then(()=>{ if(editState && editState.kind==='atividadesBoletim') render(); }).catch(()=>{ allTurmas = []; });
     }
@@ -6239,7 +6275,7 @@ function render(){
     return;
   }
   if(editState && editState.kind==='atividadeManage'){
-    content.innerHTML = atividadeManageForm();
+    content.innerHTML = comCabecalho('atividadeManage', atividadeManageForm());
     if(allTurmas===null){
       fetchTurmas().then(()=>{ if(editState && editState.kind==='atividadeManage') render(); }).catch(()=>{ allTurmas = []; });
     }
@@ -6281,8 +6317,8 @@ function render(){
       title: a.title, subtitle: a.subtitle||'', sources: a.sources||'',
       intro: a.intro||'', roteiro: a.roteiro||'', sections: a.sections||[]
     }, null, 2);
-    content.innerHTML = `<div class="editor-form">
-      <div class="editing-type-banner">&lt;/&gt; Programação da aula ${a.num} — ${esc(a.title)}</div>
+    content.innerHTML = comCabecalho('aulaCode', `<div class="editor-form">
+      <div class="tela-contexto">Aula ${a.num} — ${esc(a.title)}</div>
       <div class="hint">Este é o código (JSON) exatamente como a aula está salva. Fluxo com IA: 1) copie o prompt de formatação; 2) cole na IA junto com este código e o ajuste que quiser ("deixe a seção 2 mais didática", "acrescente uma atividade prática de 40min"...); 3) cole a resposta aqui e Aplicar. <strong>Atenção:</strong> os campos <code>id</code> e <code>storageKey</code> das seções mantêm imagens e encaixes funcionando — peça à IA para preservá-los.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
         <button class="btn-secondary" data-action="copy-ai-prompt">📋 Copiar prompt de formatação</button>
@@ -6291,10 +6327,10 @@ function render(){
       <label style="margin-top:12px;">Código da aula (edite direto, ou cole a versão ajustada pela IA)</label>
       <textarea id="ef-aula-code" style="min-height:340px;font-family:monospace;font-size:11.5px;white-space:pre;">${esc(codigo)}</textarea>
       <div class="editor-actions">
-        <button class="btn-primary" data-action="apply-aula-code">💾 Aplicar programação a esta aula</button>
+        <button class="btn-primary" data-action="apply-aula-code">💾 Aplicar código a esta aula</button>
         <button class="btn-secondary" data-action="cancel-edit">👁 Visual (voltar sem aplicar)</button>
       </div>
-    </div>`;
+    </div>`);
     return;
   }
   if(editState && editState.kind==='myNotes'){
@@ -6316,19 +6352,18 @@ function render(){
         </div>
         <div class="my-note-text">${esc(n.texto)}</div>
       </div>`).join('');
-    content.innerHTML = `<div class="editor-form">
-      <div class="editing-type-banner">📝 Minhas anotações</div>
+    content.innerHTML = comCabecalho('myNotes', `<div class="editor-form">
       <div class="hint">Tudo que você anotou nesta matéria, reunido num lugar só — ótimo para revisar antes da prova. Para editar uma anotação, vá até a aula (botão ao lado de cada uma).</div>
       ${cards || '<p style="color:var(--muted);font-size:13.5px;margin-top:14px;">Você ainda não anotou nada. No fim de cada aula há um bloco "📝 Minhas anotações desta aula" — o que você escrever lá aparece aqui.</p>'}
       <div class="editor-actions">
         <button class="btn-secondary" data-action="cancel-edit">← Voltar para a aula</button>
       </div>
-    </div>`;
+    </div>`);
     return;
   }
   if(editState && editState.kind==='professorsScreen'){
     if(!isMaster || !cachedUsersList){ editState = {kind:'usersScreen'}; render(); return; }
-    content.innerHTML = professorsScreenForm();
+    content.innerHTML = comCabecalho('professorsScreen', professorsScreenForm());
     return;
   }
   if(editState && editState.kind==='turmasScreen'){
@@ -6338,12 +6373,12 @@ function render(){
       fetchTurmas().then(()=>{ if(editState && editState.kind==='turmasScreen') render(); }).catch(()=>{ allTurmas = []; render(); });
       return;
     }
-    content.innerHTML = turmasScreenForm();
+    content.innerHTML = comCabecalho('turmasScreen', turmasScreenForm());
     return;
   }
   if(editState && editState.kind==='classStats'){
     if(!cachedUsersList){ editState = {kind:'usersScreen'}; render(); return; }
-    content.innerHTML = classStatsHtml();
+    content.innerHTML = comCabecalho('classStats', classStatsHtml());
     return;
   }
   if(editState && editState.kind==='userDetail'){
@@ -6361,7 +6396,7 @@ function render(){
     if(allTurmas===null){
       fetchTurmas().then(()=>{ if(editState && editState.kind==='userDetail') render(); }).catch(()=>{ allTurmas = []; });
     }
-    content.innerHTML = userDetailForm(u);
+    content.innerHTML = comCabecalho('userDetail', userDetailForm(u));
     return;
   }
 
@@ -8079,6 +8114,13 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
 
+  // Atalho entre telas relacionadas. Todos passam por aqui, entao o destino
+  // e o mesmo do botao "oficial" daquela tela — nunca uma segunda versao.
+  if(action==='ir-para-tela'){
+    irParaTela(btn.dataset.tela);
+    return;
+  }
+
   if(action==='cancel-edit'){ editState=null; cachedUsersList=null; ATV_MANAGE_RESPONSES=null; ATV_MANAGE_SCHEDULES={}; ATV_MANAGE_DRAFTS=null; ATV_BOLETIM_DATA=null; ATV_BOLETIM_SCHEDULES=null; DIARIO_REGISTROS=null; DIARIO_TODOS=null; render(); return; }
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
@@ -8654,6 +8696,123 @@ try{
   }
 }catch(e){ /* sem observador, os hints so ficam como eram antes */ }
 
+// ===================== REGISTRO DE TELAS (v3.1.0) =====================
+// Fonte UNICA de verdade para nome, icone e nivel de cada tela do sistema.
+//
+// Por que isso existe: ate a v3.0.0, o mesmo destino era escrito a mao em
+// varios lugares, com nome e icone diferentes em cada um ("Gestao" aqui,
+// "Alunos" ali). Agora, qualquer botao que leve a uma tela le daqui — entao
+// atalho e botao original sao obrigatoriamente identicos.
+//
+// nivel segue a regra do lugar: conta -> materia -> aula -> secao.
+// relacionadas sao as telas que viram atalho no cabecalho desta.
+const TELAS = {
+  usersScreen:       {rotulo:'Alunos',              icone:'group',                nivel:'conta',   relacionadas:['turmasScreen','professorsScreen','classStats']},
+  professorsScreen:  {rotulo:'Professores',         icone:'school',               nivel:'conta',   relacionadas:['usersScreen','turmasScreen']},
+  turmasScreen:      {rotulo:'Turmas',              icone:'groups',               nivel:'conta',   relacionadas:['usersScreen','classStats']},
+  classStats:        {rotulo:'Estatísticas',        icone:'bar_chart',            nivel:'conta',   relacionadas:['usersScreen','turmasScreen']},
+  userDetail:        {rotulo:'Ficha do aluno',      icone:'person',               nivel:'conta',   relacionadas:['usersScreen','classStats']},
+  myNotes:           {rotulo:'Minhas anotações',    icone:'bookmark',             nivel:'conta',   relacionadas:[]},
+
+  orgScreen:         {rotulo:'Organizar curso',     icone:'folder',               nivel:'materia', relacionadas:['atividadesCentral','diarioFrequencia']},
+  atividadesCentral: {rotulo:'Central de Atividades', icone:'assignment',         nivel:'materia', relacionadas:['atividadesBoletim','diarioFrequencia']},
+  atividadesBoletim: {rotulo:'Boletim',             icone:'grading',              nivel:'materia', relacionadas:['atividadesCentral','diarioFrequencia']},
+  diarioFrequencia:  {rotulo:'Frequência',          icone:'fact_check',           nivel:'materia', relacionadas:['diarioAula','atividadesBoletim']},
+  newBlock:          {rotulo:'Novo bloco',          icone:'create_new_folder',    nivel:'materia', relacionadas:['orgScreen']},
+
+  newAula:           {rotulo:'Nova aula',           icone:'note_add',             nivel:'aula',    relacionadas:['orgScreen']},
+  diarioAula:        {rotulo:'Diário de classe',    icone:'menu_book',            nivel:'aula',    relacionadas:['diarioFrequencia']},
+  atividadeManage:   {rotulo:'Gerenciar atividade', icone:'assignment_turned_in', nivel:'aula',    relacionadas:['atividadesCentral','atividadesBoletim']},
+  aulaCode:          {rotulo:'Código da aula',      icone:'code',                 nivel:'aula',    relacionadas:[]},
+};
+const NIVEL_ROTULO = {conta:'Sua conta', materia:'Matéria', aula:'Aula', secao:'Seção'};
+
+// Telas que abrem sem precisar de parametro nenhum podem virar atalho em
+// qualquer lugar. As que dependem de contexto (uma secao especifica, um aluno
+// especifico) ficam de fora — um atalho que abre vazio confunde mais do que ajuda.
+function telaAbrivelDireto(kind){
+  return ['usersScreen','professorsScreen','turmasScreen','classStats','myNotes',
+          'orgScreen','atividadesCentral','atividadesBoletim','diarioFrequencia','diarioAula'].includes(kind);
+}
+
+// Monta o editState de cada tela do mesmo jeito que o botao original ja fazia,
+// incluindo a limpeza de cache — senao a tela abriria com dado velho.
+function irParaTela(kind){
+  if(!TELAS[kind]) return;
+  // Guardas de permissao que viviam espalhadas em cada botao. Agora ficam
+  // num lugar so — e valem para qualquer atalho, presente ou futuro.
+  const soEquipe = ['usersScreen','professorsScreen','turmasScreen','classStats',
+                    'orgScreen','atividadesCentral','atividadesBoletim',
+                    'diarioFrequencia','diarioAula'];
+  if(soEquipe.includes(kind) && !isAdmin) return;
+  if(kind === 'professorsScreen' && !isMaster) return;
+  switch(kind){
+    case 'usersScreen':
+      editState = {kind:'usersScreen'}; cachedUsersList = null; break;
+    case 'professorsScreen':
+      editState = {kind:'professorsScreen'}; break;
+    case 'turmasScreen':
+      editState = {kind:'turmasScreen'}; break;
+    case 'classStats':
+      editState = {kind:'classStats'}; break;
+    case 'myNotes':
+      editState = {kind:'myNotes'}; break;
+    case 'orgScreen':
+      editState = {kind:'orgScreen'}; break;
+    case 'atividadesCentral':
+      editState = {kind:'atividadesCentral'};
+      cachedUsersList = null; ATV_MANAGE_RESPONSES = null; ATV_MANAGE_SCHEDULES = {}; ATV_MANAGE_DRAFTS = null;
+      break;
+    case 'atividadesBoletim':
+      editState = {kind:'atividadesBoletim', turmaId:(editState && editState.turmaId) || null};
+      ATV_BOLETIM_DATA = null; ATV_BOLETIM_SCHEDULES = null;
+      break;
+    case 'diarioFrequencia':
+      editState = {kind:'diarioFrequencia', turmaId:(editState && editState.turmaId) || null};
+      DIARIO_TODOS = null;
+      break;
+    case 'diarioAula':
+      editState = {kind:'diarioAula', blockNum:state.block, aulaNum:state.aula, date:hojeISO()};
+      DIARIO_REGISTROS = null;
+      break;
+    default:
+      return;
+  }
+  render();
+  const c = document.getElementById('content');
+  if(c) c.scrollIntoView({behavior:'smooth'});
+}
+
+// Cabecalho identico em toda tela: onde voce esta, o que e, para onde da
+// para ir daqui, e como sair. Sempre no mesmo canto.
+function telaCabecalho(kind){
+  const t = TELAS[kind];
+  if(!t) return '';
+  const atalhos = (t.relacionadas || [])
+    .filter(k => TELAS[k] && telaAbrivelDireto(k))
+    .map(k => `<button type="button" class="btn-tiny tela-atalho" data-action="ir-para-tela" data-tela="${k}" title="Ir para ${escAttr(TELAS[k].rotulo)}"><span class="mi">${TELAS[k].icone}</span>${esc(TELAS[k].rotulo)}</button>`)
+    .join('');
+  return `<div class="tela-topo">
+    <div class="tela-id">
+      <span class="mi tela-icone">${t.icone}</span>
+      <span class="tela-textos">
+        <span class="tela-nivel">${esc(NIVEL_ROTULO[t.nivel] || '')}</span>
+        <span class="tela-titulo">${esc(t.rotulo)}</span>
+      </span>
+    </div>
+    <div class="tela-acoes">
+      ${atalhos}
+      <button type="button" class="btn-tiny tela-fechar" data-action="cancel-edit" title="Fechar e voltar para a aula"><span class="mi">close</span>Fechar</button>
+    </div>
+  </div>`;
+}
+
+// Envolve o HTML que a tela ja produzia. Nenhuma das 15 funcoes de tela
+// precisou ser reescrita — elas continuam devolvendo o que sempre devolveram.
+function comCabecalho(kind, html){
+  return `<div class="tela tela-nivel-${(TELAS[kind]||{}).nivel||'materia'}">${telaCabecalho(kind)}${html}</div>`;
+}
+
 // ===================== ICONES NA INTERFACE (v3.0.0) =====================
 // A troca acontece APENAS dentro de <button> — botao e interface, e nem
 // conteudo de aula nem resposta de aluno moram ali dentro. Isso torna a
@@ -8981,20 +9140,20 @@ document.getElementById('download-pdf-btn').addEventListener('click', ()=>{
   });
 });
 
-document.getElementById('admin-users-btn').addEventListener('click', ()=>{
-  if(!isAdmin) return;
-  cachedUsersList = null; // sempre busca a lista atualizada ao abrir, nunca usa cache antigo
-  editState = {kind:'usersScreen'};
-  render();
-  document.getElementById('content').scrollIntoView({behavior:'smooth'});
-});
+// Os botoes da barra da materia agora sao roteados pelo handler unico
+// data-action="ir-para-tela" (ver irParaTela). Mantido so o guard de permissao.
 
-document.getElementById('atividades-central-btn').addEventListener('click', ()=>{
-  if(!isAdmin) return;
-  editState = {kind:'atividadesCentral'};
-  render();
-  document.getElementById('content').scrollIntoView({behavior:'smooth'});
-});
+// A barra da materia vive fora do #content, onde mora o handler geral de
+// data-action. Este ouvinte cobre essa regiao, roteando para a MESMA funcao
+// de navegacao — nenhuma logica duplicada, so o ponto de escuta a mais.
+const barraMateriaEl = document.getElementById('edit-status-bar');
+if(barraMateriaEl){
+  barraMateriaEl.addEventListener('click', (e)=>{
+    const b = e.target.closest('[data-action="ir-para-tela"]');
+    if(!b) return;
+    irParaTela(b.dataset.tela);
+  });
+}
 
 document.getElementById('download-backup-btn').addEventListener('click', ()=>{
   const dataStr = JSON.stringify(COURSE, null, 2);
