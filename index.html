@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v2.7.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v3.0.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -10,8 +10,21 @@
 <title>Gestão de Projetos — Material do Curso</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0&display=block" rel="stylesheet">
 <style>
   .hidden{display:none !important;}
+  /* ===================== PALETAS DE COR (v3.0.0) =====================
+     Os nomes das variaveis (--navy, --gold, --ice...) foram MANTIDOS de
+     proposito, mesmo ficando estranhos nas paletas nao-azuis: eles sao usados
+     em 400+ pontos do arquivo, e renomear seria risco puro sem ganho nenhum.
+     Cada paleta so redefine os VALORES.
+
+     Trocar de paleta = <html data-palette="floresta">. O navegador repinta
+     tudo sozinho, sem custo de desempenho.
+
+     --brand-* sao apelidos semanticos para codigo novo. Apontam para o mesmo
+     lugar, entao da para migrar aos poucos sem quebrar nada.
+  =================================================================== */
   :root{
     --navy:#3D3E77;
     --navy-dark:#2B2C58;
@@ -25,19 +38,276 @@
     --line:#E6E4F0;
     --white:#FFFFFF;
     --maxw:1180px;
+
+    /* Superficies tingidas — a base do padrao "Nevoa".
+       Derivadas da cor da marca, entao seguem a paleta automaticamente. */
+    --brand-rgb:61,62,119;
+    --surface-page:#F7F8FC;
+    --surface-card:rgba(var(--brand-rgb),0.045);
+    --surface-raised:#FFFFFF;
+    --tint-soft:rgba(var(--brand-rgb),0.06);
+    --tint-medium:rgba(var(--brand-rgb),0.10);
+    --tint-strong:rgba(var(--brand-rgb),0.16);
+    --hairline:rgba(var(--brand-rgb),0.13);
+    --hairline-strong:rgba(var(--brand-rgb),0.22);
+
+    /* Apelidos semanticos para codigo novo */
+    --brand:var(--navy);
+    --brand-dark:var(--navy-dark);
+    --accent:var(--gold);
+    --danger:var(--terracotta);
+    --text-strong:var(--charcoal);
+
+    /* Cores COM SIGNIFICADO FIXO — nao mudam de paleta nenhuma.
+       Verde tem que ser verde em qualquer tema, senao o aluno perde a
+       leitura de acerto e erro. */
+    --ok:#2E7D32;
+    --ok-tint:#EAF5EB;
+    --warn:#8A5A0F;
+    --warn-tint:#FFF7E8;
+    --err:#E5484D;
+    --err-tint:#FDECEC;
+
+    --radius-sm:8px;
+    --radius:10px;
+    --radius-lg:14px;
+  }
+
+  html[data-palette="grafite"]{
+    --navy:#464644; --navy-dark:#2F2F2D; --ice:#D9D8D2; --ice-tint:#F5F5F3;
+    --gold:#B8860B; --terracotta:#A65043; --terracotta-tint:#F8F0EE;
+    --charcoal:#2B2B2A; --muted:#6E6E68; --line:#E4E3DE;
+    --brand-rgb:70,70,68; --surface-page:#F8F8F7;
+  }
+  html[data-palette="floresta"]{
+    --navy:#1F5A3A; --navy-dark:#143D27; --ice:#C7E0D0; --ice-tint:#F2F8F4;
+    --gold:#B07A16; --terracotta:#A6533F; --terracotta-tint:#F8F1ED;
+    --charcoal:#222B25; --muted:#5F6B63; --line:#DDE9E1;
+    --brand-rgb:31,90,58; --surface-page:#F6F9F5;
+  }
+  html[data-palette="vinho"]{
+    --navy:#7A2635; --navy-dark:#571822; --ice:#E8CDD3; --ice-tint:#FAF2F3;
+    --gold:#A67C1A; --terracotta:#A64236; --terracotta-tint:#F9EFEC;
+    --charcoal:#2B2224; --muted:#6E5D61; --line:#EBDCE0;
+    --brand-rgb:122,38,53; --surface-page:#FBF7F7;
+  }
+  html[data-palette="oceano"]{
+    --navy:#0F5A64; --navy-dark:#083E46; --ice:#C2E0E4; --ice-tint:#F1F8F9;
+    --gold:#B5761C; --terracotta:#A85434; --terracotta-tint:#F9F0EB;
+    --charcoal:#22292B; --muted:#5C6B6E; --line:#DAE8EA;
+    --brand-rgb:15,90,100; --surface-page:#F5F9FA;
+  }
+  html[data-palette="ardosia"]{
+    --navy:#4A5063; --navy-dark:#333747; --ice:#D4D7E2; --ice-tint:#F4F5F8;
+    --gold:#8A6BB5; --terracotta:#A65567; --terracotta-tint:#F8F0F2;
+    --charcoal:#26282F; --muted:#666B78; --line:#E2E4EB;
+    --brand-rgb:74,80,99; --surface-page:#F7F7FA;
+  }
+  html[data-palette="rose"]{
+    --navy:#A34367; --navy-dark:#7A2E4B; --ice:#F2D2DE; --ice-tint:#FDF4F7;
+    --gold:#C2790C; --terracotta:#B0475A; --terracotta-tint:#FBEFF2;
+    --charcoal:#2E2429; --muted:#75626A; --line:#F0DEE5;
+    --brand-rgb:163,67,103; --surface-page:#FDF7F9;
+  }
+
+  /* NOITE — modo escuro. Unica paleta autorizada a mexer tambem nos tons
+     que o professor escolheu no conteudo (decisao do professor), porque um
+     pastel claro vira uma mancha branca gritando num fundo escuro. O
+     tratamento preserva a INTENCAO: o que era destaque continua destaque. */
+  html[data-palette="noite"]{
+    --navy:#8A8CD9; --navy-dark:#6E70C4; --ice:#3A3C55; --ice-tint:#23242F;
+    --gold:#E0A860; --terracotta:#E08A7D; --terracotta-tint:#33262A;
+    --charcoal:#EDEDF2; --muted:#9A9CB5; --line:#33354A;
+    --white:#1E1F28;
+    --brand-rgb:138,140,217;
+    --surface-page:#16171F;
+    --surface-card:rgba(255,255,255,0.04);
+    --surface-raised:#1E1F28;
+    --tint-soft:rgba(255,255,255,0.05);
+    --tint-medium:rgba(255,255,255,0.08);
+    --tint-strong:rgba(255,255,255,0.12);
+    --hairline:rgba(255,255,255,0.11);
+    --hairline-strong:rgba(255,255,255,0.2);
+    --ok:#5FBF66; --ok-tint:#1C2A1D;
+    --warn:#D9A441; --warn-tint:#2B2418;
+    --err:#F0736F; --err-tint:#2E1D1E;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     font-family:'Inter',system-ui,sans-serif;
     color:var(--charcoal);
-    background:var(--white);
+    background:var(--surface-page);
     -webkit-font-smoothing:antialiased;
+    transition:background-color .18s ease, color .18s ease;
   }
   h1,h2,h3,.serif{font-family:'Source Serif 4',Georgia,serif;}
   a{color:inherit;}
   button{font-family:inherit;}
   ::selection{background:var(--ice);}
+
+  /* ============ BASE UNICA DE BOTAO — padrao Nevoa (v3.0.0) ============
+     Tres niveis: principal (solido), secundario (tingido) e destrutivo.
+     Mesma altura, mesma fonte, mesmos cantos em todo o sistema. As classes
+     antigas (.btn-primary, .btn-secondary, .btn-tiny, .edit-chip...) apontam
+     todas para esta base, entao nenhum HTML precisou mudar de nome.
+  ==================================================================== */
+  .btn-primary, .btn-secondary, .btn-tiny,
+  .add-block-btn, .organize-sidebar-btn, .add-aula-btn,
+  .add-standalone-aula-btn, .picker-gestao-btn{
+    font-family:inherit;
+    font-size:13px;
+    font-weight:600;
+    line-height:1;
+    border-radius:var(--radius);
+    padding:10px 16px;
+    cursor:pointer;
+    border:0.5px solid transparent;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    transition:background-color .14s ease, border-color .14s ease, opacity .14s ease;
+  }
+  .btn-primary, .picker-gestao-btn{
+    background:var(--navy);
+    color:#fff;
+    border-color:var(--navy);
+  }
+  .btn-primary:hover, .picker-gestao-btn:hover{background:var(--navy-dark);border-color:var(--navy-dark);}
+  .btn-secondary, .add-block-btn, .organize-sidebar-btn,
+  .add-aula-btn, .add-standalone-aula-btn{
+    background:var(--tint-soft);
+    color:var(--navy);
+    border-color:var(--hairline);
+  }
+  .btn-secondary:hover, .add-block-btn:hover, .organize-sidebar-btn:hover,
+  .add-aula-btn:hover, .add-standalone-aula-btn:hover{
+    background:var(--tint-medium);
+    border-color:var(--hairline-strong);
+  }
+  .btn-tiny{
+    font-size:11.5px;
+    padding:7px 12px;
+    background:var(--tint-soft);
+    color:var(--navy);
+    border-color:var(--hairline);
+  }
+  .btn-tiny:hover{background:var(--tint-medium);}
+  .btn-danger{
+    background:rgba(184,80,66,0.09);
+    color:var(--terracotta);
+    border-color:rgba(184,80,66,0.22);
+  }
+  .btn-danger:hover{background:rgba(184,80,66,0.15);}
+  button:disabled{opacity:.45;cursor:default;}
+
+  /* ============ TOOLTIP — substitui os paragrafos .hint ============
+     A explicacao some da tela e aparece so quando o mouse para em cima.
+     Uso: <span class="tip" data-tip="texto">?</span>
+     ou qualquer elemento com class="has-tip" data-tip="texto".
+  ================================================================= */
+  html[data-palette="noite"] .note-box,
+  html[data-palette="noite"] .card,
+  html[data-palette="noite"] .compare-col,
+  html[data-palette="noite"] .axis-card,
+  html[data-palette="noite"] .chip{
+    background-image:linear-gradient(rgba(22,23,31,0.86),rgba(22,23,31,0.86));
+    color:var(--charcoal);
+  }
+  html[data-palette="noite"] .note-box h4,
+  html[data-palette="noite"] .card h4,
+  html[data-palette="noite"] .compare-col h4,
+  html[data-palette="noite"] .axis-card h4{color:var(--charcoal);}
+
+  .palette-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin-top:4px;
+  }
+  .palette-swatch{
+    border:1.5px solid var(--hairline);
+    border-radius:var(--radius);
+    padding:7px 6px 6px;
+    cursor:pointer;
+    background:none;
+    font-family:inherit;
+    text-align:center;
+    transition:border-color .13s ease;
+  }
+  .palette-swatch:hover{border-color:var(--hairline-strong);}
+  .palette-swatch.is-active{border-color:var(--navy);border-width:2px;padding:6px 5px 5px;}
+  .palette-dots{display:flex;gap:3px;justify-content:center;margin-bottom:5px;}
+  .palette-dots i{width:11px;height:11px;border-radius:50%;display:block;}
+  .palette-name{font-size:10.5px;color:var(--muted);font-style:normal;}
+  .palette-swatch.is-active .palette-name{color:var(--navy);font-weight:600;}
+
+  /* ===== ICONES (v3.0.0) =====
+     Emoji mudam de desenho conforme o computador do aluno — era o que mais
+     entregava "amador" no visual. Icone de traco e igual em qualquer maquina.
+     Se a fonte nao carregar, o sistema simplesmente mantem os emoji: a troca
+     so acontece depois que o navegador confirma que ela chegou. */
+  .mi{
+    font-family:'Material Symbols Outlined';
+    font-weight:normal;font-style:normal;
+    font-size:17px;line-height:1;
+    letter-spacing:normal;text-transform:none;
+    display:inline-block;white-space:nowrap;
+    direction:ltr;vertical-align:-3px;
+    -webkit-font-feature-settings:'liga';
+    -webkit-font-smoothing:antialiased;
+  }
+  .edit-chip .mi{font-size:16px;vertical-align:-2px;}
+  .btn-tiny .mi{font-size:15px;vertical-align:-3px;}
+
+  .has-tip{position:relative;}
+  .has-tip::after{
+    content:attr(data-tip);
+    position:absolute;
+    left:50%;
+    bottom:calc(100% + 8px);
+    transform:translateX(-50%);
+    background:var(--navy-dark);
+    color:#fff;
+    font-family:'Inter',system-ui,sans-serif;
+    font-size:12px;
+    font-weight:400;
+    line-height:1.5;
+    letter-spacing:normal;
+    text-transform:none;
+    text-align:left;
+    padding:8px 11px;
+    border-radius:var(--radius-sm);
+    width:max-content;
+    max-width:240px;
+    white-space:normal;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:opacity .13s ease;
+    z-index:900;
+  }
+  .has-tip:hover::after{opacity:1;visibility:visible;}
+  .tip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:16px;height:16px;
+    border-radius:50%;
+    background:var(--tint-medium);
+    color:var(--navy);
+    font-size:10.5px;
+    font-weight:700;
+    cursor:help;
+    margin-left:5px;
+    vertical-align:middle;
+    flex:0 0 auto;
+  }
+  /* Perto da borda direita da tela o balao vazaria — estas variantes
+     ancoram pela lateral em vez do centro. */
+  .has-tip.tip-left::after{left:auto;right:0;transform:none;}
+  .has-tip.tip-right::after{left:0;right:auto;transform:none;}
 
   /* ===== Top header ===== */
   .site-header{
@@ -251,8 +521,8 @@
   .side-nav{
     flex:0 0 auto;
     width:300px;
-    background:var(--white);
-    border-right:1px solid var(--line);
+    background:var(--surface-raised);
+    border-right:0.5px solid var(--hairline);
     height:100vh;
     position:sticky;
     top:0;
@@ -322,14 +592,17 @@
     text-align:left;
     background:none;
     border:none;
-    padding:9px 8px;
-    border-radius:8px;
+    padding:9px 10px;
+    border-radius:var(--radius);
     cursor:pointer;
     color:var(--navy);
+    font-family:inherit;
+    transition:background-color .13s ease;
   }
+  .nav-block-header:hover{background:var(--tint-soft);}
   .nav-block-header:hover{background:var(--ice-tint);}
-  .nav-block-header.active{background:var(--navy);}
-  .nav-block-header.active .num, .nav-block-header.active .label{color:var(--white);}
+  .nav-block-header.active{background:var(--tint-medium);}
+  .nav-block-header.active .num, .nav-block-header.active .label{color:var(--navy);}
   .nav-block-header .num{
     flex:0 0 auto;
     min-width:26px;height:26px;
@@ -343,7 +616,7 @@
     letter-spacing:0.3px;
     display:flex;align-items:center;justify-content:center;
   }
-  .nav-block-header.active .num{background:rgba(255,255,255,0.2);}
+  .nav-block-header.active .num{background:var(--tint-strong);}
   .nav-block-header .label{
     font-size:13px;
     font-weight:700;
@@ -488,15 +761,19 @@
     text-align:left;
     background:none;
     border:none;
-    padding:7px 8px;
-    border-radius:8px;
+    padding:7px 10px;
+    border-radius:var(--radius);
     cursor:pointer;
     color:var(--charcoal);
+    font-family:inherit;
+    transition:background-color .13s ease;
   }
+  .nav-aula:hover{background:var(--tint-soft);}
   .side-nav.collapsed .nav-aula{justify-content:center;padding:6px 4px;}
   .nav-aula:hover{background:var(--ice-tint);}
-  .nav-aula.active{background:var(--ice-tint);}
+  .nav-aula.active{background:var(--tint-medium);box-shadow:inset 2px 0 0 var(--gold);}
   .nav-aula.active .num{color:var(--gold);}
+  .nav-aula.active .label{color:var(--navy);font-weight:600;}
   .nav-aula.practice .num{color:var(--terracotta);}
   .nav-aula .num{
     flex:0 0 auto;
@@ -561,9 +838,12 @@
   .user-badge-profile:hover{background:rgba(255,255,255,0.2);}
 
 
+  /* A tela de login SEMPRE usa a paleta padrao: ninguem esta autenticado
+     ainda, entao o sistema nao tem como saber a preferencia de quem chegou.
+     A paleta pessoal so entra em vigor depois do login. */
   .auth-gate{
     position:fixed;inset:0;z-index:200;
-    background:linear-gradient(160deg, var(--navy) 0%, #2a2b56 100%);
+    background:#3D3E77;
     display:flex;align-items:center;justify-content:center;
     padding:20px;
   }
@@ -573,20 +853,20 @@
     text-align:center;font-size:10.5px;color:rgba(255,255,255,0.55);
   }
   .auth-box{
-    background:#fff;border-radius:16px;padding:36px 32px;
-    max-width:380px;width:100%;
-    box-shadow:0 20px 60px rgba(0,0,0,0.3);
+    background:#fff;border-radius:18px;padding:38px 34px;
+    max-width:392px;width:100%;
     text-align:center;
   }
   .auth-box h2{font-family:'Source Serif 4',serif;color:var(--navy);font-size:22px;margin-bottom:4px;}
   .auth-professor-name{font-size:14px;color:var(--muted);margin-bottom:10px;}
   .auth-subtitle{font-size:12.5px;color:var(--muted);margin-bottom:20px;line-height:1.5;}
-  .auth-tabs{display:flex;gap:4px;background:var(--ice-tint);border-radius:10px;padding:4px;margin-bottom:18px;}
+  .auth-tabs{display:flex;gap:4px;background:rgba(61,62,119,0.06);border-radius:12px;padding:4px;margin-bottom:20px;}
   .auth-tab{
-    flex:1;background:none;border:none;padding:8px;border-radius:8px;
+    flex:1;background:none;border:none;padding:9px;border-radius:9px;
     font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
+    font-family:inherit;transition:background-color .13s ease;
   }
-  .auth-tab.active{background:var(--navy);color:#fff;}
+  .auth-tab.active{background:#3D3E77;color:#fff;}
   .auth-forgot-link{
     background:none;border:none;color:var(--navy);font-size:12.5px;font-weight:600;
     cursor:pointer;margin-top:10px;text-decoration:underline;font-family:inherit;
@@ -599,8 +879,12 @@
   }
   .auth-ok.hidden{display:none;}
   #auth-login-form input, #auth-register-form input{
-    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
-    font-size:14px;margin-bottom:10px;text-align:left;
+    width:100%;padding:11px 13px;border:1px solid rgba(61,62,119,0.16);border-radius:10px;
+    font-size:14px;margin-bottom:10px;text-align:left;font-family:inherit;
+    transition:border-color .13s ease;
+  }
+  #auth-login-form input:focus, #auth-register-form input:focus{
+    outline:none;border-color:#3D3E77;
   }
   .auth-error{color:var(--terracotta);font-size:12.5px;margin-top:8px;}
   .auth-hint{font-size:11.5px;color:var(--muted);text-align:left;margin-top:8px;line-height:1.4;}
@@ -697,23 +981,16 @@
   .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
   .modal-error{color:var(--terracotta);font-size:12.5px;margin:10px 0 0 0;}
   .modal-error.hidden{display:none;}
-  .btn-primary{
-    background:var(--navy);color:#fff;border:none;padding:9px 18px;border-radius:8px;
-    font-size:13.5px;font-weight:600;cursor:pointer;
-    display:inline-flex;align-items:center;gap:7px;
-  }
+  /* Aparencia vem da base unica la em cima. Aqui ficam so as afordancias
+     especificas que o professor criou: o ✓ no confirmar e o ✕ no cancelar. */
   .btn-primary::before{content:"✓";font-weight:700;}
-  .btn-secondary{
-    background:var(--ice-tint);color:var(--charcoal);border:none;padding:9px 18px;border-radius:8px;
-    font-size:13.5px;font-weight:600;cursor:pointer;
-  }
   /* Botão de "cancelar/fechar" — mesmo peso visual do Salvar, só que vermelho —
      só nos botões que realmente descartam/fecham, não em outros secundários
      (adicionar linha, recarregar, etc.) */
   .btn-secondary[data-action="cancel-edit"],
   .btn-secondary#profile-cancel-btn,
   .btn-secondary[data-action="delete-aula-cancel"]{
-    background:var(--terracotta);color:#fff;
+    background:var(--terracotta);color:#fff;border-color:var(--terracotta);
     display:inline-flex;align-items:center;gap:7px;
   }
   .btn-secondary[data-action="cancel-edit"]:hover,
@@ -728,32 +1005,36 @@
   }
   .size-preset-btn{padding:7px 12px;font-size:12.5px;}
   .size-preset-btn.active-preset{background:var(--navy);color:#fff;}
+  /* Vive dentro da barra da materia (fundo gold), entao continua branco
+     translucido — tingir de navy aqui derrubaria o contraste. */
   .btn-tiny{
-    background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);
-    padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;
+    background:rgba(255,255,255,0.16);color:#fff;border:0.5px solid rgba(255,255,255,0.32);
+    padding:7px 13px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;
   }
-  .btn-tiny:hover{background:rgba(255,255,255,0.25);}
+  .btn-tiny:hover{background:rgba(255,255,255,0.26);}
   .btn-approve{background:var(--navy) !important;color:#fff !important;border:1px solid var(--navy) !important;}
   .btn-approve:hover{background:var(--navy-dark) !important;}
 
+  /* Barra da MATERIA (era so "modo edicao"). Pela regra do nivel, tudo que
+     afeta a materia inteira mora aqui: curso, alunos, atividades, diario. */
   .edit-status-bar{
     position:sticky;top:0;z-index:60;
     background:var(--gold);color:#fff;
     padding:9px 24px;
     font-size:13px;
     display:flex;align-items:center;justify-content:space-between;
-    gap:12px;flex-wrap:wrap;
+    gap:10px;flex-wrap:wrap;
   }
   .edit-status-bar.hidden{display:none;}
 
   /* Edit affordances on sections */
   .section{position:relative;}
-  .section-grid-on{outline:2px dashed rgba(61,62,119,0.3);outline-offset:6px;border-radius:6px;}
+  .section-grid-on{outline:2px dashed var(--hairline-strong);outline-offset:6px;border-radius:var(--radius);}
   .section-drag-handle{display:none !important;cursor:grab;font-size:13px;}
   .section-grid-on .section-drag-handle{display:flex !important;}
   .section-placement-line{
     position:absolute;height:3px;background:var(--gold);border-radius:2px;
-    pointer-events:none;z-index:400;box-shadow:0 0 0 2px rgba(247,156,49,0.3);
+    pointer-events:none;z-index:400;
   }
   .section-placement-line.hidden{display:none;}
   .section-editbar{
@@ -765,12 +1046,23 @@
   }
   body.admin-mode .section:hover .section-editbar{display:flex;}
   .edit-chip{
-    background:var(--navy);color:#fff;border:none;
-    width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:12px;
+    background:var(--tint-strong);color:var(--navy);
+    border:0.5px solid var(--hairline);
+    width:28px;height:28px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;
     display:flex;align-items:center;justify-content:center;
+    transition:background-color .13s ease;
   }
-  .edit-chip.danger{background:var(--terracotta);}
-  .edit-chip:hover{opacity:.85;}
+  .edit-chip.danger{background:rgba(184,80,66,0.12);color:var(--terracotta);border-color:rgba(184,80,66,0.24);}
+  .edit-chip:hover{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .edit-chip.danger:hover{background:var(--terracotta);color:#fff;border-color:var(--terracotta);}
+  /* A barra de acoes da secao flutua sobre o card, agrupada — em vez de
+     seis quadrados soltos. */
+  .section-editbar, .aula-editbar{
+    background:var(--surface-raised);
+    border:0.5px solid var(--hairline);
+    border-radius:999px;
+    padding:4px;
+  }
 
   .aula-header{position:relative;}
   .aula-editbar{display:none;gap:6px;position:absolute;top:0;right:0;}
@@ -861,6 +1153,20 @@
   .editor-form div.rich-text p:last-child{margin-bottom:0;}
   .editor-form div.rich-text:focus{outline:2px solid var(--navy);outline-offset:-1px;}
   .editor-form .hint{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  /* ===== HINTS COMPACTOS (v3.0.0) =====
+     As explicacoes continuam existindo — so param de ocupar a tela inteira.
+     Uma linha, reticencias no fim, texto completo ao parar o mouse.
+     Hints curtos (que ja cabem numa linha) ficam como estavam. */
+  .hint.hint-compact{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    cursor:help;
+    border-bottom:1px dotted var(--hairline-strong);
+    display:block;
+    max-width:100%;
+  }
+  .hint.hint-compact:hover{color:var(--navy);}
   .type-description-box{
     background:var(--ice-tint);
     border-left:3px solid var(--gold);
@@ -954,7 +1260,7 @@
   .atv-table input{width:100%;border:none;font-size:13px;padding:4px;background:transparent;}
   .atividade-save-row{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;}
   .atividade-save-status{font-size:11.5px;color:var(--muted);min-height:14px;}
-  .atividade-save-status.atv-save-error{color:#B85042;font-weight:700;}
+  .atividade-save-status.atv-save-error{color:var(--err);font-weight:700;}
   .atividade-grading{margin-top:16px;padding-top:14px;border-top:1.5px solid #D8A857;}
   .atividade-grade-score{font-size:15px;font-weight:800;color:#5C3D0A;margin-bottom:8px;}
   .atividade-grade-comment-label{font-size:11.5px;font-weight:800;color:#8A5A0F;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;}
@@ -1332,6 +1638,42 @@
   body.presentation-mode .student-notes,
   body.presentation-mode .roteiro-professor{display:none !important;}
   body.presentation-mode .app-body{display:block;}
+
+  /* ===== SALVAGUARDA DE PROJECAO (v3.0.0) =====
+     No monitor, o padrao Nevoa usa fundos tingidos. Num datashow, tom sobre
+     tom desbota e o aluno da ultima fileira perde o texto. Durante a
+     projecao, tudo volta para branco com texto escuro — contraste cheio.
+     O tingimento e enfeite; legibilidade em sala nao e negociavel.
+     Isso NAO altera o conteudo salvo: e so como ele e desenhado enquanto
+     o Modo Aula esta ligado. */
+  body.presentation-mode{background:#fff !important;}
+  body.presentation-mode .note-box,
+  body.presentation-mode .card,
+  body.presentation-mode .compare-col,
+  body.presentation-mode .axis-card,
+  body.presentation-mode .chip,
+  body.presentation-mode .timeline-step,
+  body.presentation-mode .hier-item{
+    background-image:none !important;
+    color:#1A1A1A !important;
+    border:1px solid #C9C9D4 !important;
+  }
+  body.presentation-mode .note-box h4,
+  body.presentation-mode .card h4,
+  body.presentation-mode .compare-col h4,
+  body.presentation-mode .axis-card h4,
+  body.presentation-mode .section-title,
+  body.presentation-mode .aula-title{color:#1A1A1A !important;}
+  body.presentation-mode .section-kicker{color:#8A5A0F !important;}
+  /* Na Noite, o veu escuro do conteudo tambem sai — senao a projecao fica
+     preta no meio de uma sala clara. */
+  html[data-palette="noite"] body.presentation-mode .note-box,
+  html[data-palette="noite"] body.presentation-mode .card,
+  html[data-palette="noite"] body.presentation-mode .compare-col,
+  html[data-palette="noite"] body.presentation-mode .axis-card,
+  html[data-palette="noite"] body.presentation-mode .chip{
+    background-image:none !important;
+  }
   body.presentation-mode #content{
     max-width:1100px;margin:0 auto;padding:28px 40px;
     font-size:calc(15.5px * var(--pres-scale));
@@ -1430,11 +1772,11 @@
 
   .section{margin-bottom:14px;}
   .section-kicker{
-    font-size:11.5px;
-    font-weight:700;
+    font-size:11px;
+    font-weight:600;
     color:var(--gold);
     text-transform:uppercase;
-    letter-spacing:1.2px;
+    letter-spacing:1.1px;
     margin-bottom:6px;
   }
   .section-title{
@@ -1479,8 +1821,9 @@
     gap:16px;
   }
   .card{
-    background:var(--ice-tint);
-    border-radius:10px;
+    background:var(--surface-card);
+    border:0.5px solid var(--hairline);
+    border-radius:var(--radius-lg);
     padding:18px;
   }
   .card h4{
@@ -1547,7 +1890,7 @@
     .axes-grid.axes-align-center > .axis-card,
     .axes-grid.axes-align-right > .axis-card{flex-basis:100%;}
   }
-  .axis-card{background:var(--ice-tint);border-radius:10px;padding:16px;}
+  .axis-card{background:var(--surface-card);border:0.5px solid var(--hairline);border-radius:var(--radius-lg);padding:16px;}
   .axis-card h4{font-family:'Source Serif 4',serif;font-size:15px;color:var(--navy);margin:0 0 8px 0;}
   .axis-card p{font-size:12.5px;line-height:1.5;margin:0;}
   .axes-example{
@@ -1569,7 +1912,8 @@
   .chips-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:16px 0;}
   .chip{
     display:flex;align-items:center;gap:10px;
-    background:var(--ice-tint);border-radius:30px;padding:8px 16px 8px 8px;
+    background:var(--surface-card);border:0.5px solid var(--hairline);
+    border-radius:999px;padding:8px 16px 8px 8px;
     font-size:13.5px;
   }
   .chip .dot{
@@ -1940,6 +2284,8 @@
     <button class="btn-tiny" id="switch-subject-btn" title="Trocar para outra matéria, ou criar uma nova">🏠 Trocar de matéria</button>
     <button class="btn-tiny" id="admin-users-btn" title="Gestão de alunos, turmas, estatísticas e professores">🗂️ Gestão</button>
     <button class="btn-tiny" id="atividades-central-btn" title="Ver e corrigir todas as atividades do curso, de todas as aulas">📋 Central de Atividades</button>
+    <button class="btn-tiny" id="bar-organize-btn" title="Organizar curso: blocos, aulas, numeração e visibilidade">🗂 Organizar curso</button>
+    <button class="btn-tiny" id="bar-diario-btn" title="Diário de classe: chamada, conteúdo dado e observações">📒 Diário de classe</button>
     <button class="btn-tiny" id="grid-mode-toggle-btn" title="Mostrar/esconder as bordas pontilhadas e a alça de arrastar seções">🔲 Grade: ligada</button>
   </span>
 </div>
@@ -1956,7 +2302,9 @@
     <label>R.A.</label><input type="text" id="profile-ra" placeholder="Número de matrícula">
     <label>Telefone</label><input type="text" id="profile-phone" placeholder="(18) 90000-0000">
     <label>Endereço completo</label><input type="text" spellcheck="true" lang="pt-BR" id="profile-address" placeholder="Rua, número, bairro, cidade">
-    <label>Cor do cabeçalho <span style="text-transform:none;font-weight:400;color:var(--muted);">(personalize a faixa do topo — só você vê assim)</span></label>
+    <label>Tema de cores <span class="tip has-tip" data-tip="Muda as cores de todo o sistema, só para você. O conteúdo das aulas que o professor montou não muda.">?</span></label>
+    <div class="palette-grid" id="profile-palette-grid"></div>
+    <label style="margin-top:14px;">Cor do cabeçalho <span class="tip has-tip tip-left" data-tip="Uma cor só para a faixa do topo, por cima do tema escolhido. Deixe igual ao tema se não quiser destacar.">?</span></label>
     <input type="color" id="profile-header-color" value="#3D3E77">
     <div class="modal-actions">
       <button class="btn-secondary" id="profile-cancel-btn">Cancelar</button>
@@ -2057,7 +2405,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v2.7.0</div>
+<div class="version-tag hidden" id="version-tag">v3.0.0</div>
 
 
 <script>
@@ -2192,7 +2540,7 @@ async function saveCourseToStorage(){
       const quando = new Date(current.updatedAt).toLocaleString('pt-BR');
       if(indicator){
         indicator.textContent = '⚠ NÃO SALVO — conflito de versão';
-        indicator.style.color = '#B85042';
+        indicator.style.color = 'var(--err)';
       }
       alert('ATENÇÃO — este salvamento foi BLOQUEADO para proteger seu trabalho.\n\n' +
         'Este curso foi salvo em outro lugar (outra aba ou outro computador) em ' + quando + ', ' +
@@ -2212,7 +2560,7 @@ async function saveCourseToStorage(){
   }catch(e){
     if(indicator){
       indicator.textContent = '⚠ NÃO SALVO — ' + (e && e.message ? e.message : 'erro desconhecido');
-      indicator.style.color = '#B85042';
+      indicator.style.color = 'var(--err)';
     }
     alert('Esta alteração NÃO foi salva.\n\nDetalhe técnico: ' + (e && e.message ? e.message : String(e)) + '\n\nSe a mensagem falar em "FIREBASE_CONFIG", significa que a configuração do Firebase ainda não foi preenchida neste arquivo.');
     return false;
@@ -2755,6 +3103,29 @@ function renderSideNav(){
       document.getElementById('content').scrollIntoView({behavior:'smooth'});
     });
   }
+  // Atalhos da barra da materia — abrem exatamente as mesmas telas dos
+  // botoes que ja existiam no menu lateral e ao lado da aula.
+  const barOrganizeBtn = document.getElementById('bar-organize-btn');
+  if(barOrganizeBtn && !barOrganizeBtn.dataset.wired){
+    barOrganizeBtn.dataset.wired = '1';
+    barOrganizeBtn.addEventListener('click', ()=>{
+      if(!isAdmin) return;
+      editState = {kind:'orgScreen'};
+      render();
+      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    });
+  }
+  const barDiarioBtn = document.getElementById('bar-diario-btn');
+  if(barDiarioBtn && !barDiarioBtn.dataset.wired){
+    barDiarioBtn.dataset.wired = '1';
+    barDiarioBtn.addEventListener('click', ()=>{
+      if(!isAdmin) return;
+      editState = {kind:'diarioAula', blockNum: state.block, aulaNum: state.aula, date: hojeISO()};
+      DIARIO_REGISTROS = null;
+      render();
+      document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    });
+  }
   const organizeBtn = document.getElementById('organize-btn');
   if(organizeBtn){
     organizeBtn.addEventListener('click', ()=>{
@@ -2832,7 +3203,7 @@ function buildNestedListHtml(bullets, markerTypeOrArray, richOutFn){
 function noteHtml(note){
   if(!note) return '';
   const paras = normalizeNoteBody(note.body);
-  return `<div class="note-box rich-content" style="background:${note.color||'#F4F5FB'};">
+  return `<div class="note-box rich-content" style="background:${note.color||'var(--surface-card)'};">
     <div class="note-heading">${esc(note.heading||'')}</div>
     <div class="note-body ${note.italic?'italic':''}">${paras.map(p=>`<p>${richOut(p)}</p>`).join('')}</div>
   </div>`;
@@ -3025,13 +3396,13 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
     }
     case 'grid':
       body = `<div class="grid-cards">${(sec.cards||[]).map(c=>`
-        <div class="card" style="background:${c.color||'#F4F5FB'};"><h4>${esc(c.title)}</h4><ul>${(c.bullets||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+        <div class="card" style="background:${c.color||'var(--surface-card)'};"><h4>${esc(c.title)}</h4><ul>${(c.bullets||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
       `).join('')}</div>`;
       break;
     case 'compare':
       body = `<div class="compare-wrap">
-        <div class="compare-col left" style="background:${sec.leftColor||'#F4F5FB'};"><h4>${esc(sec.leftTitle)}</h4><ul>${(sec.leftItems||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
-        <div class="compare-col right" style="background:${sec.rightColor||'#FBF1EC'};"><h4>${esc(sec.rightTitle)}</h4><ul>${(sec.rightItems||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+        <div class="compare-col left" style="background:${sec.leftColor||'var(--surface-card)'};"><h4>${esc(sec.leftTitle)}</h4><ul>${(sec.leftItems||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
+        <div class="compare-col right" style="background:${sec.rightColor||'var(--terracotta-tint)'};"><h4>${esc(sec.rightTitle)}</h4><ul>${(sec.rightItems||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
       </div>${sec.footerNote?`<div class="footer-note">${esc(sec.footerNote)}</div>`:''}`;
       break;
     case 'timeline':
@@ -3041,7 +3412,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       break;
     case 'axes':
       body = `<div class="axes-grid${(sec.align && sec.align!=='justify')?` axes-align-${sec.align}`:''}">${(sec.axes||[]).map(a=>`
-        <div class="axis-card" style="background:${a.color||'#F4F5FB'};"><h4>${esc(a.title)}</h4><p>${esc(a.desc)}</p></div>
+        <div class="axis-card" style="background:${a.color||'var(--surface-card)'};"><h4>${esc(a.title)}</h4><p>${esc(a.desc)}</p></div>
       `).join('')}</div>${sec.example?`<div class="axes-example">${esc(sec.example)}</div>`:''}`;
       break;
     case 'hierarchy':
@@ -3052,7 +3423,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       break;
     case 'chips':
       body = `<div class="chips-grid">${(sec.chips||[]).map(c=>`
-        <div class="chip" style="background:${sec.chipsColor||'#F4F5FB'};"><span class="dot"></span>${esc(c.label)}</div>
+        <div class="chip" style="background:${sec.chipsColor||'var(--surface-card)'};"><span class="dot"></span>${esc(c.label)}</div>
       `).join('')}</div>${sec.footerNote?`<div class="footer-note">${esc(sec.footerNote)}</div>`:''}`;
       break;
     case 'atividade': {
@@ -6370,6 +6741,55 @@ function applyUserBadgeAvatar(userDoc){
   if(foto){ img.src = foto; img.style.display = 'block'; ph.style.display = 'none'; }
   else { img.style.display = 'none'; ph.style.display = 'flex'; }
 }
+// ===================== PALETAS DE COR (v3.0.0) =====================
+// Cada aluno escolhe o tema do sistema. A escolha vive em profile.palette,
+// que ele ja tem permissao de gravar — nenhuma regra do Firestore mudou.
+// Trocar de paleta e so trocar um atributo no <html>; o CSS faz o resto.
+const PALETAS = [
+  {id:'nevoa',    nome:'Névoa',    cores:['#3D3E77','#D6DAF2','#F79C31']},
+  {id:'grafite',  nome:'Grafite',  cores:['#464644','#D9D8D2','#B8860B']},
+  {id:'floresta', nome:'Floresta', cores:['#1F5A3A','#C7E0D0','#B07A16']},
+  {id:'vinho',    nome:'Vinho',    cores:['#7A2635','#E8CDD3','#A67C1A']},
+  {id:'oceano',   nome:'Oceano',   cores:['#0F5A64','#C2E0E4','#B5761C']},
+  {id:'ardosia',  nome:'Ardósia',  cores:['#4A5063','#D4D7E2','#8A6BB5']},
+  {id:'rose',     nome:'Rosé',     cores:['#A34367','#F2D2DE','#C2790C']},
+  {id:'noite',    nome:'Noite',    cores:['#8A8CD9','#3A3C55','#E0A860']},
+];
+const PALETA_PADRAO = 'nevoa';
+
+function aplicarPaleta(id){
+  const valida = PALETAS.some(p=>p.id===id) ? id : PALETA_PADRAO;
+  if(valida === PALETA_PADRAO) document.documentElement.removeAttribute('data-palette');
+  else document.documentElement.setAttribute('data-palette', valida);
+}
+function paletaDoUsuario(userDoc){
+  return (userDoc && userDoc.profile && userDoc.profile.palette) || PALETA_PADRAO;
+}
+// A tela de login NAO tem paleta: ninguem esta autenticado ainda, entao o
+// sistema nao tem como saber a preferencia. Sempre volta ao padrao ao sair.
+function resetarPaleta(){ aplicarPaleta(PALETA_PADRAO); }
+
+function renderPaletteGrid(selecionada){
+  const grid = document.getElementById('profile-palette-grid');
+  if(!grid) return;
+  grid.innerHTML = PALETAS.map(p=>`
+    <button type="button" class="palette-swatch ${p.id===selecionada?'is-active':''}" data-paleta="${p.id}" title="${esc(p.nome)}">
+      <span class="palette-dots">${p.cores.map(c=>`<i style="background:${c}"></i>`).join('')}</span>
+      <span class="palette-name">${esc(p.nome)}</span>
+    </button>`).join('');
+  grid.querySelectorAll('.palette-swatch').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      grid.querySelectorAll('.palette-swatch').forEach(b=>b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      aplicarPaleta(btn.dataset.paleta); // pre-visualiza na hora, antes de salvar
+    });
+  });
+}
+function paletaSelecionadaNoGrid(){
+  const ativo = document.querySelector('#profile-palette-grid .palette-swatch.is-active');
+  return ativo ? ativo.dataset.paleta : PALETA_PADRAO;
+}
+
 function applyStudentHeaderColor(userDoc){
   const header = document.getElementById('site-header');
   const cor = userDoc && userDoc.profile && userDoc.profile.headerColor;
@@ -7317,7 +7737,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       currentUserDoc.aulaNotes[activeSubjectId][aulaKey] = texto;
       if(statusEl){ statusEl.textContent = '✓ Salvo'; statusEl.style.color = '#2E7D32'; setTimeout(()=>{ if(statusEl) statusEl.textContent=''; }, 2500); }
     }catch(e){
-      if(statusEl){ statusEl.textContent = '⚠ Não foi possível salvar'; statusEl.style.color = '#B85042'; }
+      if(statusEl){ statusEl.textContent = '⚠ Não foi possível salvar'; statusEl.style.color = 'var(--err)'; }
     }
     return;
   }
@@ -8207,6 +8627,96 @@ function resizeImageFile(file, maxW=1000, quality=0.82){
   });
 }
 
+// ===================== HINTS COMPACTOS (v3.0.0) =====================
+// Em vez de editar 52 textos de ajuda um a um pelo arquivo (e errar em
+// algum), um observador cuida disso sozinho: todo .hint comprido que
+// aparecer na tela vira uma linha com reticencias, e o texto inteiro passa
+// para o balao de hover. Nenhuma explicacao se perde — elas so saem da
+// frente. Vale para telas que ainda nem existem.
+const HINT_LIMITE = 85; // abaixo disso ja cabe numa linha, deixa quieto
+function compactarHints(raiz){
+  const escopo = raiz || document;
+  escopo.querySelectorAll('.hint:not([data-tip])').forEach(el=>{
+    const texto = (el.textContent || '').trim();
+    if(texto.length <= HINT_LIMITE) return;
+    el.setAttribute('data-tip', texto);
+    el.classList.add('hint-compact', 'has-tip');
+  });
+}
+try{
+  const alvoHints = document.getElementById('content');
+  if(alvoHints){
+    // So mexe em atributo, entao nao dispara a si mesmo em loop.
+    new MutationObserver(()=>{
+      compactarHints(alvoHints);
+      if(typeof iconizarBotoes === 'function') iconizarBotoes(alvoHints);
+    }).observe(alvoHints, {childList:true, subtree:true});
+  }
+}catch(e){ /* sem observador, os hints so ficam como eram antes */ }
+
+// ===================== ICONES NA INTERFACE (v3.0.0) =====================
+// A troca acontece APENAS dentro de <button> — botao e interface, e nem
+// conteudo de aula nem resposta de aluno moram ali dentro. Isso torna a
+// substituicao segura: nao ha como corromper texto do professor.
+const ICONES = {
+  '✎':'edit', '✏':'edit', '🗑':'delete', '🗑️':'delete',
+  '📒':'menu_book', '📊':'bar_chart', '📋':'assignment', '📝':'edit_note',
+  '🗂':'folder', '🗂️':'folder', '📁':'folder', '📂':'folder_open',
+  '⬇':'download', '📥':'download', '💾':'save', '📄':'description',
+  '📦':'inventory_2', '🏫':'school', '🎓':'school', '👑':'workspace_premium',
+  '👤':'person', '🧑':'person', '🧑‍🏫':'person', '⚠':'warning', '⚠️':'warning',
+  '★':'star', '🛠':'build', '🛠️':'build', '▶':'play_arrow',
+  '✕':'close', '⏱':'timer', '📨':'outbox', '✅':'check_circle',
+  '🔲':'grid_on', '🏠':'home', '🤖':'smart_toy', '👁':'visibility',
+  '🔓':'lock_open', '🔒':'lock', '⧉':'content_copy', '⣿':'drag_indicator',
+  '↑':'arrow_upward', '↓':'arrow_downward', '←':'arrow_back', '→':'arrow_forward',
+  '⇤':'format_indent_decrease', '⇥':'format_indent_increase',
+  '✨':'auto_awesome', '📈':'trending_up', '🔍':'search', '➕':'add',
+};
+const ICONES_RE = new RegExp('(' + Object.keys(ICONES)
+  .sort((a,b)=>b.length-a.length)          // combinacoes longas primeiro
+  .map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))
+  .join('|') + ')', 'g');
+
+let ICONES_ATIVOS = false;
+function iconizarBotoes(raiz){
+  if(!ICONES_ATIVOS) return;
+  const escopo = raiz || document;
+  escopo.querySelectorAll('button:not([data-iconizado])').forEach(btn=>{
+    btn.setAttribute('data-iconizado','1');
+    [...btn.childNodes].forEach(no=>{
+      if(no.nodeType !== 3) return;                 // so nos de texto puro
+      if(!ICONES_RE.test(no.textContent)) { ICONES_RE.lastIndex = 0; return; }
+      ICONES_RE.lastIndex = 0;
+      const frag = document.createDocumentFragment();
+      let ultimo = 0, m;
+      while((m = ICONES_RE.exec(no.textContent)) !== null){
+        if(m.index > ultimo) frag.appendChild(document.createTextNode(no.textContent.slice(ultimo, m.index)));
+        const span = document.createElement('span');
+        span.className = 'mi';
+        span.setAttribute('aria-hidden','true');
+        span.textContent = ICONES[m[1]];
+        frag.appendChild(span);
+        ultimo = m.index + m[1].length;
+      }
+      if(ultimo < no.textContent.length) frag.appendChild(document.createTextNode(no.textContent.slice(ultimo)));
+      no.parentNode.replaceChild(frag, no);
+    });
+  });
+}
+// So liga depois que a fonte confirmadamente carregou. Sem internet ou com a
+// fonte bloqueada, os emoji continuam ali e nada quebra.
+try{
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(()=>{
+      if(document.fonts.check("17px 'Material Symbols Outlined'")){
+        ICONES_ATIVOS = true;
+        iconizarBotoes(document);
+      }
+    }).catch(()=>{});
+  }
+}catch(e){ /* navegador antigo: segue com emoji */ }
+
 // Deep-link support
 function initFromHash(){
   const m = /bloco-(\d+)-aula-(\d+)/.exec(window.location.hash);
@@ -8852,8 +9362,14 @@ function openProfileModal(){
   document.getElementById('profile-error').classList.add('hidden');
   document.getElementById('profile-modal-backdrop').classList.remove('hidden');
   document.getElementById('profile-header-color').value = (currentUserDoc.profile && currentUserDoc.profile.headerColor) || '#3D3E77';
+  renderPaletteGrid(paletaDoUsuario(currentUserDoc));
 }
-function closeProfileModal(){ document.getElementById('profile-modal-backdrop').classList.add('hidden'); }
+function closeProfileModal(){
+  // A escolha de paleta e pre-visualizada ao vivo; se fechar sem salvar,
+  // volta para a que esta realmente gravada.
+  aplicarPaleta(paletaDoUsuario(currentUserDoc));
+  document.getElementById('profile-modal-backdrop').classList.add('hidden');
+}
 
 document.getElementById('user-badge-profile-btn').addEventListener('click', openProfileModal);
 document.getElementById('profile-cancel-btn').addEventListener('click', closeProfileModal);
@@ -8880,6 +9396,7 @@ document.getElementById('profile-save-btn').addEventListener('click', async ()=>
     address: document.getElementById('profile-address').value.trim(),
     photoUrl: preview.dataset.newPhoto || (currentUserDoc.profile && currentUserDoc.profile.photoUrl) || '',
     headerColor: document.getElementById('profile-header-color').value,
+    palette: paletaSelecionadaNoGrid(),
   };
   try{
     await db.collection('users').doc(currentUser.uid).update({profile});
@@ -9143,6 +9660,7 @@ if(!firebaseReady || !auth){
       currentUserDoc = null;
       currentSessionStart = null;
       isAdmin = false;
+      resetarPaleta(); // tela de login sempre no padrao: ninguem logado, sem preferencia conhecida
       document.body.classList.remove('admin-mode');
     showOnly(['auth-gate']);
     const okEl = document.getElementById('auth-forgot-ok'); if(okEl) okEl.classList.add('hidden');
@@ -9177,6 +9695,7 @@ if(!firebaseReady || !auth){
   document.getElementById('user-badge').classList.remove('hidden');
   document.getElementById('user-badge-name').textContent = (isMaster ? '👑 ' : (isAdmin ? '🧑‍🏫 ' : '')) + userDoc.name;
   applyUserBadgeAvatar(userDoc);
+  aplicarPaleta(paletaDoUsuario(userDoc));
   applyStudentHeaderColor(userDoc);
   const viewAsBtn = document.getElementById('user-badge-viewas-btn');
   viewAsBtn.classList.toggle('hidden', !realIsAdmin);
