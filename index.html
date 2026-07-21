@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v3.6.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.0.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -632,6 +632,63 @@
     background:var(--warn-tint);border-radius:var(--radius-sm);padding:8px 11px;
   }
   @media(max-width:620px){ .an-opcao-rot{flex:0 0 120px;} }
+
+  .gestao-sub{
+    font-size:10.5px;font-weight:600;color:var(--gold);
+    text-transform:uppercase;letter-spacing:1.1px;margin-bottom:10px;
+  }
+  .risco-linha{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    border:0.5px solid var(--hairline);
+    border-left:3px solid var(--warn);
+    border-radius:0 var(--radius) var(--radius) 0;
+    padding:11px 14px;margin-bottom:8px;
+    background:var(--surface-card);
+  }
+  .risco-alto{border-left-color:var(--err);}
+  .risco-nome{flex:0 0 190px;display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .risco-nome span{font-size:11px;color:var(--muted);}
+  .risco-sinais{flex:1;display:flex;gap:6px;flex-wrap:wrap;min-width:0;}
+  .risco-tag{
+    display:inline-flex;align-items:center;gap:5px;
+    background:var(--warn-tint);color:var(--warn);
+    border-radius:999px;padding:4px 11px;font-size:11.5px;
+  }
+  .risco-tag .mi{font-size:14px;}
+  .risco-nivel{
+    flex:0 0 auto;font-size:11px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.6px;color:var(--warn);
+  }
+  .risco-alto .risco-nivel{color:var(--err);}
+  .risco-vazio{
+    display:flex;align-items:flex-start;gap:11px;
+    background:var(--ok-tint);border:0.5px solid var(--ok);
+    border-radius:var(--radius);padding:14px 16px;font-size:13px;
+  }
+  .risco-vazio .mi{font-size:20px;color:var(--ok);}
+  .risco-vazio p{margin:3px 0 0;color:var(--muted);font-size:12.5px;}
+  .saude-card{
+    background:var(--surface-card);
+    border:0.5px solid var(--hairline);
+    border-radius:var(--radius-lg);
+    padding:15px 17px;margin-bottom:12px;
+  }
+  .saude-outra{opacity:.7;}
+  .saude-titulo{font-size:14px;font-weight:600;color:var(--navy);margin-bottom:11px;}
+  .saude-titulo em{font-style:normal;font-weight:400;color:var(--muted);font-size:12px;}
+  .saude-linha{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12.5px;}
+  .saude-rot{flex:0 0 175px;color:var(--muted);cursor:help;}
+  .saude-barra{flex:1;height:9px;background:var(--tint-soft);border-radius:5px;overflow:hidden;}
+  .saude-barra i{display:block;height:100%;background:var(--navy);opacity:.7;}
+  .saude-num{flex:0 0 54px;text-align:right;color:var(--charcoal);}
+  .espelho-nums{display:flex;gap:26px;flex-wrap:wrap;}
+  .espelho-nums div{display:flex;flex-direction:column;gap:2px;}
+  .espelho-nums strong{font-family:'Source Serif 4',Georgia,serif;font-size:22px;color:var(--navy);}
+  .espelho-nums span{font-size:11px;color:var(--muted);}
+  @media(max-width:620px){
+    .risco-nome{flex:0 0 100%;}
+    .saude-rot{flex:0 0 120px;}
+  }
 
   .has-tip{position:relative;}
   .has-tip::after{
@@ -2014,7 +2071,16 @@
   body.presentation-mode .aula-editbar,
   body.presentation-mode .add-section-row,
   body.presentation-mode .student-notes,
-  body.presentation-mode .roteiro-professor{display:none !important;}
+  body.presentation-mode .roteiro-professor,
+  body.presentation-mode .tela-topo,
+  body.presentation-mode .gestao-grupos,
+  body.presentation-mode .gestao-abas,
+  body.presentation-mode .painel-atalhos,
+  body.presentation-mode .ia-opcoes,
+  body.presentation-mode .ia-etapa,
+  body.presentation-mode .aval-aviso,
+  body.presentation-mode .editor-actions,
+  body.presentation-mode .users-tabs{display:none !important;}
   body.presentation-mode .app-body{display:block;}
 
   /* ===== SALVAGUARDA DE PROJECAO (v3.0.0) =====
@@ -2791,7 +2857,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v3.6.0</div>
+<div class="version-tag hidden" id="version-tag">v4.0.0</div>
 
 
 <script>
@@ -3366,7 +3432,7 @@ function renderSideNav(){
             <button class="edit-chip nav-aula-drag-handle" draggable="true" data-drag-nav-aula-num="${a.num}" title="Arrastar para reordenar (renumera automaticamente)" style="cursor:grab;">⣿</button>
             <input type="checkbox" class="nav-aula-visible-cb" data-vis-block="${b.num}" data-vis-aula="${a.num}" ${a.hidden?'':'checked'} title="Visível para os alunos">
             <button class="nav-aula" data-block="${b.num}" data-aula="${a.num}">
-              <span class="num">${a.num}</span><span class="label">${esc(a.title)}${(a.sections&&a.sections.some(s=>s.type==='activity'))?' <span class="nav-aula-practice-badge" title="Esta aula tem atividade prática">🛠</span>':''}${(!isAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.seen && STUDENT_PROGRESS.seen[String(a.num)])?' <span class="nav-aula-seen" title="Você já viu esta aula">✓</span>':''}${a.hidden?' <em>(oculta)</em>':''}</span>
+              <span class="num">${a.num}</span><span class="label">${esc(a.title)}${(a.sections&&a.sections.some(s=>s.type==='atividade'))?' <span class="nav-aula-practice-badge" title="Esta aula tem atividade respondível — gera nota e tem prazo">📝</span>':''}${(!isAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.seen && STUDENT_PROGRESS.seen[String(a.num)])?' <span class="nav-aula-seen" title="Você já viu esta aula">✓</span>':''}${a.hidden?' <em>(oculta)</em>':''}</span>
             </button>
             <button class="edit-chip nav-aula-edit-btn" data-edit-block="${b.num}" data-edit-aula="${a.num}" title="Editar informações da aula">✎</button>
           </div>`).join('')}
@@ -3964,6 +4030,17 @@ function atvIsLocked(response, schedule){
   if(schedule && schedule.closesAt && Date.now() > schedule.closesAt) return true;
   return false;
 }
+// Quanto valem, no total, as entregas no prazo desta materia. Ate a v3.6.0
+// eram 3 pontos fixos, escritos direto na formula em dois lugares. Cada
+// professor avalia do seu jeito, entao virou configuracao da materia.
+// A regra em si continua a mesma: proporcional as atividades existentes —
+// 3 atividades valem 1 ponto cada, 6 valem 0,5, e assim por diante.
+function pontosDaMateria(){
+  const s = (allSubjects||[]).find(x=>x.id===activeSubjectId);
+  const v = s && s.pontosAtividades;
+  return (typeof v === 'number' && v > 0) ? v : 3;
+}
+
 function atvMaxScore(sec){
   return (sec.items||[]).reduce((t,it)=> t + ((it.points!=null && !isNaN(it.points)) ? Number(it.points) : 1), 0);
 }
@@ -4499,6 +4576,161 @@ function atvPorQuestaoHtml(sec, ctx){
     </div>`;
 }
 
+// ===================== ESTATISTICAS POR GRUPO (v4.0.0) =====================
+// Principio que guiou as tres: a estatistica util num sistema de ensino nao e
+// a que classifica aluno, e a que mostra onde o ensino falhou ou quem esta se
+// perdendo a tempo de agir.
+
+// ---------- ALUNO: sinal de risco ----------
+// Nao e nota nem ranking. E uma lista curta de quem procurar esta semana,
+// montada com o que ja existe: faltas recentes (diario) e entregas perdidas.
+function riscoPorAlunoHtml(){
+  if(!cachedUsersList) return '<p class="painel-vazio">Carregando alunos…</p>';
+  if(DIARIO_TODOS === null || ATV_BOLETIM_DATA === null || ATV_BOLETIM_SCHEDULES === null){
+    return '<p class="painel-vazio">Carregando frequência e entregas…</p>';
+  }
+  const alunos = cachedUsersList.filter(u=>!roleIsStaff(u.role) && !u.archived);
+  if(!alunos.length) return '<p class="painel-vazio">Nenhum aluno ativo.</p>';
+
+  // Atividades que ja fecharam o prazo — so elas contam como "perdida".
+  const agora = Date.now();
+  const prazos = {};
+  (ATV_BOLETIM_SCHEDULES||[]).forEach(s=>{ (prazos[s.sectionId] = prazos[s.sectionId]||{})[s.turmaId] = s; });
+  const entregas = {};
+  (ATV_BOLETIM_DATA||[]).forEach(r=>{ (entregas[r.sectionId] = entregas[r.sectionId]||{})[r.studentUid] = r; });
+  const atividades = [];
+  COURSE.forEach(b=>(b.aulas||[]).forEach(a=>(a.sections||[]).forEach(s=>{
+    if(s.type==='atividade') atividades.push({sectionId:s.id, aulaNum:a.num, title:s.title||''});
+  })));
+
+  // Ultimos 4 registros de diario, por turma — "recente" precisa ser recente.
+  const porTurma = {};
+  (DIARIO_TODOS||[]).forEach(r=>{ (porTurma[r.turmaId] = porTurma[r.turmaId]||[]).push(r); });
+  Object.values(porTurma).forEach(l=> l.sort((x,y)=> String(y.date).localeCompare(String(x.date))));
+
+  const linhas = alunos.map(u=>{
+    const recentes = (porTurma[u.turmaId]||[]).slice(0,4);
+    const faltas = recentes.filter(r=> (r.absences||[]).includes(u.id)).length;
+    let perdidas = 0, cobradas = 0;
+    atividades.forEach(at=>{
+      const sc = (prazos[at.sectionId]||{})[u.turmaId];
+      if(!sc || !sc.closesAt || sc.closesAt > agora) return; // ainda dá tempo
+      cobradas++;
+      const r = (entregas[at.sectionId]||{})[u.id];
+      if(!r || !r.submittedAt || r.submittedAt > sc.closesAt) perdidas++;
+    });
+    // Pesos: falta e ausencia da aula, entrega perdida e ausencia do trabalho.
+    // As duas juntas sao o padrao de quem esta abandonando em silencio.
+    const pontos = faltas * 1 + perdidas * 1.5;
+    const nivel = pontos >= 4 ? 'alto' : pontos >= 2 ? 'medio' : 'ok';
+    return {u, faltas, perdidas, cobradas, recentes: recentes.length, pontos, nivel};
+  }).filter(x => x.nivel !== 'ok')
+    .sort((a,b)=> b.pontos - a.pontos);
+
+  if(!linhas.length){
+    return `<div class="risco-vazio"><span class="mi">check_circle</span>
+      <div><strong>Ninguém em situação de alerta.</strong>
+      <p>Nenhum aluno acumulou faltas recentes junto com entregas perdidas.</p></div></div>`;
+  }
+
+  const rows = linhas.map(x=>`
+    <div class="risco-linha risco-${x.nivel}">
+      <div class="risco-nome">
+        <button class="user-row-name-btn" data-action="open-user-detail" data-uid="${x.u.id}"><strong>${esc(atvNomeAluno(x.u))}</strong></button>
+        <span>${esc(turmaNameById(x.u.turmaId) || 'sem turma')}</span>
+      </div>
+      <div class="risco-sinais">
+        ${x.faltas ? `<span class="risco-tag"><span class="mi">event_busy</span>${x.faltas} falta(s) nas últimas ${x.recentes} aulas</span>` : ''}
+        ${x.perdidas ? `<span class="risco-tag"><span class="mi">assignment_late</span>${x.perdidas} de ${x.cobradas} entrega(s) perdida(s)</span>` : ''}
+      </div>
+      <div class="risco-nivel">${x.nivel === 'alto' ? 'Procurar' : 'Observar'}</div>
+    </div>`).join('');
+
+  return `<div class="hint">Quem cruzou <strong>faltas recentes</strong> com <strong>entregas perdidas</strong> — o padrão de quem está abandonando em silêncio. Não é nota nem ranking: é a lista de quem procurar esta semana. Só entram atividades cujo prazo já fechou.</div>
+    ${rows}`;
+}
+
+// ---------- MATERIA: saude do curso ----------
+function saudeMateriaHtml(){
+  const minhas = (allSubjects||[]).filter(s=> !s.archived && (isMaster || (s.ownerUid && currentUser && s.ownerUid===currentUser.uid)));
+  if(!minhas.length) return '<p class="painel-vazio">Nenhuma matéria ativa.</p>';
+
+  // Só a matéria aberta tem o COURSE carregado; para as outras não dá para
+  // contar aulas sem buscar tudo. Então detalha a atual e lista as demais.
+  const cards = minhas.map(s=>{
+    if(s.id !== activeSubjectId){
+      return `<div class="saude-card saude-outra">
+        <div class="saude-titulo">${esc(s.name)}</div>
+        <p class="hint">Abra esta matéria para ver a saúde dela em detalhe.</p>
+      </div>`;
+    }
+    const todasAulas = [];
+    COURSE.forEach(b=>(b.aulas||[]).forEach(a=>todasAulas.push({b, a})));
+    const total = todasAulas.length;
+    const comConteudo = todasAulas.filter(x=>(x.a.sections||[]).length > 0).length;
+    const publicadas = todasAulas.filter(x=>!x.a.hidden && !x.b.hidden).length;
+    const comAtividade = todasAulas.filter(x=>(x.a.sections||[]).some(sc=>sc.type==='atividade')).length;
+    const dadas = new Set((DIARIO_TODOS||[]).map(r=>String(r.aulaNum))).size;
+
+    const barra = (rot, n, den, dica)=>{
+      const pct = den ? Math.round((n/den)*100) : 0;
+      return `<div class="saude-linha">
+        <span class="saude-rot has-tip" data-tip="${escAttr(dica)}">${esc(rot)}</span>
+        <span class="saude-barra"><i style="width:${pct}%"></i></span>
+        <span class="saude-num">${n}/${den}</span>
+      </div>`;
+    };
+    return `<div class="saude-card">
+      <div class="saude-titulo">${esc(s.name)}</div>
+      ${barra('Aulas com conteúdo', comConteudo, total, 'Aulas que já têm pelo menos uma seção montada.')}
+      ${barra('Visíveis ao aluno', publicadas, total, 'Aulas publicadas — nem ocultas nem dentro de bloco oculto.')}
+      ${barra('Com atividade avaliada', comAtividade, total, 'Aulas com bloco Atividade, que gera nota e prazo.')}
+      ${barra('Já ministradas', dadas, total, 'Aulas com pelo menos um registro no diário de classe. Mostra o ritmo real contra o planejado.')}
+    </div>`;
+  }).join('');
+
+  return `<div class="hint">Cobertura e ritmo do curso. "Já ministradas" vem do diário de classe — é o ritmo real, não o planejado.</div>${cards}`;
+}
+
+// ---------- PROFESSOR: espelho, nao placar ----------
+// Decisao registrada: professor medido pela nota media dos alunos tem como
+// saida facil facilitar a prova; medido pela avaliacao recebida, agradar. Nos
+// dois casos o numero melhora e o ensino piora. Entao aqui cada um ve o
+// PROPRIO trabalho, e a metrica principal e a unica que so depende dele:
+// quanto tempo o aluno espera pela correcao.
+function espelhoProfessorHtml(){
+  if(!cachedUsersList) return '<p class="painel-vazio">Carregando…</p>';
+  if(ATV_BOLETIM_DATA === null) return '<p class="painel-vazio">Carregando correções…</p>';
+
+  const eu = currentUser && currentUser.uid;
+  const equipe = cachedUsersList.filter(u=>roleIsStaff(u.role) && !u.archived);
+  const alvos = isMaster ? equipe : equipe.filter(u=>u.id===eu);
+
+  const cards = alvos.map(u=>{
+    const materias = (allSubjects||[]).filter(s=>!s.archived && s.ownerUid===u.id);
+    const corrigidas = (ATV_BOLETIM_DATA||[]).filter(r=> r.grading && r.grading.published && r.grading.gradedBy === u.id && r.submittedAt && r.grading.gradedAt);
+    let mediaHoras = null;
+    if(corrigidas.length){
+      const soma = corrigidas.reduce((acc,r)=> acc + (r.grading.gradedAt - r.submittedAt), 0);
+      mediaHoras = Math.round((soma/corrigidas.length)/3600000);
+    }
+    const rotuloTempo = mediaHoras===null ? '—'
+      : mediaHoras < 24 ? mediaHoras + 'h'
+      : Math.round(mediaHoras/24) + ' dia(s)';
+    const souEu = u.id === eu;
+    return `<div class="saude-card">
+      <div class="saude-titulo">${esc(u.name||u.email||'')}${souEu?' <em>(você)</em>':''}</div>
+      <div class="espelho-nums">
+        <div><strong>${materias.length}</strong><span>matéria(s) ativa(s)</span></div>
+        <div><strong>${corrigidas.length}</strong><span>correção(ões) publicada(s)</span></div>
+        <div><strong>${rotuloTempo}</strong><span>espera média pela correção</span></div>
+      </div>
+    </div>`;
+  }).join('') || '<p class="painel-vazio">Nenhum professor ativo.</p>';
+
+  return `<div class="hint">Estatística de professor aqui é <strong>espelho, não placar</strong>: serve para você olhar o próprio trabalho. A espera média pela correção é a métrica mais honesta do conjunto — depende só de você, e é o que o aluno sente.</div>${cards}`;
+}
+
 // ---------- ABA: ANALISE (v3.6.0) ----------
 // A estatistica mais util de todas, e a que costuma faltar: em vez de dizer
 // quanto CADA ALUNO tirou, diz quanto a TURMA acertou EM CADA QUESTAO.
@@ -4750,7 +4982,8 @@ function atividadesBoletimForm(){
       const sched = prazoPorSecao[at.sectionId];
       if(!sched || !sched.closesAt || r.submittedAt <= sched.closesAt) noPrazo++;
     });
-    const pontosAtv = atividades.length ? Math.round((3 * (noPrazo/atividades.length))*10)/10 : 0;
+    const totalPontos = pontosDaMateria();
+    const pontosAtv = atividades.length ? Math.round((totalPontos * (noPrazo/atividades.length))*10)/10 : 0;
     const clsPrazo = atividades.length && noPrazo===atividades.length ? 'atv-bol-ok' : (noPrazo>0 ? 'atv-bol-mid' : 'atv-bol-low');
     return `<tr><td class="atv-bol-name">${esc(atvNomeAluno(u))}</td>${cells}<td><strong>${Math.round(soma*100)/100}</strong>${somaMax?` / ${Math.round(somaMax*100)/100}`:''}</td><td>${pctTotal!=null?pctTotal+'%':'—'}</td><td class="${clsPrazo}" title="Entregou ${noPrazo} de ${atividades.length} atividades dentro do prazo">${noPrazo}/${atividades.length}</td><td class="${clsPrazo}"><strong>${String(pontosAtv).replace('.',',')}</strong></td></tr>`;
   }).join('') || `<tr><td colspan="${atividades.length+3}" class="hint">Nenhum aluno nesta turma.</td></tr>`;
@@ -4758,7 +4991,7 @@ function atividadesBoletimForm(){
   return `<div class="editor-form">
     <div class="editing-type-banner">📊 Boletim de atividades</div>
     <p class="hint">Só entram notas <strong>publicadas</strong>. Cada coluna é uma aula (passe o mouse para ver o nome da atividade). Um ponto “·” significa que ainda não há nota publicada para aquele aluno.</p>
-    <p class="hint">As duas últimas colunas implementam a regra de avaliação da disciplina: <strong>3 pontos por entregar as atividades no prazo</strong>, calculados proporcionalmente (entregou 8 de 10 no prazo → 2,4). Atividades sem prazo cadastrado contam como entregues no prazo.</p>
+    <p class="hint">As duas últimas colunas implementam a regra de avaliação desta matéria: <strong>${String(pontosDaMateria()).replace('.',',')} ponto(s) por entregar as atividades no prazo</strong>, calculados proporcionalmente (entregou 8 de 10 no prazo → ${String(Math.round((pontosDaMateria()*0.8)*10)/10).replace('.',',')}). Atividades sem prazo cadastrado contam como entregues no prazo. Você altera esse total em "Organizar curso".</p>
     <div class="atv-turma-row">
       <label>Turma</label>
       <select id="atv-boletim-turma-select">${turmaOptions}</select>
@@ -6342,9 +6575,20 @@ function gestaoScreenForm(){
   let corpo = '';
 
   if(aba === 'estatisticas'){
-    corpo = (grupo === 'alunos')
-      ? classStatsHtml()
-      : `<div class="editor-form"><p class="painel-vazio">As estatísticas de ${esc(GESTAO_GRUPOS[grupo].rotulo.toLowerCase())} ainda não foram desenhadas — vamos definir juntos quais fazem sentido aqui.</p></div>`;
+    if(grupo === 'alunos'){
+      corpo = `<div class="editor-form">
+        <div class="gestao-sub">Quem procurar esta semana</div>
+        ${riscoPorAlunoHtml()}
+        <div class="gestao-sub" style="margin-top:24px;">Visão geral da turma</div>
+        ${classStatsHtml()}
+      </div>`;
+    } else if(grupo === 'materias'){
+      corpo = `<div class="editor-form">${saudeMateriaHtml()}</div>`;
+    } else if(grupo === 'professores'){
+      corpo = `<div class="editor-form">${espelhoProfessorHtml()}</div>`;
+    } else {
+      corpo = `<div class="editor-form"><p class="painel-vazio">Sem estatísticas próprias para turmas — elas aparecem dentro de Alunos, filtradas por turma.</p></div>`;
+    }
   } else if(grupo === 'alunos'){
     usersViewMode = (aba === 'arquivados') ? 'archived' : 'active';
     corpo = usersScreenForm();
@@ -6522,6 +6766,10 @@ function orgScreenForm(){
     <div class="editing-type-banner">Organizar curso — blocos, aulas, numeração e visibilidade</div>
     <label>Nome da matéria (aparece como título no topo do site)</label>
     <input type="text" spellcheck="true" lang="pt-BR" id="org-subject-name" value="${escAttr(currentSubject.name||'')}">
+    <label>Pontos por entregar as atividades no prazo
+      <span class="tip has-tip" data-tip="Vale só para esta matéria. O total é dividido pelo número de atividades: com 3 atividades cada uma vale 1 ponto; com 6, cada uma vale 0,5.">?</span>
+    </label>
+    <input type="text" id="org-pontos-atividades" value="${String(pontosDaMateria()).replace('.',',')}" style="max-width:120px;">
     <label>Descrição do cabeçalho (linha pequena abaixo do título)</label>
     <input type="text" spellcheck="true" lang="pt-BR" id="org-subject-description" value="${escAttr(currentSubject.description||'')}" placeholder="Ex.: Administração de Empresas · 8º Semestre · Faculdade da Fundação Educacional de Araçatuba">
     <div class="hint">Mude números, títulos, blocos e visibilidade à vontade. Nada é salvo até você clicar em "Salvar todas as alterações" no final. Excluir aqui também é definitivo (use um backup se quiser voltar atrás).</div>
@@ -6782,6 +7030,19 @@ function render(){
   }
   if(editState && editState.kind==='gestao'){
     content.innerHTML = comCabecalho('gestao', gestaoScreenForm());
+    // A aba de estatisticas cruza diario com entregas — busca sob demanda,
+    // so quando ela esta aberta, para nao pesar as outras abas.
+    if(editState.aba === 'estatisticas'){
+      if(DIARIO_TODOS===null){
+        fetchDiarioCompleto().then(l=>{ DIARIO_TODOS = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ DIARIO_TODOS = []; });
+      }
+      if(ATV_BOLETIM_DATA===null){
+        fetchAllActivityResponses().then(l=>{ ATV_BOLETIM_DATA = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ ATV_BOLETIM_DATA = []; });
+      }
+      if(ATV_BOLETIM_SCHEDULES===null){
+        fetchAllActivitySchedules().then(l=>{ ATV_BOLETIM_SCHEDULES = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ ATV_BOLETIM_SCHEDULES = []; });
+      }
+    }
     if(!cachedUsersList){
       fetchAllUsers().then(()=>{ if(editState && editState.kind==='gestao') render(); });
     }
@@ -7489,6 +7750,9 @@ function presSetDraw(on){
 function enterPresentationMode(){
   if(presentationMode) return;
   if(!realIsAdmin) return; // exclusivo de professor/master
+  // Projetar significa mostrar a AULA. Qualquer tela de edicao aberta fecha
+  // antes — senao ela ia para o datashow junto, com barra de acoes e abas.
+  if(editState){ editState = null; render(); }
   presentationMode = true;
   document.body.classList.add('presentation-mode');
   document.getElementById('pres-toolbar').classList.remove('hidden');
@@ -8218,7 +8482,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     (ATV_BOLETIM_SCHEDULES||[]).forEach(s=>{ if(s.turmaId===turmaId) prazoPorSecaoCsv[s.sectionId] = s; });
     const entregaPorSecaoCsv = {};
     (ATV_BOLETIM_DATA||[]).forEach(r=>{ (entregaPorSecaoCsv[r.sectionId] = entregaPorSecaoCsv[r.sectionId]||{})[r.studentUid] = r; });
-    const linhas = [['Aluno', ...atividades.map(at=>`Aula ${at.aulaNum} - ${at.title}`), 'Total', 'Maximo', 'Entregues no prazo', 'Total atividades', 'Pontos atividades (0-3)']];
+    const linhas = [['Aluno', ...atividades.map(at=>`Aula ${at.aulaNum} - ${at.title}`), 'Total', 'Maximo', 'Entregues no prazo', 'Total atividades', `Pontos atividades (0-${pontosDaMateria()})`]];
     alunos.forEach(u=>{
       let soma=0, somaMax=0;
       const cells = atividades.map(at=>{
@@ -8235,7 +8499,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         const sc = prazoPorSecaoCsv[at.sectionId];
         if(!sc || !sc.closesAt || r.submittedAt <= sc.closesAt) noPrazo++;
       });
-      const pontosAtv = atividades.length ? Math.round((3*(noPrazo/atividades.length))*10)/10 : 0;
+      const pontosAtv = atividades.length ? Math.round((pontosDaMateria()*(noPrazo/atividades.length))*10)/10 : 0;
       linhas.push([atvNomeAluno(u), ...cells, String(Math.round(soma*100)/100).replace('.',','), String(Math.round(somaMax*100)/100).replace('.',','),
                    String(noPrazo), String(atividades.length), String(pontosAtv).replace('.',',')]);
     });
@@ -8627,12 +8891,21 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
   if(action==='save-org-screen'){
     const newSubjectName = document.getElementById('org-subject-name').value.trim();
+    const rawPontos = (document.getElementById('org-pontos-atividades')||{}).value || '';
+    const novoPontos = parseFloat(String(rawPontos).replace(',','.'));
+    if(rawPontos && (isNaN(novoPontos) || novoPontos <= 0)){
+      alert('O total de pontos das atividades precisa ser um número maior que zero (ex.: 3 ou 2,5).');
+      return;
+    }
     const newSubjectDescription = document.getElementById('org-subject-description').value.trim();
     if(newSubjectName && activeSubjectId){
       try{
-        await db.collection('subjects').doc(activeSubjectId).update({name: newSubjectName, description: newSubjectDescription});
+        const patch = {name: newSubjectName, description: newSubjectDescription};
+        if(!isNaN(novoPontos) && novoPontos > 0) patch.pontosAtividades = novoPontos;
+        await db.collection('subjects').doc(activeSubjectId).update(patch);
         const s = allSubjects.find(x=>x.id===activeSubjectId);
-        if(s){ s.name = newSubjectName; s.description = newSubjectDescription; }
+        if(s){ s.name = newSubjectName; s.description = newSubjectDescription;
+               if(patch.pontosAtividades) s.pontosAtividades = patch.pontosAtividades; }
         document.getElementById('site-title-text').textContent = newSubjectName;
         const subtitleEl = document.querySelector('.site-subtitle');
         if(subtitleEl) subtitleEl.textContent = newSubjectDescription;
