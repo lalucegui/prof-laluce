@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.4.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.5.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2916,7 +2916,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.4.0</div>
+<div class="version-tag hidden" id="version-tag">v4.5.0</div>
 
 
 <script>
@@ -6600,6 +6600,17 @@ async function fetchAllUsers(){
   cachedUsersList.sort((a,b)=> (roleIsStaff(a.role)?-1:1) - (roleIsStaff(b.role)?-1:1) || (a.name||'').localeCompare(b.name||''));
 }
 
+// Convite de professor por e-mail: o master pré-autoriza um e-mail; quando a
+// pessoa se cadastra com esse e-mail, a conta já nasce como professor
+// aprovado (em vez de nascer aluno e precisar ser promovida depois).
+let cachedProfessorInvites = null;
+async function fetchProfessorInvites(){
+  if(!isMaster){ cachedProfessorInvites = []; return; }
+  const snap = await db.collection('professor_invites').get();
+  cachedProfessorInvites = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  cachedProfessorInvites.sort((a,b)=> (a.used?1:0)-(b.used?1:0) || (a.id||'').localeCompare(b.id||''));
+}
+
 function fmtDateTime(ts){
   if(!ts) return '—';
   const d = new Date(ts);
@@ -7064,14 +7075,29 @@ function professorsScreenForm(){
       </button>
     </div>`).join('') || '<p style="color:var(--muted);font-size:13px;">Nenhum professor ainda. Peça para a pessoa se cadastrar como aluno e promova-a abaixo.</p>';
   const options = alunos.map(u=>`<option value="${u.id}">${esc(u.name||u.email||'')}</option>`).join('');
+  const invites = cachedProfessorInvites || [];
+  const invitesRows = invites.length ? `
+    <div class="turmas-list" style="margin-top:8px;">
+      ${invites.map(inv=>`
+        <div class="turma-row">
+          <div class="turma-row-name"><strong>${esc(inv.id)}</strong><span>${inv.used ? 'já se cadastrou como professor' : 'aguardando a pessoa se cadastrar'}</span></div>
+          ${inv.used ? '' : `<button class="btn-tiny" style="background:var(--terracotta);" data-action="cancel-professor-invite" data-email="${esc(inv.id)}">🗑️ Cancelar convite</button>`}
+        </div>`).join('')}
+    </div>` : '';
   return `<div class="editor-form">
-    <div class="hint">Cada professor gerencia SÓ as próprias matérias, turmas e alunos. Você (master) vê e gerencia tudo. Para criar um professor: a pessoa se cadastra normalmente (como aluno) e você a promove aqui.</div>
+    <div class="hint">Cada professor gerencia SÓ as próprias matérias, turmas e alunos. Você (master) vê e gerencia tudo. Duas formas de criar um professor: promover um cadastro já existente, ou convidar por e-mail — nesse caso, a pessoa já nasce professora ao se cadastrar, sem passar por aluno.</div>
     <div class="turmas-list">${rows}</div>
     <label style="margin-top:18px;">Promover um cadastro a professor</label>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <select id="ef-promote-select" style="flex:1;min-width:220px;">${options || '<option value="">— nenhum aluno cadastrado —</option>'}</select>
       <button class="btn-primary" data-action="promote-professor">⬆ Promover a professor</button>
     </div>
+    <label style="margin-top:18px;">Convidar professor por e-mail</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <input type="email" id="ef-invite-email" placeholder="email@exemplo.com" style="flex:1;min-width:220px;">
+      <button class="btn-primary" data-action="invite-professor">✉ Convidar</button>
+    </div>
+    ${invitesRows}
     <div class="editor-actions">
       <button class="btn-secondary" data-action="back-to-users">← Voltar para o painel de alunos</button>
     </div>
@@ -7680,6 +7706,9 @@ function render(){
     }
     if(!cachedUsersList){
       fetchAllUsers().then(()=>{ if(editState && editState.kind==='gestao') render(); });
+    }
+    if(isMaster && cachedProfessorInvites===null){
+      fetchProfessorInvites().then(()=>{ if(editState && editState.kind==='gestao') render(); }).catch(()=>{ cachedProfessorInvites = []; });
     }
     if(allTurmas===null){
       fetchTurmas().then(()=>{ if(editState && editState.kind==='gestao') render(); }).catch(()=>{ allTurmas = []; });
@@ -9582,6 +9611,31 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       u.role = 'professor'; u.approved = true;
       render();
     }catch(e){ alert('Não foi possível promover: ' + (e && e.message ? e.message : String(e))); }
+    return;
+  }
+  if(action==='invite-professor'){
+    if(!isMaster) return;
+    const input = document.getElementById('ef-invite-email');
+    const email = (input.value||'').trim().toLowerCase();
+    if(!email || !email.includes('@')){ alert('Digite um e-mail válido.'); return; }
+    try{
+      await db.collection('professor_invites').doc(email).set({
+        invitedBy: currentUser.uid, invitedAt: Date.now(), used:false
+      });
+      await fetchProfessorInvites();
+      render();
+    }catch(e){ alert('Não foi possível criar o convite: ' + (e && e.message ? e.message : String(e))); }
+    return;
+  }
+  if(action==='cancel-professor-invite'){
+    if(!isMaster) return;
+    const email = btn.dataset.email;
+    if(!confirm(`Cancelar o convite para ${email}? A pessoa deixa de nascer professora automaticamente se ainda não se cadastrou.`)) return;
+    try{
+      await db.collection('professor_invites').doc(email).delete();
+      cachedProfessorInvites = (cachedProfessorInvites||[]).filter(i=>i.id!==email);
+      render();
+    }catch(e){ alert('Não foi possível cancelar: ' + (e && e.message ? e.message : String(e))); }
     return;
   }
   if(action==='demote-professor'){
@@ -11764,11 +11818,30 @@ document.getElementById('auth-register-btn').addEventListener('click', async ()=
   if(password.length < 6){ errEl.textContent='A senha precisa ter pelo menos 6 caracteres.'; errEl.classList.remove('hidden'); return; }
   try{
     const cred = await auth.createUserWithEmailAndPassword(email, password);
-    await db.collection('users').doc(cred.user.uid).set({
-      name, email, role:'student', approved:false, createdAt: Date.now(),
-      profile:{ fullName:name, ra, phone, birthdate }, sessions:[]
-    });
-    // onAuthStateChanged cuida de mostrar a tela de "aguardando aprovação" a seguir
+    // Se o e-mail foi convidado como professor (Configurações > Professores),
+    // a conta já nasce como professor aprovado — sem passar pela etapa de aluno.
+    const emailKey = email.toLowerCase();
+    let convite = null;
+    try{
+      const invSnap = await db.collection('professor_invites').doc(emailKey).get();
+      if(invSnap.exists && invSnap.data().used !== true) convite = invSnap.data();
+    }catch(e){ /* sem convite legível: segue o cadastro normal de aluno */ }
+    if(convite){
+      await db.collection('users').doc(cred.user.uid).set({
+        name, email, role:'professor', approved:true, createdAt: Date.now(),
+        profile:{ fullName:name, ra, phone, birthdate }, sessions:[]
+      });
+      try{
+        await db.collection('professor_invites').doc(emailKey).update({ used:true, usedByUid: cred.user.uid, usedAt: Date.now() });
+      }catch(e){ /* não crítico: a conta de professor já foi criada normalmente */ }
+    } else {
+      await db.collection('users').doc(cred.user.uid).set({
+        name, email, role:'student', approved:false, createdAt: Date.now(),
+        profile:{ fullName:name, ra, phone, birthdate }, sessions:[]
+      });
+    }
+    // onAuthStateChanged cuida de mostrar a tela certa a seguir (aprovação
+    // pendente para aluno, ou direto para a área de professor quando convidado)
   }catch(e){
     errEl.textContent = friendlyAuthError(e.code);
     errEl.classList.remove('hidden');
