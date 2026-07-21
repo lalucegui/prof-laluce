@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v2.5.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v2.6.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -919,6 +919,32 @@
   .atv-manage-prazo{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:10px 0 16px 0;}
   .atv-manage-prazo label{margin:0;font-size:11px;}
   .atv-student-row{margin-bottom:2px;}
+  /* ---- Diário de classe ---- */
+  .diario-topo{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:12px 0 6px 0;}
+  .diario-topo label{margin:0;}
+  .diario-topo select, .diario-topo input[type=date]{max-width:260px;}
+  .diario-existente{background:#FFF7E8;border:1px solid #E4D2AC;border-radius:8px;padding:8px 12px;font-size:12.5px;color:#7A5A12;margin-top:8px;}
+  .diario-resumo{background:var(--ice-tint);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--navy);margin-top:8px;}
+  .diario-acoes-massa{display:flex;gap:6px;margin:6px 0 8px 0;}
+  .diario-lista{display:flex;flex-direction:column;gap:4px;max-height:420px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px;}
+  .diario-aluno-row{
+    display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;
+    font-size:13.5px;background:#fff;transition:background .12s;
+  }
+  .diario-aluno-row:hover{background:var(--ice-tint);}
+  .diario-aluno-row .diario-aluno-nome{flex:1;}
+  .diario-falta-tag{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);opacity:0.5;}
+  .diario-aluno-row.faltou{background:#FDECEC;}
+  .diario-aluno-row.faltou .diario-aluno-nome{text-decoration:line-through;color:#B23B3B;opacity:0.75;}
+  .diario-aluno-row.faltou .diario-falta-tag{color:#B23B3B;opacity:1;}
+  .diario-hist{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+  .diario-hist-row{display:flex;align-items:center;gap:6px;}
+  .diario-hist-open{
+    flex:1;text-align:left;background:var(--ice-tint);border:none;border-radius:8px;
+    padding:9px 12px;font-size:12.5px;cursor:pointer;color:var(--charcoal);
+  }
+  .diario-hist-open:hover{background:#E6E6F0;}
+  .diario-hist-row.atual .diario-hist-open{outline:2px solid var(--navy);}
   /* ---- Tela de correção de atividades (v2.5.0) ---- */
   .atv-turma-row{display:flex;align-items:center;gap:10px;margin:12px 0 4px 0;flex-wrap:wrap;}
   .atv-turma-row label{margin:0;}
@@ -1449,6 +1475,23 @@
   .tl-caption{font-size:13px;color:var(--muted);font-style:italic;margin-top:14px;}
 
   .axes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;}
+  /* Alinhamento dos cards de "eixos" quando a última linha fica incompleta.
+     Sem classe = comportamento antigo (grid esticando para preencher a linha),
+     para que nenhuma aula já criada mude de aparência. */
+  .axes-grid.axes-align-left,
+  .axes-grid.axes-align-center,
+  .axes-grid.axes-align-right{display:flex;flex-wrap:wrap;}
+  .axes-grid.axes-align-left{justify-content:flex-start;}
+  .axes-grid.axes-align-center{justify-content:center;}
+  .axes-grid.axes-align-right{justify-content:flex-end;}
+  .axes-grid.axes-align-left > .axis-card,
+  .axes-grid.axes-align-center > .axis-card,
+  .axes-grid.axes-align-right > .axis-card{flex:0 1 240px;}
+  @media(max-width:560px){
+    .axes-grid.axes-align-left > .axis-card,
+    .axes-grid.axes-align-center > .axis-card,
+    .axes-grid.axes-align-right > .axis-card{flex-basis:100%;}
+  }
   .axis-card{background:var(--ice-tint);border-radius:10px;padding:16px;}
   .axis-card h4{font-family:'Source Serif 4',serif;font-size:15px;color:var(--navy);margin:0 0 8px 0;}
   .axis-card p{font-size:12.5px;line-height:1.5;margin:0;}
@@ -1958,7 +2001,7 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v2.5.0</div>
+<div class="version-tag hidden" id="version-tag">v2.6.0</div>
 
 
 <script>
@@ -2330,6 +2373,23 @@ function globalAulaNumber(){
 }
 
 function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+// ===== Bloco de ABERTURA (aulas fora da numeração dos blocos) =====
+// Um bloco com isIntro:true e num 0 aparece antes do Bloco I e é desenhado sem
+// a moldura "Bloco X" — serve para a aula de apresentação da disciplina.
+function blocoEhAbertura(b){ return !!(b && b.isIntro); }
+function blocoRotulo(b){
+  if(!b) return '';
+  return blocoEhAbertura(b) ? esc(b.title||'Abertura') : `Bloco ${toRoman(b.num)} — ${esc(b.title)}`;
+}
+function blocoRotuloTexto(b){
+  if(!b) return '';
+  return blocoEhAbertura(b) ? (b.title||'Abertura') : `Bloco ${toRoman(b.num)} — ${b.title}`;
+}
+function blocoEyebrow(b, a){
+  if(!b) return '';
+  return blocoEhAbertura(b) ? esc(b.title||'Abertura') : `Bloco ${toRoman(b.num)} · Aula ${a.num}`;
+}
+function existeBlocoAbertura(){ return COURSE.some(b=>blocoEhAbertura(b)); }
 function toRoman(num){
   const map = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
   let result = '', n = num;
@@ -2489,7 +2549,7 @@ function renderSideNav(){
       <div class="nav-block-row">
         <input type="checkbox" class="nav-block-visible-cb" data-vis-block="${b.num}" ${b.hidden?'':'checked'} title="Bloco visível para os alunos">
         <button class="nav-block-header ${b.num===state.block?'active':''}" data-block="${b.num}">
-          <span class="num">${toRoman(b.num)}</span><span class="label" data-block-label="${b.num}">${esc(b.title)}${b.hidden?' <em>(oculto)</em>':''}</span>
+          <span class="num">${blocoEhAbertura(b)?'★':toRoman(b.num)}</span><span class="label" data-block-label="${b.num}">${esc(b.title)}${b.hidden?' <em>(oculto)</em>':''}</span>
         </button>
         <button class="edit-chip block-edit-btn ${(isAdmin&&sectionGridMode)?'block-edit-grid-on':''}" data-block-edit="${b.num}" title="Editar este bloco (organizar curso)">✎</button>
       </div>
@@ -2879,7 +2939,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       `).join('')}</div>${sec.caption?`<div class="tl-caption">${esc(sec.caption)}</div>`:''}`;
       break;
     case 'axes':
-      body = `<div class="axes-grid">${(sec.axes||[]).map(a=>`
+      body = `<div class="axes-grid${(sec.align && sec.align!=='justify')?` axes-align-${sec.align}`:''}">${(sec.axes||[]).map(a=>`
         <div class="axis-card" style="background:${a.color||'#F4F5FB'};"><h4>${esc(a.title)}</h4><p>${esc(a.desc)}</p></div>
       `).join('')}</div>${sec.example?`<div class="axes-example">${esc(sec.example)}</div>`:''}`;
       break;
@@ -2931,6 +2991,7 @@ let ATV_MANAGE_SCHEDULES = {};   // turmaId -> {opensAt, closesAt}
 let ATV_MANAGE_DRAFTS = null;    // studentUid -> correção ainda NÃO publicada
 let ATV_FEEDBACK_BANK = null;    // array de comentários rápidos reutilizáveis
 let ATV_BOLETIM_DATA = null;     // todas as respostas da matéria (tela de boletim)
+let ATV_BOLETIM_SCHEDULES = null; // todos os prazos da matéria (para calcular entregas no prazo)
 let atvSaveTimer = null;
 
 // Status é sempre CALCULADO (nunca gravado), evitando ficar dessincronizado:
@@ -3239,6 +3300,10 @@ async function fetchAllActivityResponses(){
   const snap = await db.collection(`subjects/${activeSubjectId}/activity_responses`).get();
   return snap.docs.map(d=>({id:d.id, ...d.data()}));
 }
+async function fetchAllActivitySchedules(){
+  const snap = await db.collection(`subjects/${activeSubjectId}/activity_schedules`).get();
+  return snap.docs.map(d=>({id:d.id, ...d.data()}));
+}
 // Chips de comentários rápidos reaproveitáveis, ao lado de cada campo de feedback.
 function atvFeedbackBankHtml(targetKey){
   const bank = ATV_FEEDBACK_BANK || [];
@@ -3375,7 +3440,7 @@ function atividadesCentralForm(){
     <div class="user-row atv-central-row">
       <div class="user-row-info">
         <strong>${esc(it.title)}</strong>
-        <div class="hint" style="margin:2px 0 0;">Bloco ${toRoman(it.blockNum)} · Aula ${it.aulaNum} — ${esc(it.aulaTitle)}${it.aulaHidden?' <em>(aula oculta)</em>':''}</div>
+        <div class="hint" style="margin:2px 0 0;">${blocoRotulo(COURSE.find(bb=>bb.num===it.blockNum))} · Aula ${it.aulaNum} — ${esc(it.aulaTitle)}${it.aulaHidden?' <em>(aula oculta)</em>':''}</div>
       </div>
       <div class="user-row-status">${it.itemCount} questão(ões)${it.required===false?' · opcional':''}</div>
       <button class="btn-secondary" data-action="open-atividade-central-item" data-block="${it.blockNum}" data-aula="${it.aulaNum}" data-secid="${esc(it.sectionId)}">📋 Gerenciar</button>
@@ -3623,7 +3688,7 @@ function baixarCsv(linhas, nomeArquivo){
 
 // ===== BOLETIM: todas as atividades x todos os alunos de uma turma =====
 function atividadesBoletimForm(){
-  if(allTurmas===null || cachedUsersList===null || ATV_BOLETIM_DATA===null){
+  if(allTurmas===null || cachedUsersList===null || ATV_BOLETIM_DATA===null || ATV_BOLETIM_SCHEDULES===null){
     return `<div class="editor-form"><div class="editing-type-banner">📊 Boletim de atividades</div><p>Carregando notas…</p></div>`;
   }
   const turmaId = editState.turmaId || (allTurmas[0] && allTurmas[0].id) || null;
@@ -3640,6 +3705,17 @@ function atividadesBoletimForm(){
     if(!r.grading || !r.grading.published) return;
     (porSecao[r.sectionId] = porSecao[r.sectionId] || {})[r.studentUid] = r;
   });
+  // Entregas no prazo — vale os 3 pontos do bimestre. Considera entregue no prazo
+  // quando o aluno marcou "entregar" antes do fechamento configurado para a turma.
+  // Sem prazo cadastrado, qualquer entrega conta como no prazo.
+  const entregaPorSecao = {};
+  (ATV_BOLETIM_DATA||[]).forEach(r=>{
+    (entregaPorSecao[r.sectionId] = entregaPorSecao[r.sectionId] || {})[r.studentUid] = r;
+  });
+  const prazoPorSecao = {};
+  (ATV_BOLETIM_SCHEDULES||[]).forEach(s=>{
+    if(s.turmaId===turmaId) prazoPorSecao[s.sectionId] = s;
+  });
   const secMap = {};
   atividades.forEach(at=>{
     const b = COURSE.find(x=>x.num===at.blockNum);
@@ -3647,7 +3723,7 @@ function atividadesBoletimForm(){
     secMap[at.sectionId] = a && (a.sections||[]).find(s=>s.id===at.sectionId);
   });
 
-  const head = `<tr><th class="atv-bol-name">Aluno</th>${atividades.map(at=>`<th title="${escAttr(at.title)} — Aula ${at.aulaNum}">A${at.aulaNum}</th>`).join('')}<th>Total</th><th>%</th></tr>`;
+  const head = `<tr><th class="atv-bol-name">Aluno</th>${atividades.map(at=>`<th title="${escAttr(at.title)} — Aula ${at.aulaNum}">A${at.aulaNum}</th>`).join('')}<th>Total</th><th>%</th><th title="Atividades entregues dentro do prazo">No prazo</th><th title="Pontuação de atividades (0 a 3), proporcional às entregas no prazo">Pts atv.</th></tr>`;
   const body = alunos.map(u=>{
     let soma=0, somaMax=0;
     const cells = atividades.map(at=>{
@@ -3663,12 +3739,23 @@ function atividadesBoletimForm(){
       return `<td class="${cls}" title="${escAttr(at.title)}: ${nota} de ${maxT}">${nota}</td>`;
     }).join('');
     const pctTotal = somaMax ? Math.round((soma/somaMax)*100) : null;
-    return `<tr><td class="atv-bol-name">${esc(atvNomeAluno(u))}</td>${cells}<td><strong>${Math.round(soma*100)/100}</strong>${somaMax?` / ${Math.round(somaMax*100)/100}`:''}</td><td>${pctTotal!=null?pctTotal+'%':'—'}</td></tr>`;
+    // Contagem de entregas no prazo
+    let noPrazo = 0;
+    atividades.forEach(at=>{
+      const r = (entregaPorSecao[at.sectionId]||{})[u.id];
+      if(!r || !r.submittedAt) return;
+      const sched = prazoPorSecao[at.sectionId];
+      if(!sched || !sched.closesAt || r.submittedAt <= sched.closesAt) noPrazo++;
+    });
+    const pontosAtv = atividades.length ? Math.round((3 * (noPrazo/atividades.length))*10)/10 : 0;
+    const clsPrazo = atividades.length && noPrazo===atividades.length ? 'atv-bol-ok' : (noPrazo>0 ? 'atv-bol-mid' : 'atv-bol-low');
+    return `<tr><td class="atv-bol-name">${esc(atvNomeAluno(u))}</td>${cells}<td><strong>${Math.round(soma*100)/100}</strong>${somaMax?` / ${Math.round(somaMax*100)/100}`:''}</td><td>${pctTotal!=null?pctTotal+'%':'—'}</td><td class="${clsPrazo}" title="Entregou ${noPrazo} de ${atividades.length} atividades dentro do prazo">${noPrazo}/${atividades.length}</td><td class="${clsPrazo}"><strong>${String(pontosAtv).replace('.',',')}</strong></td></tr>`;
   }).join('') || `<tr><td colspan="${atividades.length+3}" class="hint">Nenhum aluno nesta turma.</td></tr>`;
 
   return `<div class="editor-form">
     <div class="editing-type-banner">📊 Boletim de atividades</div>
     <p class="hint">Só entram notas <strong>publicadas</strong>. Cada coluna é uma aula (passe o mouse para ver o nome da atividade). Um ponto “·” significa que ainda não há nota publicada para aquele aluno.</p>
+    <p class="hint">As duas últimas colunas implementam a regra de avaliação da disciplina: <strong>3 pontos por entregar as atividades no prazo</strong>, calculados proporcionalmente (entregou 8 de 10 no prazo → 2,4). Atividades sem prazo cadastrado contam como entregues no prazo.</p>
     <div class="atv-turma-row">
       <label>Turma</label>
       <select id="atv-boletim-turma-select">${turmaOptions}</select>
@@ -3677,6 +3764,138 @@ function atividadesBoletimForm(){
     <div class="editor-actions">
       <button class="btn-secondary" data-action="atv-boletim-csv">⬇ Exportar boletim em CSV</button>
       <button class="btn-secondary" data-action="open-atividades-central">🗂️ Central de Atividades</button>
+      <button class="btn-secondary" data-action="cancel-edit">← Voltar</button>
+    </div>
+  </div>`;
+}
+
+// ===================== DIÁRIO DE CLASSE =====================
+// Um registro por (aula + turma + data) — assim a mesma aula pode ser dada em
+// dois ou mais dias, cada dia com sua própria chamada.
+let DIARIO_REGISTROS = null;   // registros da aula aberta
+let DIARIO_TODOS = null;       // todos os registros da matéria (tela de frequência)
+
+function hojeISO(){
+  const d = new Date(), p = n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function dataBR(iso){
+  if(!iso) return '';
+  const [a,m,d] = String(iso).split('-');
+  return `${d}/${m}/${a}`;
+}
+function diarioDocId(aulaNum, turmaId, date){ return `${aulaNum}_${turmaId}_${date}`; }
+async function fetchDiarioDaAula(aulaNum){
+  const snap = await db.collection(`subjects/${activeSubjectId}/class_log`).where('aulaNum','==',aulaNum).get();
+  return snap.docs.map(d=>({id:d.id, ...d.data()})).sort((x,y)=>String(x.date).localeCompare(String(y.date)));
+}
+async function fetchDiarioCompleto(){
+  const snap = await db.collection(`subjects/${activeSubjectId}/class_log`).get();
+  return snap.docs.map(d=>({id:d.id, ...d.data()}));
+}
+
+function diarioAulaForm(){
+  const es = editState;
+  const b = COURSE.find(x=>x.num===es.blockNum);
+  const a = b && b.aulas.find(x=>x.num===es.aulaNum);
+  if(!a) return `<div class="editor-form"><div class="editing-type-banner">📒 Diário de classe</div><p>Aula não encontrada.</p><div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">← Voltar</button></div></div>`;
+  if(allTurmas===null || cachedUsersList===null || DIARIO_REGISTROS===null){
+    return `<div class="editor-form"><div class="editing-type-banner">📒 Diário de classe — Aula ${a.num}</div><p>Carregando turmas e alunos…</p></div>`;
+  }
+  // Turma: se só existe uma, já vem escolhida; com várias, obriga a escolher.
+  const turmaId = es.turmaId !== undefined ? es.turmaId : ((allTurmas.length===1) ? allTurmas[0].id : '');
+  const date = es.date || hojeISO();
+  const turmaOptions = `<option value="">— selecione a turma —</option>` +
+    allTurmas.map(t=>`<option value="${t.id}" ${t.id===turmaId?'selected':''}>${esc(t.name)}</option>`).join('');
+
+  const registroAtual = turmaId ? (DIARIO_REGISTROS||[]).find(r=>r.turmaId===turmaId && r.date===date) : null;
+  const faltosos = new Set((registroAtual && registroAtual.absences) || []);
+  const alunos = turmaId ? (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId)
+    .sort((x,y)=>String((x.profile&&x.profile.fullName)||x.name||'').localeCompare(String((y.profile&&y.profile.fullName)||y.name||''))) : [];
+
+  const listaAlunos = !turmaId
+    ? '<p class="hint">Escolha a turma acima para carregar a lista de alunos.</p>'
+    : (alunos.length ? alunos.map(u=>`
+        <label class="diario-aluno-row ${faltosos.has(u.id)?'faltou':''}" data-uid="${escAttr(u.id)}">
+          <input type="checkbox" class="diario-falta-cb" data-uid="${escAttr(u.id)}" ${faltosos.has(u.id)?'checked':''}>
+          <span class="diario-aluno-nome">${esc(atvNomeAluno(u))}</span>
+          <span class="diario-falta-tag">falta</span>
+        </label>`).join('')
+      : '<p class="hint">Nenhum aluno cadastrado nesta turma.</p>');
+
+  const presentes = alunos.length - alunos.filter(u=>faltosos.has(u.id)).length;
+
+  const historico = (DIARIO_REGISTROS||[]).length ? `
+    <label style="margin-top:20px;">Registros já feitos desta aula</label>
+    <div class="hint">A mesma aula pode ser dada em vários dias — cada dia é um registro. Clique para abrir e editar.</div>
+    <div class="diario-hist">${(DIARIO_REGISTROS||[]).map(r=>{
+      const t = (allTurmas||[]).find(x=>x.id===r.turmaId);
+      const atual = (r.turmaId===turmaId && r.date===date);
+      return `<div class="diario-hist-row ${atual?'atual':''}">
+        <button type="button" class="diario-hist-open" data-action="diario-abrir-registro" data-turma="${escAttr(r.turmaId)}" data-date="${escAttr(r.date)}">
+          <strong>${dataBR(r.date)}</strong> · ${esc(t?t.name:'turma removida')} · ${(r.absences||[]).length} falta(s)
+        </button>
+        <button type="button" class="btn-tiny" style="background:var(--terracotta);" data-action="diario-excluir-registro" data-turma="${escAttr(r.turmaId)}" data-date="${escAttr(r.date)}" title="Excluir este registro">🗑️</button>
+      </div>`;
+    }).join('')}</div>` : '';
+
+  return `<div class="editor-form">
+    <div class="editing-type-banner">📒 Diário de classe — Aula ${a.num}</div>
+    <div class="hint">${esc(a.title)}</div>
+    <div class="diario-topo">
+      <div><label>Turma</label><select id="diario-turma-select">${turmaOptions}</select></div>
+      <div><label>Data da aplicação</label><input type="date" id="diario-data-input" value="${escAttr(date)}"></div>
+      <button type="button" class="btn-secondary" data-action="diario-hoje">Hoje</button>
+    </div>
+    ${registroAtual?`<div class="diario-existente">✏️ Já existe um registro desta aula para esta turma nesta data — você está editando ele.</div>`:''}
+    ${turmaId?`<div class="diario-resumo">Presentes: <strong>${presentes}</strong> · Faltas: <strong>${alunos.length-presentes}</strong> · Total: ${alunos.length}</div>`:''}
+    <label style="margin-top:14px;">Chamada <span style="text-transform:none;font-weight:400;color:var(--muted);">(marque quem <strong>faltou</strong>)</span></label>
+    ${turmaId&&alunos.length?`<div class="diario-acoes-massa">
+      <button type="button" class="btn-tiny" data-action="diario-marcar-todos" data-modo="presentes">Todos presentes</button>
+      <button type="button" class="btn-tiny" data-action="diario-marcar-todos" data-modo="faltas">Todos ausentes</button>
+    </div>`:''}
+    <div class="diario-lista" id="diario-lista">${listaAlunos}</div>
+    <label style="margin-top:16px;">Conteúdo efetivamente trabalhado (opcional)</label>
+    <textarea id="diario-conteudo" placeholder="O que deu tempo de dar, o que ficou para a próxima...">${esc((registroAtual&&registroAtual.conteudo)||'')}</textarea>
+    <label style="margin-top:12px;">Observações da aula (opcional)</label>
+    <textarea id="diario-obs" placeholder="Turma dispersa, faltou projetor, aluno X chegou atrasado, rendimento da atividade...">${esc((registroAtual&&registroAtual.obs)||'')}</textarea>
+    <div class="editor-actions">
+      <button class="btn-primary" data-action="diario-salvar">💾 Salvar registro da aula</button>
+      <button class="btn-secondary" data-action="open-diario-frequencia">📊 Frequência da turma</button>
+      <button class="btn-secondary" data-action="cancel-edit">← Voltar para a aula</button>
+    </div>
+    ${historico}
+  </div>`;
+}
+
+// ---------- Tela de frequência consolidada ----------
+function diarioFrequenciaForm(){
+  if(allTurmas===null || cachedUsersList===null || DIARIO_TODOS===null){
+    return `<div class="editor-form"><div class="editing-type-banner">📊 Frequência</div><p>Carregando diário…</p></div>`;
+  }
+  const turmaId = editState.turmaId || (allTurmas[0] && allTurmas[0].id) || '';
+  const turmaOptions = allTurmas.map(t=>`<option value="${t.id}" ${t.id===turmaId?'selected':''}>${esc(t.name)}</option>`).join('') || '<option value="">(sem turmas)</option>';
+  const registros = (DIARIO_TODOS||[]).filter(r=>r.turmaId===turmaId).sort((x,y)=>String(x.date).localeCompare(String(y.date)));
+  const alunos = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId)
+    .sort((x,y)=>String((x.profile&&x.profile.fullName)||x.name||'').localeCompare(String((y.profile&&y.profile.fullName)||y.name||'')));
+  const totalAulas = registros.length;
+  const linhas = alunos.map(u=>{
+    const faltas = registros.filter(r=>(r.absences||[]).includes(u.id)).length;
+    const presencas = totalAulas - faltas;
+    const pct = totalAulas ? Math.round((presencas/totalAulas)*100) : null;
+    const cls = pct==null ? '' : (pct>=75 ? 'atv-bol-ok' : (pct>=60 ? 'atv-bol-mid' : 'atv-bol-low'));
+    return `<tr><td class="atv-bol-name">${esc(atvNomeAluno(u))}</td><td>${presencas}</td><td>${faltas}</td><td class="${cls}">${pct!=null?pct+'%':'—'}</td></tr>`;
+  }).join('') || `<tr><td colspan="4" class="hint">Nenhum aluno nesta turma.</td></tr>`;
+  return `<div class="editor-form">
+    <div class="editing-type-banner">📊 Frequência da turma</div>
+    <p class="hint">Baseado nos ${totalAulas} registro(s) de diário desta turma. O mínimo legal de presença costuma ser 75% — as linhas abaixo de 75% aparecem destacadas.</p>
+    <div class="atv-turma-row"><label>Turma</label><select id="diario-freq-turma-select">${turmaOptions}</select></div>
+    <div class="atv-bol-wrap"><table class="atv-bol-table">
+      <tr><th class="atv-bol-name">Aluno</th><th>Presenças</th><th>Faltas</th><th>Frequência</th></tr>
+      ${linhas}
+    </table></div>
+    <div class="editor-actions">
+      <button class="btn-secondary" data-action="diario-freq-csv">⬇ Exportar frequência em CSV</button>
       <button class="btn-secondary" data-action="cancel-edit">← Voltar</button>
     </div>
   </div>`;
@@ -3723,7 +3942,7 @@ function atividadeManageForm(){
 function renderAulaPicker(){
   const el = document.getElementById('aula-picker');
   el.innerHTML = COURSE.filter(b=>isAdmin || (!b.hidden && b.aulas.some(a=>!a.hidden))).map(b => `
-    <div class="picker-block-title">Bloco ${toRoman(b.num)} — ${esc(b.title)}</div>
+    <div class="picker-block-title">${blocoRotulo(b)}</div>
     ${b.aulas.filter(a=>isAdmin || !a.hidden).map(a => `
       <button class="picker-item ${a.isPractice?'practice':''} ${a.hidden?'is-hidden':''} ${(b.num===state.block && a.num===state.aula)?'current':''}" data-block="${b.num}" data-aula="${a.num}" role="menuitem">
         <span class="n">${a.num}</span><span>${esc(a.title)}${a.hidden?' <em>(oculta)</em>':''}</span>
@@ -4578,6 +4797,14 @@ function sectionEditorForm(sec, idx){
       <label>Eixos / cards</label>
       <div id="ef-ld-wrap">${labelDescListHtml(items.length?items:[{_label:'',_desc:''}], 'axes', 'Nome do eixo')}</div>
       <button type="button" class="btn-secondary" data-action="add-ld-row" data-kind="axes" style="margin-top:6px;">+ Adicionar eixo</button>
+      <label style="margin-top:14px;">Alinhamento dos cards</label>
+      <select id="ef-axes-align">
+        <option value="justify" ${(!sec.align||sec.align==='justify')?'selected':''}>Justificado — os cards esticam e preenchem a linha (padrão)</option>
+        <option value="center" ${sec.align==='center'?'selected':''}>Centralizado</option>
+        <option value="left" ${sec.align==='left'?'selected':''}>Alinhado à esquerda</option>
+        <option value="right" ${sec.align==='right'?'selected':''}>Alinhado à direita</option>
+      </select>
+      <div class="hint">Isso resolve a última linha quando sobram cards (ex.: 6 cards numa grade de 4). No modo justificado eles esticam para ocupar a largura toda; nos outros três eles mantêm o tamanho e se agrupam do lado escolhido.</div>
       <label style="margin-top:14px;">Exemplo aplicado (opcional)</label>
       <input type="text" spellcheck="true" lang="pt-BR" id="ef-axes-example" value="${escAttr(sec.example||'')}">`;
   } else if(type==='hierarchy'){
@@ -4650,7 +4877,7 @@ function sectionEditorForm(sec, idx){
 
 function aulaHeaderEditorForm(a){
   const currentBlockNum = findBlockForAula(a.num);
-  const blockOpts = COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===currentBlockNum?'selected':''}>Bloco ${toRoman(bb.num)} — ${esc(bb.title)}</option>`).join('');
+  const blockOpts = COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===currentBlockNum?'selected':''}>${blocoRotulo(bb)}</option>`).join('');
   return `<div class="editor-form" data-kind="aulaHeader">
     <label>Bloco a que esta aula pertence</label>
     <select id="ef-a-block">${blockOpts}</select>
@@ -4811,7 +5038,7 @@ function parseAulaJsonOrAlert(raw){
 
 
 function newAulaForm(blockNum, suggestedNum){
-  const blockOpts = COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===blockNum?'selected':''}>Bloco ${toRoman(bb.num)} — ${esc(bb.title)}</option>`).join('');
+  const blockOpts = COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===blockNum?'selected':''}>${blocoRotulo(bb)}</option>`).join('');
   return `<div class="editor-form" data-kind="newAula">
     <label>Bloco</label>
     <select id="ef-new-a-block">${blockOpts}</select>
@@ -5151,11 +5378,11 @@ function turmasScreenForm(){
 }
 
 function orgScreenForm(){
-  const blockOptsFor = (curBn)=>COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===curBn?'selected':''}>Bloco ${toRoman(bb.num)} — ${esc(bb.title)}</option>`).join('');
+  const blockOptsFor = (curBn)=>COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===curBn?'selected':''}>${blocoRotulo(bb)}</option>`).join('');
   const blockRows = COURSE.map(b=>`
     <div class="org-block-card" data-org-block="${b.num}">
       <div class="org-block-header-row">
-        <input type="text" class="org-block-num" value="${toRoman(b.num)}" title="Número do bloco (algarismo romano)" placeholder="Ex.: IV">
+        <input type="text" class="org-block-num" value="${blocoEhAbertura(b)?'★':toRoman(b.num)}" ${blocoEhAbertura(b)?'readonly title="Bloco de abertura — fica sempre antes do Bloco I e não recebe numeração"':'title="Número do bloco (algarismo romano)"'} placeholder="Ex.: IV">
         <input type="text" class="org-block-title" value="${escAttr(b.title)}" title="Título do bloco">
         <label class="org-hidden-label"><input type="checkbox" class="org-block-hidden" ${b.hidden?'':'checked'}> Visível</label>
         <button type="button" class="btn-tiny org-delete-block" style="background:var(--terracotta);" data-action="org-delete-block-row">🗑️ Excluir bloco</button>
@@ -5199,7 +5426,10 @@ function orgScreenForm(){
 }
 
 function newBlockForm(suggestedNum){
+  const jaTemAbertura = existeBlocoAbertura();
   return `<div class="editor-form" data-kind="newBlock">
+    ${jaTemAbertura?'':`<label class="org-hidden-label" style="margin-bottom:10px;"><input type="checkbox" id="ef-new-b-intro"> Este é um bloco de <strong>abertura</strong> (fica antes do Bloco I, sem numeração)</label>
+    <div class="hint" style="margin-bottom:12px;">Use para a aula de apresentação da disciplina: professor, ementa, avaliação. Só pode existir um bloco de abertura.</div>`}
     <label>Número do bloco (algarismo romano)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-b-num" value="${toRoman(suggestedNum)}" placeholder="Ex.: IV">
     <label>Título do bloco</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-b-title" placeholder="Título do novo bloco" value="">
     <div class="hint">O bloco é criado sem nenhuma aula — use "+ Adicionar aula" dentro dele depois.</div>
@@ -5355,6 +5585,38 @@ function render(){
     content.innerHTML = atividadesCentralForm();
     return;
   }
+  if(editState && editState.kind==='diarioAula'){
+    content.innerHTML = diarioAulaForm();
+    if(allTurmas===null){
+      fetchTurmas().then(()=>{ if(editState && editState.kind==='diarioAula') render(); }).catch(()=>{ allTurmas = []; });
+    }
+    if(cachedUsersList===null){
+      fetchAllUsers().then(()=>{ if(editState && editState.kind==='diarioAula') render(); });
+    }
+    if(DIARIO_REGISTROS===null){
+      fetchDiarioDaAula(editState.aulaNum).then(list=>{
+        DIARIO_REGISTROS = list;
+        if(editState && editState.kind==='diarioAula') render();
+      }).catch(()=>{ DIARIO_REGISTROS = []; });
+    }
+    return;
+  }
+  if(editState && editState.kind==='diarioFrequencia'){
+    content.innerHTML = diarioFrequenciaForm();
+    if(allTurmas===null){
+      fetchTurmas().then(()=>{ if(editState && editState.kind==='diarioFrequencia') render(); }).catch(()=>{ allTurmas = []; });
+    }
+    if(cachedUsersList===null){
+      fetchAllUsers().then(()=>{ if(editState && editState.kind==='diarioFrequencia') render(); });
+    }
+    if(DIARIO_TODOS===null){
+      fetchDiarioCompleto().then(list=>{
+        DIARIO_TODOS = list;
+        if(editState && editState.kind==='diarioFrequencia') render();
+      }).catch(()=>{ DIARIO_TODOS = []; });
+    }
+    return;
+  }
   if(editState && editState.kind==='atividadesBoletim'){
     content.innerHTML = atividadesBoletimForm();
     if(allTurmas===null){
@@ -5369,6 +5631,12 @@ function render(){
         ATV_BOLETIM_DATA = list;
         if(editState && editState.kind==='atividadesBoletim') render();
       }).catch(()=>{ ATV_BOLETIM_DATA = []; });
+    }
+    if(ATV_BOLETIM_SCHEDULES===null){
+      fetchAllActivitySchedules().then(list=>{
+        ATV_BOLETIM_SCHEDULES = list;
+        if(editState && editState.kind==='atividadesBoletim') render();
+      }).catch(()=>{ ATV_BOLETIM_SCHEDULES = []; });
     }
     return;
   }
@@ -5509,8 +5777,8 @@ function render(){
     inner = aulaHeaderEditorForm(a);
   } else {
     inner = `<div class="aula-header">
-      <div class="aula-editbar"><button class="edit-chip" data-action="edit-aula-header" title="Editar informações da aula">✎</button><button class="edit-chip" data-action="open-aula-code" title="Ver/editar esta aula como programação (JSON) — para ajustes com ajuda de IA">&lt;/&gt;</button></div>
-      <div class="aula-eyebrow">Bloco ${toRoman(b.num)} · Aula ${a.num}</div>
+      <div class="aula-editbar"><button class="edit-chip" data-action="open-diario-aula" title="Diário de classe: registrar turma, data, chamada e observações desta aula">📒</button><button class="edit-chip" data-action="edit-aula-header" title="Editar informações da aula">✎</button><button class="edit-chip" data-action="open-aula-code" title="Ver/editar esta aula como programação (JSON) — para ajustes com ajuda de IA">&lt;/&gt;</button></div>
+      <div class="aula-eyebrow">${blocoEyebrow(b, a)}</div>
       <h2 class="aula-title">${esc(a.title)}</h2>
       ${a.subtitle?`<p class="aula-subtitle">${esc(a.subtitle)}</p>`:''}
       ${a.sources?`<div class="aula-sources">Fontes: ${esc(a.sources)}</div>`:''}
@@ -6544,6 +6812,100 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     render();
     return;
   }
+  if(action==='open-diario-aula'){
+    if(!isAdmin) return;
+    editState = {kind:'diarioAula', blockNum: state.block, aulaNum: state.aula, date: hojeISO()};
+    DIARIO_REGISTROS = null;
+    render();
+    document.getElementById('content').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  if(action==='diario-hoje'){
+    editState.date = hojeISO();
+    render();
+    return;
+  }
+  if(action==='diario-marcar-todos'){
+    const marcar = btn.dataset.modo === 'faltas';
+    document.querySelectorAll('#diario-lista .diario-falta-cb').forEach(cb=>{
+      cb.checked = marcar;
+      const row = cb.closest('.diario-aluno-row');
+      if(row) row.classList.toggle('faltou', marcar);
+    });
+    return;
+  }
+  if(action==='diario-abrir-registro'){
+    editState.turmaId = btn.dataset.turma;
+    editState.date = btn.dataset.date;
+    render();
+    return;
+  }
+  if(action==='diario-excluir-registro'){
+    const turmaId = btn.dataset.turma, date = btn.dataset.date;
+    if(!confirm(`Excluir o registro de ${dataBR(date)}?\n\nA chamada daquele dia será apagada.`)) return;
+    try{
+      await db.collection(`subjects/${activeSubjectId}/class_log`).doc(diarioDocId(editState.aulaNum, turmaId, date)).delete();
+      DIARIO_REGISTROS = (DIARIO_REGISTROS||[]).filter(r=>!(r.turmaId===turmaId && r.date===date));
+      DIARIO_TODOS = null;
+      alert('Registro excluído.');
+    }catch(err){ alert('Não foi possível excluir: ' + (err && err.message ? err.message : String(err))); }
+    render();
+    return;
+  }
+  if(action==='diario-salvar'){
+    const turmaSel = document.getElementById('diario-turma-select');
+    const turmaId = turmaSel ? turmaSel.value : '';
+    const date = document.getElementById('diario-data-input').value;
+    if(!turmaId){ alert('Escolha a turma antes de salvar.'); return; }
+    if(!date){ alert('Escolha a data da aula antes de salvar.'); return; }
+    const absences = [...document.querySelectorAll('#diario-lista .diario-falta-cb')].filter(cb=>cb.checked).map(cb=>cb.dataset.uid);
+    const totalCount = document.querySelectorAll('#diario-lista .diario-falta-cb').length;
+    const payload = {
+      subjectId: activeSubjectId, aulaNum: editState.aulaNum, turmaId, date,
+      absences, totalCount, presentCount: totalCount - absences.length,
+      conteudo: (document.getElementById('diario-conteudo').value||'').trim(),
+      obs: (document.getElementById('diario-obs').value||'').trim(),
+      updatedAt: Date.now(), updatedBy: currentUser.uid,
+    };
+    btn.disabled = true; btn.textContent = 'Salvando…';
+    try{
+      await db.collection(`subjects/${activeSubjectId}/class_log`).doc(diarioDocId(editState.aulaNum, turmaId, date)).set(payload, {merge:true});
+      const i = (DIARIO_REGISTROS||[]).findIndex(r=>r.turmaId===turmaId && r.date===date);
+      if(i>=0) DIARIO_REGISTROS[i] = {...DIARIO_REGISTROS[i], ...payload};
+      else (DIARIO_REGISTROS = DIARIO_REGISTROS||[]).push({id:diarioDocId(editState.aulaNum,turmaId,date), ...payload});
+      DIARIO_REGISTROS.sort((x,y)=>String(x.date).localeCompare(String(y.date)));
+      DIARIO_TODOS = null;
+      editState.turmaId = turmaId; editState.date = date;
+      alert(`Registro salvo: ${payload.presentCount} presente(s), ${absences.length} falta(s).`);
+    }catch(err){
+      alert('Não foi possível salvar o registro: ' + (err && err.message ? err.message : String(err)));
+    }
+    render();
+    return;
+  }
+  if(action==='open-diario-frequencia'){
+    const turmaSel = document.getElementById('diario-turma-select');
+    editState = {kind:'diarioFrequencia', turmaId: (turmaSel && turmaSel.value) || (editState && editState.turmaId) || null};
+    DIARIO_TODOS = null;
+    render();
+    return;
+  }
+  if(action==='diario-freq-csv'){
+    const turmaId = editState.turmaId;
+    const registros = (DIARIO_TODOS||[]).filter(r=>r.turmaId===turmaId).sort((x,y)=>String(x.date).localeCompare(String(y.date)));
+    const alunos = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId)
+      .sort((x,y)=>String((x.profile&&x.profile.fullName)||x.name||'').localeCompare(String((y.profile&&y.profile.fullName)||y.name||'')));
+    const linhas = [['Aluno', ...registros.map(r=>`${dataBR(r.date)} (A${r.aulaNum})`), 'Presencas', 'Faltas', 'Frequencia %']];
+    alunos.forEach(u=>{
+      const marcas = registros.map(r=>(r.absences||[]).includes(u.id) ? 'F' : 'P');
+      const faltas = marcas.filter(m=>m==='F').length;
+      const pres = marcas.length - faltas;
+      linhas.push([atvNomeAluno(u), ...marcas, String(pres), String(faltas), marcas.length?String(Math.round((pres/marcas.length)*100)):'']);
+    });
+    const t = (allTurmas||[]).find(x=>x.id===turmaId);
+    baixarCsv(linhas, `frequencia-${(t&&t.name?t.name:'turma').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}.csv`);
+    return;
+  }
   if(action==='atv-boletim-csv'){
     const turmaId = editState.turmaId;
     const atividades = collectAllAtividades();
@@ -6554,7 +6916,11 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       if(!r.grading || !r.grading.published) return;
       (porSecao[r.sectionId] = porSecao[r.sectionId] || {})[r.studentUid] = r;
     });
-    const linhas = [['Aluno', ...atividades.map(at=>`Aula ${at.aulaNum} - ${at.title}`), 'Total', 'Maximo']];
+    const prazoPorSecaoCsv = {};
+    (ATV_BOLETIM_SCHEDULES||[]).forEach(s=>{ if(s.turmaId===turmaId) prazoPorSecaoCsv[s.sectionId] = s; });
+    const entregaPorSecaoCsv = {};
+    (ATV_BOLETIM_DATA||[]).forEach(r=>{ (entregaPorSecaoCsv[r.sectionId] = entregaPorSecaoCsv[r.sectionId]||{})[r.studentUid] = r; });
+    const linhas = [['Aluno', ...atividades.map(at=>`Aula ${at.aulaNum} - ${at.title}`), 'Total', 'Maximo', 'Entregues no prazo', 'Total atividades', 'Pontos atividades (0-3)']];
     alunos.forEach(u=>{
       let soma=0, somaMax=0;
       const cells = atividades.map(at=>{
@@ -6564,7 +6930,16 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         soma += nota; somaMax += (r.grading.maxScore||0);
         return String(nota).replace('.',',');
       });
-      linhas.push([atvNomeAluno(u), ...cells, String(Math.round(soma*100)/100).replace('.',','), String(Math.round(somaMax*100)/100).replace('.',',')]);
+      let noPrazo = 0;
+      atividades.forEach(at=>{
+        const r = (entregaPorSecaoCsv[at.sectionId]||{})[u.id];
+        if(!r || !r.submittedAt) return;
+        const sc = prazoPorSecaoCsv[at.sectionId];
+        if(!sc || !sc.closesAt || r.submittedAt <= sc.closesAt) noPrazo++;
+      });
+      const pontosAtv = atividades.length ? Math.round((3*(noPrazo/atividades.length))*10)/10 : 0;
+      linhas.push([atvNomeAluno(u), ...cells, String(Math.round(soma*100)/100).replace('.',','), String(Math.round(somaMax*100)/100).replace('.',','),
+                   String(noPrazo), String(atividades.length), String(pontosAtv).replace('.',',')]);
     });
     const t = (allTurmas||[]).find(x=>x.id===turmaId);
     baixarCsv(linhas, `boletim-atividades-${(t&&t.name?t.name:'turma').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}.csv`);
@@ -6572,7 +6947,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
   if(action==='open-atv-boletim'){
     editState = {kind:'atividadesBoletim', turmaId: (editState && editState.turmaId) || null};
-    ATV_BOLETIM_DATA = null;
+    ATV_BOLETIM_DATA = null; ATV_BOLETIM_SCHEDULES = null;
     render();
     return;
   }
@@ -6981,7 +7356,8 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     for(const card of blockCards){
       const oldNum = +card.dataset.orgBlock;
       const origBlock = COURSE.find(x=>x.num===oldNum);
-      const newNum = fromRoman(card.querySelector('.org-block-num').value);
+      const ehAbertura = !!(origBlock && origBlock.isIntro);
+      const newNum = ehAbertura ? 0 : fromRoman(card.querySelector('.org-block-num').value);
       const newTitle = card.querySelector('.org-block-title').value.trim();
       if(newNum===null || !newTitle){ alert('Todo bloco precisa de um número romano válido (ex.: IV, VII) e um título.'); return; }
       if(seenBlockNums.has(newNum)){ alert(`Número de bloco repetido: ${newNum}. Corrija antes de salvar.`); return; }
@@ -6989,6 +7365,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       const hidden = !card.querySelector('.org-block-hidden').checked;
       const newBlock = { num:newNum, title:newTitle, hidden,
         aulaRange:(origBlock&&origBlock.aulaRange)||'', sources:(origBlock&&origBlock.sources)||'', aulas:[] };
+      if(ehAbertura) newBlock.isIntro = true;
       newCourse.push(newBlock);
       blockByOldNum[oldNum] = newBlock; // fallback, caso o select não tenha sido mudado
     }
@@ -6996,7 +7373,8 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const newBlockByOldSelectValue = {};
     blockCards.forEach(card=>{
       const oldNum = +card.dataset.orgBlock;
-      const newNum = fromRoman(card.querySelector('.org-block-num').value);
+      const origB = COURSE.find(x=>x.num===oldNum);
+      const newNum = (origB && origB.isIntro) ? 0 : fromRoman(card.querySelector('.org-block-num').value);
       newBlockByOldSelectValue[oldNum] = newCourse.find(x=>x.num===newNum);
     });
     // Agora distribui as aulas para os blocos (novos) escolhidos
@@ -7036,15 +7414,20 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
 
   if(action==='confirm-new-block'){
-    const newNum = fromRoman(document.getElementById('ef-new-b-num').value);
+    const introCb = document.getElementById('ef-new-b-intro');
+    const ehAbertura = !!(introCb && introCb.checked);
+    const newNum = ehAbertura ? 0 : fromRoman(document.getElementById('ef-new-b-num').value);
     const newTitle = document.getElementById('ef-new-b-title').value.trim();
-    if(newNum===null){ alert('Número do bloco inválido — digite um algarismo romano válido (ex.: IV, VII, XII).'); return; }
+    if(!ehAbertura && newNum===null){ alert('Número do bloco inválido — digite um algarismo romano válido (ex.: IV, VII, XII).'); return; }
     if(!newTitle){ alert('Digite um título para o bloco.'); return; }
+    if(ehAbertura && existeBlocoAbertura()){ alert('Já existe um bloco de abertura neste curso.'); return; }
     if(COURSE.some(bb=>bb.num===newNum)){
-      alert(`Já existe um bloco com o número ${newNum}. Escolha outro número.`);
+      alert(ehAbertura ? 'Já existe um bloco ocupando a posição de abertura.' : `Já existe um bloco com o número ${newNum}. Escolha outro número.`);
       return;
     }
-    COURSE.push({num:newNum, title:newTitle, aulaRange:'', sources:'', aulas:[]});
+    const novoBloco = {num:newNum, title:newTitle, aulaRange:'', sources:'', aulas:[]};
+    if(ehAbertura) novoBloco.isIntro = true;
+    COURSE.push(novoBloco);
     COURSE.sort((x,y)=>x.num-y.num);
     state.block = newNum;
     editState = null;
@@ -7053,7 +7436,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
 
-  if(action==='cancel-edit'){ editState=null; cachedUsersList=null; ATV_MANAGE_RESPONSES=null; ATV_MANAGE_SCHEDULES={}; ATV_MANAGE_DRAFTS=null; ATV_BOLETIM_DATA=null; render(); return; }
+  if(action==='cancel-edit'){ editState=null; cachedUsersList=null; ATV_MANAGE_RESPONSES=null; ATV_MANAGE_SCHEDULES={}; ATV_MANAGE_DRAFTS=null; ATV_BOLETIM_DATA=null; ATV_BOLETIM_SCHEDULES=null; DIARIO_REGISTROS=null; DIARIO_TODOS=null; render(); return; }
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
   if(action==='edit-aula-header'){ editState={kind:'aulaHeader'}; render(); return; }
@@ -7401,6 +7784,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
           kicker: document.getElementById('ef-kicker').value.trim()||undefined,
           title: document.getElementById('ef-title').value.trim()||undefined,
           axes: items.filter(it=>it._label).map(it=>({title:it._label, desc:it._desc, color:it._color})),
+          align: (document.getElementById('ef-axes-align')||{}).value || undefined,
           example: document.getElementById('ef-axes-example').value.trim()||undefined };
       } else if(type==='hierarchy'){
         const items = collectLabelDescListFromDom('ef-ld-wrap');
@@ -7456,6 +7840,26 @@ document.getElementById('content').addEventListener('change', async (e)=>{
     const row = e.target.closest('.atv-item-editor-row');
     const extra = row.querySelector('.atv-item-extra');
     extra.innerHTML = atvItemExtraFieldsHtml({type: e.target.value});
+    return;
+  }
+  if(e.target.id==='diario-turma-select'){
+    editState.turmaId = e.target.value;
+    render();
+    return;
+  }
+  if(e.target.id==='diario-data-input'){
+    editState.date = e.target.value;
+    render();
+    return;
+  }
+  if(e.target.id==='diario-freq-turma-select'){
+    editState.turmaId = e.target.value;
+    render();
+    return;
+  }
+  if(e.target.classList && e.target.classList.contains('diario-falta-cb')){
+    const row = e.target.closest('.diario-aluno-row');
+    if(row) row.classList.toggle('faltou', e.target.checked);
     return;
   }
   if(e.target.id==='atv-question-select'){
@@ -7662,7 +8066,7 @@ function sectionToPrintHtml(sec){
       body = `<ol class="pdf-bullets">${(sec.steps||[]).map(s=>`<li><strong>${esc(s.label)}</strong>${s.desc?' — '+esc(s.desc):''}</li>`).join('')}</ol>`;
       break;
     case 'axes':
-      body = `<div class="pdf-grid">${(sec.axes||[]).map(a=>`<div class="pdf-grid-card" style="background:${a.color||'#F7F7F9'};"><h4>${esc(a.title)}</h4><p>${esc(a.desc||'')}</p></div>`).join('')}</div>`;
+      body = `<div class="pdf-grid${(sec.align && sec.align!=='justify')?` pdf-align-${sec.align}`:''}">${(sec.axes||[]).map(a=>`<div class="pdf-grid-card" style="background:${a.color||'#F7F7F9'};"><h4>${esc(a.title)}</h4><p>${esc(a.desc||'')}</p></div>`).join('')}</div>`;
       break;
     case 'hierarchy':
       body = `<p>${(sec.chain||[]).map(c=>esc(c.label)).join(' → ')}</p>` +
@@ -7706,7 +8110,7 @@ function buildAulaPrintHtml(b, a){
   const now = new Date();
   const nowStr = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
   const sectionsHtml = (a.sections||[]).filter(s=>s.type!=='atividade' && !(s.type==='activity' && s.visibleToStudent===false)).map(sectionToPrintHtml).join('');
-  const docTitle = `Bloco ${toRoman(b.num)} - Aula ${a.num} - ${a.title}`;
+  const docTitle = blocoEhAbertura(b) ? `${b.title||'Abertura'} - ${a.title}` : `Bloco ${toRoman(b.num)} - Aula ${a.num} - ${a.title}`;
 
   return `<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(docTitle)}</title>
@@ -7761,6 +8165,12 @@ function buildAulaPrintHtml(b, a){
   .pdf-video-box-text{font-family:'Helvetica',sans-serif;font-size:12.5px;line-height:1.5;}
   .pdf-video-box-text strong{color:#3D3E77;}
   .pdf-grid{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;}
+  .pdf-grid.pdf-align-left{justify-content:flex-start;}
+  .pdf-grid.pdf-align-center{justify-content:center;}
+  .pdf-grid.pdf-align-right{justify-content:flex-end;}
+  .pdf-grid.pdf-align-left > .pdf-grid-card,
+  .pdf-grid.pdf-align-center > .pdf-grid-card,
+  .pdf-grid.pdf-align-right > .pdf-grid-card{flex:0 1 200px;}
   .pdf-grid-card{flex:1 1 200px;background:#F7F7F9;border-radius:8px;padding:12px 14px;font-size:12.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .pdf-grid-card h4{margin:0 0 6px 0;color:#3D3E77;font-family:'Helvetica',sans-serif;font-size:13px;}
   .author-footer {
@@ -7792,7 +8202,7 @@ ${wmDiagonal}${wmBanner}
       <div class="logo-badge"><img src="${facLogoSrc}"></div>
       <div class="inst-name">${esc(instName)}</div>
     </div>
-    <div class="eyebrow">Bloco ${toRoman(b.num)} · Aula ${a.num} · ${esc(instCourse)}</div>
+    <div class="eyebrow">${blocoEhAbertura(b)?esc(b.title||'Abertura'):`Bloco ${toRoman(b.num)} · Aula ${a.num}`} · ${esc(instCourse)}</div>
     <h1>${esc(a.title)}</h1>
     <div class="subtitle">${esc(a.subtitle||'')}</div>
   </div>
@@ -8199,6 +8609,7 @@ document.getElementById('switch-subject-btn').addEventListener('click', async ()
 });
 
 document.getElementById('user-badge-logout-btn').addEventListener('click', async ()=>{
+  limparUltimaAtividade();
   await logSessionEnd();
   auth.signOut();
 });
@@ -8425,13 +8836,47 @@ async function saveInactivitySetting(minutes){
 
 let lastActivityAt = Date.now();
 let inactivityCheckHandle = null;
-function registerActivity(){ lastActivityAt = Date.now(); }
+// O relógio de inatividade só corre com a página aberta. Sem gravar a última
+// atividade em disco, fechar o navegador e reabrir dias depois devolvia a sessão
+// logada (a persistência do Firebase é local e não expira sozinha). Guardamos o
+// carimbo para poder expirar a sessão TAMBÉM entre aberturas do navegador.
+const LAST_ACTIVITY_KEY = 'proflaluce-last-activity';
+let lastActivityPersistAt = 0;
+function persistLastActivity(ts){
+  try{ localStorage.setItem(LAST_ACTIVITY_KEY, String(ts)); }catch(e){}
+}
+function lerUltimaAtividadeSalva(){
+  try{
+    const v = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '', 10);
+    return isNaN(v) ? null : v;
+  }catch(e){ return null; }
+}
+function limparUltimaAtividade(){
+  try{ localStorage.removeItem(LAST_ACTIVITY_KEY); }catch(e){}
+}
+function registerActivity(){
+  lastActivityAt = Date.now();
+  // grava no máximo a cada 5s para não castigar o disco a cada mexida de mouse
+  if(lastActivityAt - lastActivityPersistAt > 5000){
+    lastActivityPersistAt = lastActivityAt;
+    persistLastActivity(lastActivityAt);
+  }
+}
 ['mousemove','mousedown','keydown','scroll','touchstart'].forEach(evt=>{
   document.addEventListener(evt, registerActivity, {passive:true});
 });
+// Verifica, no momento em que a sessão é restaurada, se ela já deveria ter
+// expirado enquanto o navegador esteve fechado. Devolve true se expirou.
+function sessaoExpirouEnquantoFechado(){
+  const ultima = lerUltimaAtividadeSalva();
+  if(!ultima) return false;
+  return (Date.now() - ultima) > (inactivityMinutes * 60 * 1000);
+}
 function startInactivityWatch(){
   if(inactivityCheckHandle) clearInterval(inactivityCheckHandle);
   lastActivityAt = Date.now();
+  persistLastActivity(lastActivityAt);
+  lastActivityPersistAt = lastActivityAt;
   inactivityCheckHandle = setInterval(()=>{
     const limitMs = inactivityMinutes * 60 * 1000;
     const remainingMs = Math.max(0, limitMs - (Date.now() - lastActivityAt));
@@ -8444,6 +8889,7 @@ function startInactivityWatch(){
     }
     if(remainingMs <= 0){
       clearInterval(inactivityCheckHandle);
+      limparUltimaAtividade();
       logSessionEnd().finally(()=> auth.signOut());
     }
   }, 1000);
@@ -8506,6 +8952,19 @@ if(!firebaseReady || !auth){
   viewAsBtn.classList.toggle('hidden', !realIsAdmin);
   updateViewAsButtonLabel();
   await loadInactivitySetting();
+  // Sessão restaurada pelo navegador: se passou do limite desde a última
+  // atividade registrada, desconecta ANTES de mostrar qualquer conteúdo.
+  if(sessaoExpirouEnquantoFechado()){
+    limparUltimaAtividade();
+    await auth.signOut();
+    showOnly(['auth-gate']);
+    const expEl = document.getElementById('auth-login-error');
+    if(expEl){
+      expEl.textContent = 'Sua sessão expirou por inatividade. Entre novamente.';
+      expEl.classList.remove('hidden');
+    }
+    return;
+  }
   startInactivityWatch();
   if(!currentSessionStart) logSessionStart();
 
