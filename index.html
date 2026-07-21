@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.2.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.3.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2168,6 +2168,19 @@
   body.presentation-mode #content p, body.presentation-mode #content li, body.presentation-mode #content td{
     font-size:calc(15.5px * var(--pres-scale));line-height:1.65;
   }
+  .presenter-control-bar{
+    position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9500;
+    display:flex;align-items:center;gap:10px;background:rgba(28,32,52,0.94);
+    color:#fff;border-radius:999px;padding:9px 16px;box-shadow:0 8px 24px rgba(0,0,0,0.3);
+    font-size:13.5px;font-weight:600;
+  }
+  .presenter-control-bar.hidden{display:none;}
+  .presenter-control-bar .mi{font-size:18px;}
+  .presenter-control-bar button{
+    background:rgba(255,255,255,0.15);border:none;border-radius:999px;color:#fff;
+    font-size:12.5px;font-weight:700;padding:6px 12px;cursor:pointer;font-family:inherit;
+  }
+  .presenter-control-bar button:hover{background:#E5484D;}
   .pres-toolbar{
     position:fixed;bottom:18px;right:18px;z-index:10000;
     display:flex;gap:6px;background:rgba(28,32,52,0.92);border-radius:12px;padding:8px;
@@ -2833,6 +2846,9 @@
   <button class="nav-fab hidden" id="presentation-btn" title="Modo Aula: tela cheia para projetar (tecla F)">
     <span class="arrow">🖥</span><span class="label">Modo Aula (F)</span>
   </button>
+  <button class="nav-fab hidden" id="presentation-2-telas-btn" title="Modo Aula em 2 telas: projeta só o conteúdo no monitor externo e mantém suas anotações só na sua tela. Chrome/Edge, com o monitor em modo Estender.">
+    <span class="arrow">🖥️🖥️</span><span class="label">2 telas</span>
+  </button>
   <button class="nav-fab nav-fab-next" id="next-aula-btn" title="Próxima aula">
     <span class="arrow">→</span><span class="label">Próxima aula</span>
   </button>
@@ -2895,7 +2911,16 @@
   <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.2.0</div>
+
+<!-- Faixa fixa que só aparece na tela do PROFESSOR quando há uma segunda
+     tela (projetor) sendo controlada por aqui — a tela do projetor não tem
+     isto, só o conteúdo limpo. -->
+<div class="presenter-control-bar hidden" id="presenter-control-bar">
+  <span class="mi">present_to_all</span>
+  <span id="presenter-control-label">Projetando na 2ª tela</span>
+  <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
+</div>
+<div class="version-tag hidden" id="version-tag">v4.3.0</div>
 
 
 <script>
@@ -2983,6 +3008,7 @@ async function loadCourseFromStorage(){
     const res = await withRetry(()=>subjectDbGet(STORAGE_KEY));
     if(res && res.value){
       COURSE = JSON.parse(res.value);
+      garantirIdsDeAula();
       COURSE_LOADED_AT = res.updatedAt || 0;
       LAST_LOAD_ERROR = null;
       return true;
@@ -3071,6 +3097,27 @@ let activeSubjectId = null;
 let studentSubjectIds = []; // matérias atribuídas ao aluno logado (pode ser mais de uma)
 let allSubjects = null;
 
+// ===== Modo Aula em 2 telas (apresentador + projetor) =====
+// Duas janelas da MESMA aba, uma delas aberta via window.open direto no
+// monitor do projetor. Conversam por BroadcastChannel (mesma origem, sem
+// precisar de rede) — a janela do professor manda "para onde ir", a do
+// projetor só obedece. Nenhum dado sensível trafega aqui, só bloco/aula.
+let presenterModeControl = false;   // esta janela é a do PROFESSOR, controlando uma 2ª tela
+let presenterModeDisplay = false;   // esta janela É o projetor (só exibe, não controla)
+let presenterChannel = null;
+let presenterProjectorWin = null;
+let presenterWatchTimer = null;
+let presenterLastSent = '';
+// Se a URL trouxer ?modoaula=projetor, esta aba nasceu para ser o projetor —
+// lido uma vez, no carregamento, antes mesmo do login terminar.
+const PRESENTER_BOOT = (function(){
+  try{
+    const p = new URLSearchParams(location.search);
+    if(p.get('modoaula') !== 'projetor') return null;
+    return { materia: p.get('materia'), bloco: +p.get('bloco'), aula: +p.get('aula') };
+  }catch(e){ return null; }
+})();
+
 async function fetchAllSubjects(){
   const snap = await db.collection('subjects').get();
   allSubjects = snap.docs.map(d => ({id: d.id, ...d.data()}));
@@ -3150,7 +3197,7 @@ function recordStudentProgress(blockNum, aulaNum){
 function allActivitiesDone(aula){
   const atividades = (aula.sections||[]).filter(s=>s.type==='activity');
   if(!atividades.length) return true;
-  const feitas = (STUDENT_PROGRESS && STUDENT_PROGRESS.actDone && STUDENT_PROGRESS.actDone[String(aula.num)]) || {};
+  const feitas = (STUDENT_PROGRESS && STUDENT_PROGRESS.actDone && STUDENT_PROGRESS.actDone[aula.id]) || {};
   return atividades.every(s=>!!feitas[s.id]);
 }
 function checkAulaCompletion(){
@@ -3159,7 +3206,7 @@ function checkAulaCompletion(){
   const b = COURSE.find(x=>x.num===state.block);
   const a = b && b.aulas.find(x=>x.num===state.aula);
   if(!a) return;
-  const key = String(a.num);
+  const key = a.id;
   if(STUDENT_PROGRESS.seen[key]) return; // já conquistou o ✓
   if(!scrolledBottomAulas.has(a.num)) return;
   if(!allActivitiesDone(a)) return;
@@ -3224,7 +3271,7 @@ function flatAulaList(includeHidden){
   list.sort((x,y)=>x.aulaNum-y.aulaNum);
   return list;
 }
-function totalAulas(){ return flatAulaList(isAdmin).length; }
+function totalAulas(){ return flatAulaList(isAdmin).filter(x=>x.aulaNum !== 0).length; }
 
 function findBlockForAula(aulaNum){
   for(const b of COURSE){
@@ -3261,7 +3308,9 @@ document.getElementById('next-aula-btn').addEventListener('click', ()=>{
 });
 
 function globalAulaNumber(){
-  const list = flatAulaList(isAdmin);
+  // A apresentacao da disciplina (num 0) fica fora da contagem: o curso tem
+  // 48 aulas, nao 49 porque existe uma tela de abertura.
+  const list = flatAulaList(isAdmin).filter(x=>x.aulaNum !== 0);
   const idx = list.findIndex(x=>x.aulaNum===state.aula);
   return idx===-1 ? 0 : idx+1;
 }
@@ -3271,6 +3320,60 @@ function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
 // Um bloco com isIntro:true e num 0 aparece antes do Bloco I e é desenhado sem
 // a moldura "Bloco X" — serve para a aula de apresentação da disciplina.
 function blocoEhAbertura(b){ return !!(b && b.isIntro); }
+// A apresentacao da disciplina fica FORA da numeracao (num 0). Estas duas
+// funcoes sao o unico lugar que decide como uma aula e chamada na tela —
+// antes cada uma montava "Aula ${a.num}" na mao, e a apresentacao aparecia
+// como "Aula 0".
+function aulaEhAbertura(a){ return !!(a && a.num === 0); }
+function rotuloAula(a){ return aulaEhAbertura(a) ? 'Apresentação da disciplina' : `Aula ${a.num}`; }
+function numeroAula(a){ return aulaEhAbertura(a) ? '★' : a.num; }
+
+// Usado tanto pelo botão manual "Renumerar aulas em sequência" quanto pela
+// oferta automática depois de salvar o Organizar curso — mesma lógica,
+// mesmo detector de colisão, para as duas portas de entrada nunca divergirem.
+// Desde que cada aula ganhou um id fixo (independente do número — ver
+// garantirIdsDeAula/aulaIdDe), renumerar deixou de ter QUALQUER risco de
+// misturar dado de uma aula com o de outra: resposta de atividade, diário e
+// anotação do aluno se agarram ao id, não ao número. Esta função hoje só
+// mostra a prévia do que muda — não existe mais o que "arriscar".
+async function conferirEAplicarRenumeracao(origemPosSalvar){
+  const mapaCompleto = [];
+  let proximo = 1;
+  COURSE.forEach(b=>{
+    (b.aulas||[]).forEach(a=>{
+      const alvo = blocoEhAbertura(b) ? 0 : proximo++;
+      mapaCompleto.push({de:a.num, para:alvo, titulo:a.title, abertura:blocoEhAbertura(b)});
+    });
+  });
+  const plano = mapaCompleto.filter(p=>p.de !== p.para);
+  if(!plano.length){
+    alert(origemPosSalvar ? 'Organização salva com sucesso.' : 'A numeração já está em sequência — nada a mudar.');
+    return;
+  }
+
+  const limite = origemPosSalvar ? 10 : 12;
+  const amostra = plano.slice(0, limite)
+    .map(p=>`   ${p.abertura ? 'Apresentação' : 'Aula ' + p.de} → ${p.para === 0 ? 'fora da numeração' : 'Aula ' + p.para}  (${p.titulo})`)
+    .join('\n');
+  const resto = plano.length > limite ? `\n   …e mais ${plano.length - limite}.` : '';
+  const aviso = `\n\nIsso muda só a POSIÇÃO de exibição — respostas de atividade, diário e anotações de aluno continuam corretamente vinculados à mesma aula depois da mudança.`;
+
+  const titulo = origemPosSalvar
+    ? `Organização salva.\n\nA numeração ficou fora de sequência em ${plano.length} aula(s) — é o que costuma acontecer ao mover ou excluir aulas.\n\nQuer renumerar em cascata agora?`
+    : `Renumerar ${plano.length} aula(s)?`;
+
+  if(!confirm(`${titulo}\n\n${amostra}${resto}${aviso}\n\nConfirma?`)) return;
+
+  let n2 = 1;
+  COURSE.forEach(b=>{ (b.aulas||[]).forEach(a=>{ a.num = blocoEhAbertura(b) ? 0 : n2++; }); });
+  COURSE.forEach(b=>b.aulas.sort((x,y)=>x.num-y.num));
+  const primeira = flatAulaList(true)[0];
+  if(primeira){ state.block = primeira.blockNum; state.aula = primeira.aulaNum; }
+  editState = null;
+  await saveCourseToStorage();
+  render();
+  alert(origemPosSalvar ? 'Numeração atualizada em cascata.' : 'Numeração atualizada.');
+}
 function blocoRotulo(b){
   if(!b) return '';
   return blocoEhAbertura(b) ? esc(b.title||'Abertura') : `Bloco ${toRoman(b.num)} — ${esc(b.title)}`;
@@ -3384,7 +3487,7 @@ function renderSearchResults(query){
 document.addEventListener('input', (e)=>{
   if(e.target && e.target.id === 'nav-search-input') renderSearchResults(e.target.value);
   if(e.target && e.target.classList && e.target.classList.contains('atv-ans-field')){
-    saveAtividadeAnswerDebounced(e.target.dataset.secid, state.aula);
+    saveAtividadeAnswerDebounced(e.target.dataset.secid, aulaIdDe(state.block, state.aula), state.aula);
   }
 });
 // Atribuição de turma (select na linha do aluno e na ficha) + filtro por turma
@@ -3404,7 +3507,8 @@ document.addEventListener('change', async (e)=>{
   }
   if(e.target && e.target.classList && e.target.classList.contains('act-done-cb')){
     if(realIsAdmin || !currentUser || !STUDENT_PROGRESS) return;
-    const key = String(state.aula);
+    const key = aulaIdDe(state.block, state.aula);
+    if(!key) return;
     if(!STUDENT_PROGRESS.actDone) STUDENT_PROGRESS.actDone = {};
     if(!STUDENT_PROGRESS.actDone[key]) STUDENT_PROGRESS.actDone[key] = {};
     if(e.target.checked) STUDENT_PROGRESS.actDone[key][e.target.dataset.secid] = Date.now();
@@ -3419,7 +3523,7 @@ document.addEventListener('change', async (e)=>{
     return;
   }
   if(e.target && e.target.classList && e.target.classList.contains('atv-ans-field')){
-    saveAtividadeAnswerDebounced(e.target.dataset.secid, state.aula);
+    saveAtividadeAnswerDebounced(e.target.dataset.secid, aulaIdDe(state.block, state.aula), state.aula);
     return;
   }
 });
@@ -3470,7 +3574,7 @@ function renderSideNav(){
             <button class="edit-chip nav-aula-drag-handle" draggable="true" data-drag-nav-aula-num="${a.num}" title="Arrastar para reordenar (renumera automaticamente)" style="cursor:grab;">⣿</button>
             <input type="checkbox" class="nav-aula-visible-cb" data-vis-block="${b.num}" data-vis-aula="${a.num}" ${a.hidden?'':'checked'} title="Visível para os alunos">
             <button class="nav-aula" data-block="${b.num}" data-aula="${a.num}">
-              <span class="num">${a.num}</span><span class="label">${esc(a.title)}${(a.sections&&a.sections.some(s=>s.type==='atividade'))?' <span class="nav-aula-practice-badge" title="Esta aula tem atividade respondível — gera nota e tem prazo">📝</span>':''}${(!isAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.seen && STUDENT_PROGRESS.seen[String(a.num)])?' <span class="nav-aula-seen" title="Você já viu esta aula">✓</span>':''}${a.hidden?' <em>(oculta)</em>':''}</span>
+              <span class="num">${numeroAula(a)}</span><span class="label">${esc(a.title)}${(a.sections&&a.sections.some(s=>s.type==='atividade'))?' <span class="nav-aula-practice-badge" title="Esta aula tem atividade respondível — gera nota e tem prazo">📝</span>':''}${(!isAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.seen && STUDENT_PROGRESS.seen[a.id])?' <span class="nav-aula-seen" title="Você já viu esta aula">✓</span>':''}${a.hidden?' <em>(oculta)</em>':''}</span>
             </button>
             <button class="edit-chip nav-aula-edit-btn" data-edit-block="${b.num}" data-edit-aula="${a.num}" title="Editar informações da aula">✎</button>
           </div>`).join('')}
@@ -3792,7 +3896,8 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
         sec.results ? `<div class="act-row"><span class="act-tag">✅ O que entregar</span><div>${esc(sec.results)}</div></div>` : '',
         sec.obs ? `<div class="act-row"><span class="act-tag">💡 Observações</span><div>${esc(sec.obs)}</div></div>` : '',
       ].join('');
-      const feita = (!realIsAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.actDone && STUDENT_PROGRESS.actDone[String(state.aula)] && STUDENT_PROGRESS.actDone[String(state.aula)][sec.id]);
+      const aulaIdAtual = aulaIdDe(state.block, state.aula);
+      const feita = (!realIsAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.actDone && STUDENT_PROGRESS.actDone[aulaIdAtual] && STUDENT_PROGRESS.actDone[aulaIdAtual][sec.id]);
       const checkAluno = (!realIsAdmin && currentUser) ? `
         <label class="activity-done-row">
           <input type="checkbox" class="act-done-cb" data-secid="${sec.id}" ${feita?'checked':''}>
@@ -3966,6 +4071,9 @@ async function autoPublicarAtividadesVencidas(){
       if(!pendentes.length) continue;
       const maxScore = atvMaxScore(sec);
       for(const resp of pendentes){
+        // Regra única, sem exceção: só processa resposta que já tem o id
+        // novo. Sem tentativa de reconstruir chave de registro antigo.
+        if(!resp.aulaId) continue;
         const answers = resp.answers || {};
         const perItem = {};
         let total = 0;
@@ -3976,9 +4084,9 @@ async function autoPublicarAtividadesVencidas(){
           total += pts;
         });
         total = Math.round(total*100)/100;
-        const docId = `${resp.aulaNum}_${agenda.sectionId}_${resp.studentUid}`;
+        const docId = `${resp.aulaId}_${agenda.sectionId}_${resp.studentUid}`;
         const payload = {
-          subjectId: activeSubjectId, aulaNum: resp.aulaNum, sectionId: agenda.sectionId,
+          subjectId: activeSubjectId, aulaId: resp.aulaId, aulaNum: resp.aulaNum, sectionId: agenda.sectionId,
           studentUid: resp.studentUid, turmaId: resp.turmaId || agenda.turmaId,
           studentName: resp.studentName || '',
           answers,
@@ -4079,14 +4187,16 @@ function atvEffectiveGrading(resp, draft){
   };
 }
 
-async function loadActivityData(sectionId, aulaNum){
+// aulaId é a CHAVE usada para achar a resposta já salva do aluno — fixa,
+// nunca muda com renumeração (diferente do número, que é só posição).
+async function loadActivityData(sectionId, aulaId){
   if(ACTIVITY_DATA_CACHE[sectionId] && ACTIVITY_DATA_CACHE[sectionId].loaded) return;
   ACTIVITY_DATA_CACHE[sectionId] = ACTIVITY_DATA_CACHE[sectionId] || {};
-  if(!activeSubjectId || !currentUser){ ACTIVITY_DATA_CACHE[sectionId].loaded = true; return; }
+  if(!activeSubjectId || !currentUser || !aulaId){ ACTIVITY_DATA_CACHE[sectionId].loaded = true; return; }
   try{
     const uid = currentUser.uid;
     const turmaId = (currentUserDoc && currentUserDoc.turmaId) || null;
-    const respId = `${aulaNum}_${sectionId}_${uid}`;
+    const respId = `${aulaId}_${sectionId}_${uid}`;
     const respPromise = db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(respId).get();
     const schedPromise = turmaId ? db.collection(`subjects/${activeSubjectId}/activity_schedules`).doc(`${sectionId}_${turmaId}`).get() : Promise.resolve(null);
     const [respSnap, schedSnap] = await Promise.all([respPromise, schedPromise]);
@@ -4099,7 +4209,7 @@ async function loadAllActivityData(){
   const placeholders = [...document.querySelectorAll('[data-atv-load-id]')];
   const pending = placeholders.filter(p=>!(ACTIVITY_DATA_CACHE[p.dataset.atvLoadId] && ACTIVITY_DATA_CACHE[p.dataset.atvLoadId].loaded));
   if(!pending.length) return;
-  await Promise.all(pending.map(p=>loadActivityData(p.dataset.atvLoadId, +p.dataset.atvAula)));
+  await Promise.all(pending.map(p=>loadActivityData(p.dataset.atvLoadId, aulaIdDe(state.block, +p.dataset.atvAula))));
   render(); // agora com os dados prontos, desenha o formulário de verdade
 }
 
@@ -4239,20 +4349,22 @@ function collectAtividadeAnswersFromDom(sectionId){
   return answers;
 }
 
-function saveAtividadeAnswerDebounced(sectionId, aulaNum){
+function saveAtividadeAnswerDebounced(sectionId, aulaId, aulaNum){
   clearTimeout(atvSaveTimer);
-  atvSaveTimer = setTimeout(()=>persistAtividadeAnswer(sectionId, aulaNum), 1200);
+  atvSaveTimer = setTimeout(()=>persistAtividadeAnswer(sectionId, aulaId, aulaNum), 1200);
 }
 let LAST_ATV_SAVE_ERROR = '';
-async function persistAtividadeAnswer(sectionId, aulaNum){
+// aulaId é a CHAVE (fixa, nunca muda com renumeração). aulaNum vai junto só
+// como informação de exibição (ex.: título de coluna no boletim).
+async function persistAtividadeAnswer(sectionId, aulaId, aulaNum){
   if(realIsAdmin || !currentUser || !activeSubjectId) return false;
   const cache = ACTIVITY_DATA_CACHE[sectionId];
   if(atvIsLocked(cache && cache.response, cache && cache.schedule)) return false; // travado — não salva mais
   const answers = collectAtividadeAnswersFromDom(sectionId);
-  const docId = `${aulaNum}_${sectionId}_${currentUser.uid}`;
+  const docId = `${aulaId}_${sectionId}_${currentUser.uid}`;
   const payload = {
     subjectId: activeSubjectId, turmaId: (currentUserDoc&&currentUserDoc.turmaId)||null,
-    aulaNum, sectionId, studentUid: currentUser.uid,
+    aulaId, aulaNum, sectionId, studentUid: currentUser.uid,
     studentName: (currentUserDoc&&((currentUserDoc.profile&&currentUserDoc.profile.fullName)||currentUserDoc.name))||'',
     answers, updatedAt: Date.now(),
   };
@@ -4691,7 +4803,7 @@ function saudeMateriaHtml(){
     const comConteudo = todasAulas.filter(x=>(x.a.sections||[]).length > 0).length;
     const publicadas = todasAulas.filter(x=>!x.a.hidden && !x.b.hidden).length;
     const comAtividade = todasAulas.filter(x=>(x.a.sections||[]).some(sc=>sc.type==='atividade')).length;
-    const dadas = new Set((DIARIO_TODOS||[]).map(r=>String(r.aulaNum))).size;
+    const dadas = new Set((DIARIO_TODOS||[]).map(r=>r.aulaId)).size;
 
     const barra = (rot, n, den, dica)=>{
       const pct = den ? Math.round((n/den)*100) : 0;
@@ -4878,10 +4990,11 @@ function atvCollectItemGrading(scopeEl){
 // Grava/atualiza o RASCUNHO de correção (coleção separada — aluno não lê).
 async function atvSaveDraft(uid, perItemPartial, commentParas){
   const sectionId = editState.sectionId;
-  const docId = `${editState.aulaNum}_${sectionId}_${uid}`;
+  const aulaId = aulaIdDe(editState.blockNum, editState.aulaNum);
+  const docId = `${aulaId}_${sectionId}_${uid}`;
   const alunoDoc = (cachedUsersList||[]).find(u=>u.id===uid) || {};
   const payload = {
-    subjectId: activeSubjectId, aulaNum: editState.aulaNum, sectionId, studentUid: uid,
+    subjectId: activeSubjectId, aulaId, aulaNum: editState.aulaNum, sectionId, studentUid: uid,
     turmaId: alunoDoc.turmaId || editState.turmaId || null,
     perItem: perItemPartial, updatedAt: Date.now(), updatedBy: currentUser.uid,
   };
@@ -4912,10 +5025,13 @@ async function atvPublishForStudent(sec, uid){
     total += (pts||0);
   });
   total = Math.round(total*100)/100;
-  const docId = `${editState.aulaNum}_${editState.sectionId}_${uid}`;
+  // MESMA chave que o aluno usou para salvar a resposta — se divergir, a nota
+  // publicada vai para um documento diferente de onde a resposta está.
+  const aulaId = aulaIdDe(editState.blockNum, editState.aulaNum);
+  const docId = `${aulaId}_${editState.sectionId}_${uid}`;
   const alunoDoc = (cachedUsersList||[]).find(u=>u.id===uid) || {};
   const payload = {
-    subjectId: activeSubjectId, aulaNum: editState.aulaNum, sectionId: editState.sectionId,
+    subjectId: activeSubjectId, aulaId, aulaNum: editState.aulaNum, sectionId: editState.sectionId,
     studentUid: uid, turmaId: resp.turmaId || alunoDoc.turmaId || editState.turmaId || null,
     studentName: resp.studentName || (alunoDoc.profile && alunoDoc.profile.fullName) || alunoDoc.name || '',
     answers: resp.answers || {},
@@ -5041,9 +5157,12 @@ function dataBR(iso){
   const [a,m,d] = String(iso).split('-');
   return `${d}/${m}/${a}`;
 }
-function diarioDocId(aulaNum, turmaId, date){ return `${aulaNum}_${turmaId}_${date}`; }
-async function fetchDiarioDaAula(aulaNum){
-  const snap = await db.collection(`subjects/${activeSubjectId}/class_log`).where('aulaNum','==',aulaNum).get();
+function diarioDocId(aulaId, turmaId, date){ return `${aulaId}_${turmaId}_${date}`; }
+// Regra única: busca só pelo id. Sem consulta paralela por número antigo —
+// decisão explícita para não carregar uma exceção de compatibilidade por
+// uma situação pontual (curso ainda em preparação, sem dado real em risco).
+async function fetchDiarioDaAula(aulaId){
+  const snap = await db.collection(`subjects/${activeSubjectId}/class_log`).where('aulaId','==',aulaId).get();
   return snap.docs.map(d=>({id:d.id, ...d.data()})).sort((x,y)=>String(x.date).localeCompare(String(y.date)));
 }
 async function fetchDiarioCompleto(){
@@ -5057,7 +5176,7 @@ function diarioAulaForm(){
   const a = b && b.aulas.find(x=>x.num===es.aulaNum);
   if(!a) return `<div class="editor-form"><div class="editing-type-banner">📒 Diário de classe</div><p>Aula não encontrada.</p><div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">← Voltar</button></div></div>`;
   if(allTurmas===null || cachedUsersList===null || DIARIO_REGISTROS===null){
-    return `<div class="editor-form"><div class="editing-type-banner">📒 Diário de classe — Aula ${a.num}</div><p>Carregando turmas e alunos…</p></div>`;
+    return `<div class="editor-form"><div class="editing-type-banner">📒 Diário de classe — ${rotuloAula(a)}</div><p>Carregando turmas e alunos…</p></div>`;
   }
   // Turma: se só existe uma, já vem escolhida; com várias, obriga a escolher.
   const turmaId = es.turmaId !== undefined ? es.turmaId : ((allTurmas.length===1) ? allTurmas[0].id : '');
@@ -5097,7 +5216,7 @@ function diarioAulaForm(){
     }).join('')}</div>` : '';
 
   return `<div class="editor-form">
-    <div class="editing-type-banner">📒 Diário de classe — Aula ${a.num}</div>
+    <div class="editing-type-banner">📒 Diário de classe — ${rotuloAula(a)}</div>
     <div class="hint">${esc(a.title)}</div>
     <div class="diario-topo">
       <div><label>Turma</label><select id="diario-turma-select">${turmaOptions}</select></div>
@@ -5181,7 +5300,7 @@ function atividadeManageForm(){
 
   return `<div class="editor-form">
     <div class="editing-type-banner">📋 Corrigir atividade — ${esc(sec.title||'(sem título)')}</div>
-    <div class="hint">Aula ${a.num} — ${esc(a.title)} · ${(sec.items||[]).length} questão(ões) · vale ${atvMaxScore(sec)} pontos no total</div>
+    <div class="hint">${rotuloAula(a)} — ${esc(a.title)} · ${(sec.items||[]).length} questão(ões) · vale ${atvMaxScore(sec)} pontos no total</div>
     <div class="atv-turma-row">
       <label>Turma</label>
       <select id="atv-manage-turma-select">${turmaOptions}</select>
@@ -5203,7 +5322,7 @@ function renderAulaPicker(){
     <div class="picker-block-title">${blocoRotulo(b)}</div>
     ${b.aulas.filter(a=>isAdmin || !a.hidden).map(a => `
       <button class="picker-item ${a.isPractice?'practice':''} ${a.hidden?'is-hidden':''} ${(b.num===state.block && a.num===state.aula)?'current':''}" data-block="${b.num}" data-aula="${a.num}" role="menuitem">
-        <span class="n">${a.num}</span><span>${esc(a.title)}${a.hidden?' <em>(oculta)</em>':''}</span>
+        <span class="n">${numeroAula(a)}</span><span>${esc(a.title)}${a.hidden?' <em>(oculta)</em>':''}</span>
       </button>`).join('')}
   `).join('');
   el.querySelectorAll('.picker-item').forEach(btn=>{
@@ -6461,7 +6580,7 @@ function classStatsHtml(){
   const aulaRows = allAulas
     .map(a=>({...a, count: visitCount[String(a.num)]||0}))
     .sort((x,y)=>x.count-y.count)
-    .map(a=>`<tr class="${(a.count===0 && !a.hidden)?'stat-alert':''}"><td>Aula ${a.num} — ${esc(a.title)}${a.hidden?' <em style="color:var(--muted);">(oculta)</em>':''}</td><td>${a.count}</td></tr>`)
+    .map(a=>`<tr class="${(a.count===0 && !a.hidden)?'stat-alert':''}"><td>${rotuloAula(a)} — ${esc(a.title)}${a.hidden?' <em style="color:var(--muted);">(oculta)</em>':''}</td><td>${a.count}</td></tr>`)
     .join('');
 
   return `<div class="editor-form">
@@ -6865,7 +6984,7 @@ function orgScreenForm(){
       <div class="org-aula-rows">
         ${b.aulas.map(a=>`
           <div class="org-aula-row" data-org-aula="${a.num}" data-org-aula-block="${b.num}">
-            <input type="text" class="org-aula-num" value="${a.num}" title="Número da aula">
+            <input type="text" class="org-aula-num" value="${blocoEhAbertura(b)?'★':a.num}" ${blocoEhAbertura(b)?'readonly title="A apresentação da disciplina fica FORA da numeração — o curso começa na aula 1"':'title="Número da aula"'}>
             <select class="org-aula-block">${blockOptsFor(b.num)}</select>
             <input type="text" class="org-aula-title" value="${escAttr(a.title)}" title="Título da aula">
             <label class="org-hidden-label"><input type="checkbox" class="org-aula-hidden" ${a.hidden?'':'checked'}> Visível</label>
@@ -6894,6 +7013,9 @@ function orgScreenForm(){
       <span style="text-transform:none;font-weight:600;color:var(--charcoal);letter-spacing:normal;">🤖 Inserir instruções para a IA no início do arquivo <span style="font-weight:400;color:var(--muted);">(explica à IA o formato do sistema, o que preservar e como devolver as aulas — recomendado)</span></span>
     </label>
     <button type="button" class="btn-secondary" data-action="export-course-txt" style="margin-top:8px;">📄 Exportar curso completo (JSON em .txt)</button>
+    <label style="margin-top:22px;">Numeração</label>
+    <div class="hint">Renumera as aulas em sequência (1, 2, 3…) na ordem em que aparecem nos blocos, fechando buracos deixados por exclusões ou mudanças de bloco. A apresentação da disciplina fica fora da contagem. Você vê exatamente o que muda antes de confirmar.</div>
+    <button type="button" class="btn-secondary" data-action="renumerar-aulas" style="margin-top:8px;">🔢 Renumerar aulas em sequência</button>
     <div class="editor-actions">
       <button class="btn-primary" data-action="save-org-screen">Salvar todas as alterações</button>
       <button class="btn-secondary" data-action="cancel-edit">Cancelar (descarta tudo que mudou aqui)</button>
@@ -6950,7 +7072,7 @@ function iaScreenForm(){
     const indisponivel = (id==='melhorar' && !a);
     return `<button type="button" class="ia-opcao ${e.intencao===id?'is-ativa':''}" data-action="ia-intencao" data-ia="${id}" ${indisponivel?'disabled':''}>
       <span class="mi">${i.icone}</span>
-      <span class="ia-opcao-txt">${esc(i.rotulo)}${id==='melhorar'&&a?`<em>Aula ${a.num} — ${esc(a.title)}</em>`:''}</span>
+      <span class="ia-opcao-txt">${esc(i.rotulo)}${id==='melhorar'&&a?`<em>${rotuloAula(a)} — ${esc(a.title)}</em>`:''}</span>
       <span class="tip has-tip tip-left" data-tip="${escAttr(i.dica)}">?</span>
     </button>`;
   }).join('');
@@ -7069,6 +7191,37 @@ function genSectionId(){
 function genItemId(){
   return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 }
+// Chave primária da aula: nasce uma vez e nunca muda, mesmo que a aula seja
+// renumerada depois. É nela — não no número — que resposta de atividade,
+// diário e nota do aluno se agarram daqui pra frente.
+function genAulaId(){
+  return 'aula-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+// Migração sem tocar em dado nenhum do Firestore: toda aula que ainda não tem
+// id ganha um agora — igual ao seu número ATUAL. Como é exatamente esse
+// número que os registros já gravados usam como chave hoje, nada some. Só a
+// partir de agora esse id fica fixo, independente de renumeração futura.
+// Regra única, sem exceção para dado antigo: toda aula que ainda não tem id
+// ganha um DE VERDADE (o mesmo gerador das aulas novas) — não um id que
+// imita o número atual só para tentar continuar enxergando registro já
+// gravado antes desta versão. Decisão explícita: preferir simplicidade e uma
+// única regra sólida a manter compatibilidade com dado antigo pontual — o
+// curso ainda está sendo preparado, não há nada de valor real para proteger.
+function garantirIdsDeAula(){
+  (COURSE||[]).forEach(b=>{
+    (b.aulas||[]).forEach(a=>{
+      if(!a.id) a.id = genAulaId();
+    });
+  });
+}
+// Acha o id estável de uma aula a partir da posição atual (bloco+número) —
+// é a ponte entre a navegação (que continua por número, sem mudar em nada) e
+// a gravação em disco (que passa a usar o id, imune a renumeração).
+function aulaIdDe(blockNum, aulaNum){
+  const b = COURSE.find(x=>x.num===blockNum);
+  const a = b && (b.aulas||[]).find(x=>x.num===aulaNum);
+  return a ? a.id : null;
+}
 function blankSection(type){
   const id = genSectionId();
   switch(type){
@@ -7121,6 +7274,23 @@ function render(){
       if(!realIsAdmin) window.scrollTo(0, 0);
     }
     if(!realIsAdmin) scheduleShortAulaCheck();
+    // Modo Aula em 2 telas: esta janela é a do professor controlando o
+    // projetor — toda vez que a posição muda, avisa a outra janela.
+    if(presenterModeControl && presenterChannel){
+      const chavePresenter = b.num + '-' + a.num;
+      if(presenterLastSent !== chavePresenter){
+        presenterLastSent = chavePresenter;
+        try{ presenterChannel.postMessage({type:'nav', bloco:b.num, aula:a.num}); }catch(e){}
+      }
+    }
+  }
+  const presenterBar = document.getElementById('presenter-control-bar');
+  if(presenterBar){
+    presenterBar.classList.toggle('hidden', !presenterModeControl);
+    if(presenterModeControl && a && b){
+      const lbl = document.getElementById('presenter-control-label');
+      if(lbl) lbl.textContent = `Projetando: ${rotuloAula(a)} — ${a.title}`;
+    }
   }
 
   if(editState && editState.kind!=='newBlock' && COURSE.length===0
@@ -7248,7 +7418,7 @@ function render(){
       fetchAllUsers().then(()=>{ if(editState && editState.kind==='diarioAula') render(); });
     }
     if(DIARIO_REGISTROS===null){
-      fetchDiarioDaAula(editState.aulaNum).then(list=>{
+      fetchDiarioDaAula(aulaIdDe(editState.blockNum, editState.aulaNum)).then(list=>{
         DIARIO_REGISTROS = list;
         if(editState && editState.kind==='diarioAula') render();
       }).catch(()=>{ DIARIO_REGISTROS = []; });
@@ -7338,7 +7508,7 @@ function render(){
       intro: a.intro||'', roteiro: a.roteiro||'', sections: a.sections||[]
     }, null, 2);
     content.innerHTML = comCabecalho('aulaCode', `<div class="editor-form">
-      <div class="tela-contexto">Aula ${a.num} — ${esc(a.title)}</div>
+      <div class="tela-contexto">${rotuloAula(a)} — ${esc(a.title)}</div>
       <div class="hint">Este é o código (JSON) exatamente como a aula está salva. Fluxo com IA: 1) copie o prompt de formatação; 2) cole na IA junto com este código e o ajuste que quiser ("deixe a seção 2 mais didática", "acrescente uma atividade prática de 40min"...); 3) cole a resposta aqui e Aplicar. <strong>Atenção:</strong> os campos <code>id</code> e <code>storageKey</code> das seções mantêm imagens e encaixes funcionando — peça à IA para preservá-los.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
         <button class="btn-secondary" data-action="copy-ai-prompt">📋 Copiar prompt de formatação</button>
@@ -7360,7 +7530,7 @@ function render(){
       if(bb.hidden) return;
       bb.aulas.forEach(aa=>{
         if(aa.hidden) return;
-        const txt = notas[String(aa.num)];
+        const txt = notas[aa.id];
         if(txt && txt.trim()) aulasComNota.push({blockNum: bb.num, num: aa.num, title: aa.title, texto: txt});
       });
     });
@@ -7416,7 +7586,7 @@ function render(){
       ${a.subtitle?`<p class="aula-subtitle">${esc(a.subtitle)}</p>`:''}
       ${a.sources?`<div class="aula-sources">Fontes: ${esc(a.sources)}</div>`:''}
       ${(!realIsAdmin && currentUser && STUDENT_PROGRESS)?`<div class="aula-seen-toggle-row">
-        <button class="aula-seen-toggle ${STUDENT_PROGRESS.seen[String(a.num)]?'is-seen':''}" data-action="toggle-aula-seen">${STUDENT_PROGRESS.seen[String(a.num)]?'✓ Aula assistida':'○ Marcar como assistida'}</button>
+        <button class="aula-seen-toggle ${STUDENT_PROGRESS.seen[a.id]?'is-seen':''}" data-action="toggle-aula-seen">${STUDENT_PROGRESS.seen[a.id]?'✓ Aula assistida':'○ Marcar como assistida'}</button>
       </div>`:''}
       ${a.updatedAt?`<div class="aula-updated-at">Atualizado em ${new Date(a.updatedAt).toLocaleDateString('pt-BR')}</div>`:''}
       ${(isAdmin && a.roteiro)?`
@@ -7479,7 +7649,7 @@ function render(){
   // realIsAdmin: o caderno é do ALUNO de verdade — nem no modo "ver como aluno"
   // ele aparece para o professor (mostraria as anotações da conta do professor, sem sentido).
   if(!realIsAdmin && currentUser){
-    const minhaNota = (currentUserDoc && currentUserDoc.aulaNotes && currentUserDoc.aulaNotes[activeSubjectId] && currentUserDoc.aulaNotes[activeSubjectId][String(a.num)]) || '';
+    const minhaNota = (currentUserDoc && currentUserDoc.aulaNotes && currentUserDoc.aulaNotes[activeSubjectId] && currentUserDoc.aulaNotes[activeSubjectId][a.id]) || '';
     inner += `<div class="student-notes">
       <div class="student-notes-head">📝 Minhas anotações desta aula</div>
       <textarea id="student-note-text" placeholder="Anote aqui seus pontos importantes, dúvidas para perguntar, ideias...">${esc(minhaNota)}</textarea>
@@ -7497,7 +7667,8 @@ function render(){
   wireImageSizeFields();
   wireTypeDescription();
   
-  document.getElementById('progress-pill-text').textContent = `Aula ${globalAulaNumber()} de ${totalAulas()}`;
+  document.getElementById('progress-pill-text').textContent =
+    (state.aula === 0) ? 'Apresentação da disciplina' : `Aula ${globalAulaNumber()} de ${totalAulas()}`;
   if(!document.getElementById('aula-picker').classList.contains('hidden')){
     renderAulaPicker();
   }
@@ -7722,10 +7893,9 @@ document.addEventListener('drop', async (e)=>{
   // Renumera TODAS as aulas do curso em sequência, seguindo a ordem final —
   // a aula que "entrou no lugar" herda aquele número, e todas as demais, dali
   // para frente, deslizam uma posição, exatamente como pedido.
-  const firstNum = Math.min(...COURSE.flatMap(bb=>bb.aulas.map(aa=>aa.num)));
-  let n = firstNum;
+  let n = 1;
   [...COURSE].sort((a,b)=>a.num-b.num).forEach(bb=>{
-    bb.aulas.forEach(aa=>{ aa.num = n++; });
+    bb.aulas.forEach(aa=>{ aa.num = blocoEhAbertura(bb) ? 0 : n++; });
   });
 
   state.block = toBlock.num;
@@ -7914,6 +8084,104 @@ function exitPresentationMode(){
       document.exitFullscreen().catch(()=>{});
     }
   }catch(e){}
+  // Esta janela É a tela do projetor (2 telas) e não tem mais função nenhuma
+  // fora da apresentação — fecha sozinha em vez de deixar uma aba solta.
+  if(presenterModeDisplay){
+    try{ if(presenterChannel) presenterChannel.close(); }catch(e){}
+    try{ window.close(); }catch(e){}
+  }
+}
+
+// ===== Modo Aula em 2 telas: abrir, encerrar e virar a tela do projetor =====
+async function iniciarSessao2Telas(){
+  if(!realIsAdmin || !activeSubjectId) return;
+  if(presenterModeControl){ encerrarSessao2Telas(); return; } // clicar de novo encerra
+  if(!('getScreenDetails' in window)){
+    alert('A apresentação em 2 telas funciona no Chrome e no Edge — este navegador não tem esse recurso.\n\nVocê ainda pode usar o "Modo Aula" comum: arraste esta janela para o monitor do projetor (com o Windows em modo "Estender") e ative o Modo Aula lá.');
+    return;
+  }
+  let screenDetails;
+  try{
+    screenDetails = await window.getScreenDetails();
+  }catch(e){
+    alert('Não consegui acessar as telas conectadas — a permissão pode ter sido negada.\n\nClique de novo e permita o acesso quando o navegador perguntar.');
+    return;
+  }
+  const telas = screenDetails.screens || [];
+  if(telas.length < 2){
+    alert('Só encontrei uma tela conectada.\n\nConecte o projetor/monitor externo, deixe o Windows em modo "Estender" (não "Duplicar") e tente de novo.');
+    return;
+  }
+  const atual = screenDetails.currentScreen;
+  const alvo = telas.find(t=>t!==atual) || telas[1];
+
+  const params = new URLSearchParams();
+  params.set('modoaula','projetor');
+  params.set('materia', activeSubjectId);
+  params.set('bloco', state.block);
+  params.set('aula', state.aula);
+  const url = location.origin + location.pathname + '?' + params.toString();
+
+  const win = window.open(url, 'modoaula-projetor-' + activeSubjectId,
+    `left=${alvo.left},top=${alvo.top},width=${alvo.width},height=${alvo.height}`);
+  if(!win){
+    alert('O navegador bloqueou a abertura da segunda janela — permita pop-ups para este site (ícone na barra de endereço) e tente de novo.');
+    return;
+  }
+
+  presenterProjectorWin = win;
+  presenterModeControl = true;
+  presenterChannel = new BroadcastChannel('modoaula-2telas-' + activeSubjectId);
+  presenterLastSent = '';
+  render();
+
+  clearInterval(presenterWatchTimer);
+  presenterWatchTimer = setInterval(()=>{
+    if(win.closed) encerrarSessao2Telas();
+  }, 1000);
+}
+function encerrarSessao2Telas(){
+  if(presenterChannel){
+    try{ presenterChannel.postMessage({type:'bye'}); }catch(e){}
+    try{ presenterChannel.close(); }catch(e){}
+  }
+  presenterChannel = null;
+  if(presenterProjectorWin && !presenterProjectorWin.closed){
+    try{ presenterProjectorWin.close(); }catch(e){}
+  }
+  presenterProjectorWin = null;
+  clearInterval(presenterWatchTimer);
+  presenterWatchTimer = null;
+  presenterModeControl = false;
+  render();
+}
+// Chamada uma única vez, quando esta ABA nasceu como projetor (?modoaula=projetor
+// na URL) — vira uma tela de exibição pura, sem controles próprios, obedecendo
+// só ao que chegar pelo BroadcastChannel.
+async function entrarComoTelaProjetada(){
+  if(!PRESENTER_BOOT || !PRESENTER_BOOT.materia) return;
+  presenterModeDisplay = true;
+  await openSubject(PRESENTER_BOOT.materia);
+  state.block = PRESENTER_BOOT.bloco;
+  state.aula = PRESENTER_BOOT.aula;
+  editState = null;
+  render();
+  window.scrollTo(0,0);
+  enterPresentationMode();
+  document.getElementById('pres-toolbar').classList.add('hidden'); // sem controles aqui — quem manda é a outra janela
+  presenterChannel = new BroadcastChannel('modoaula-2telas-' + PRESENTER_BOOT.materia);
+  presenterChannel.onmessage = (ev)=>{
+    if(!ev.data) return;
+    if(ev.data.type==='nav'){
+      state.block = ev.data.bloco;
+      state.aula = ev.data.aula;
+      render();
+      window.scrollTo(0,0);
+    } else if(ev.data.type==='bye'){
+      try{ presenterChannel.close(); }catch(e){}
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:22px;color:#555;background:#fff;">Apresentação encerrada pelo professor — pode fechar esta janela.</div>';
+    }
+  };
 }
 function presGoAula(delta){
   const flat = [];
@@ -7957,6 +8225,8 @@ document.getElementById('pres-draw-panel').addEventListener('click', (e)=>{
   presSetDraw(true);
 });
 document.getElementById('presentation-btn').addEventListener('click', enterPresentationMode);
+document.getElementById('presentation-2-telas-btn').addEventListener('click', iniciarSessao2Telas);
+document.getElementById('presenter-control-end-btn').addEventListener('click', encerrarSessao2Telas);
 // Laser: o ponto segue o mouse
 document.addEventListener('mousemove', (e)=>{
   if(!presentationMode || !presLaserOn) return;
@@ -8015,6 +8285,10 @@ document.addEventListener('keydown', (e)=>{
   }
   if(!presentationMode) return;
   if(e.key==='Escape'){ exitPresentationMode(); return; }
+  // A tela do PROJETOR (2 telas) não navega sozinha por teclado — quem manda
+  // é a janela do professor, via BroadcastChannel. Só o Esc local continua
+  // valendo, como saída de segurança.
+  if(presenterModeDisplay) return;
   if(e.key==='ArrowRight' || e.key==='PageDown'){ e.preventDefault(); presGoAula(1); return; }
   if(e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); presGoAula(-1); return; }
   if(e.key==='+' || e.key==='='){ presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale(); return; }
@@ -8083,6 +8357,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     try{
       const secoesImportadas = dados.sections.map(s=>({ ...s, id: genSectionId() }));
       novaAula = {
+        id: genAulaId(),
         num: newNum,
         title: dados.title.trim(),
         subtitle: (dados.subtitle||'').trim(),
@@ -8155,6 +8430,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         atividadeEnabled: true, // aula criada a partir de agora — pode receber o bloco "Atividade" quando o professor quiser adicionar
       };
     }
+    // Id novo sempre — mesmo vindo de um modelo, essa é uma aula nova e
+    // distinta; nunca deve compartilhar chave com a aula que virou modelo.
+    newAula.id = genAulaId();
     targetBlock.aulas.push(newAula);
     targetBlock.aulas.sort((x,y)=>x.num-y.num);
     state.block = blockNum;
@@ -8191,7 +8469,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const aulaNum = +btn.dataset.aula;
     const originalLabel = btn.textContent;
     btn.disabled = true; btn.textContent = 'Salvando…';
-    const ok = await persistAtividadeAnswer(secid, aulaNum);
+    const ok = await persistAtividadeAnswer(secid, aulaIdDe(state.block, aulaNum), aulaNum);
     btn.disabled = false; btn.textContent = originalLabel;
     if(!ok){
       alert('Não consegui salvar sua resposta agora.\n\nMotivo: ' + (LAST_ATV_SAVE_ERROR || 'desconhecido') + '.\n\nTente novamente — se continuar falhando, avise o professor.');
@@ -8205,13 +8483,13 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     if(!confirm('Entregar esta atividade para correção?\n\nDepois de entregar você não consegue mais editar as respostas. Se precisar, o professor pode reabrir para você.')) return;
     clearTimeout(atvSaveTimer);
     btn.disabled = true; btn.textContent = 'Entregando…';
-    const ok = await persistAtividadeAnswer(secid, aulaNum);
+    const ok = await persistAtividadeAnswer(secid, aulaIdDe(state.block, aulaNum), aulaNum);
     if(!ok){
       btn.disabled = false; btn.textContent = '📨 Entregar para correção';
       alert('Não consegui salvar antes de entregar.\n\nMotivo: ' + (LAST_ATV_SAVE_ERROR || 'desconhecido') + '.\n\nTente de novo.');
       return;
     }
-    const docId = `${aulaNum}_${secid}_${currentUser.uid}`;
+    const docId = `${aulaIdDe(state.block, aulaNum)}_${secid}_${currentUser.uid}`;
     try{
       await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId)
         .set({submittedAt: Date.now()}, {merge:true});
@@ -8375,7 +8653,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='atv-reopen-student'){
     const uid = btn.dataset.uid;
     if(!confirm('Reabrir a atividade para este aluno editar de novo?\n\nA entrega dele será desmarcada. Se já havia nota publicada, ela continua salva até você publicar de novo.')) return;
-    const docId = `${editState.aulaNum}_${editState.sectionId}_${uid}`;
+    const docId = `${aulaIdDe(editState.blockNum, editState.aulaNum)}_${editState.sectionId}_${uid}`;
     try{
       await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId)
         .set({submittedAt: null, grading: {published: false}}, {merge:true});
@@ -8538,7 +8816,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const turmaId = btn.dataset.turma, date = btn.dataset.date;
     if(!confirm(`Excluir o registro de ${dataBR(date)}?\n\nA chamada daquele dia será apagada.`)) return;
     try{
-      await db.collection(`subjects/${activeSubjectId}/class_log`).doc(diarioDocId(editState.aulaNum, turmaId, date)).delete();
+      await db.collection(`subjects/${activeSubjectId}/class_log`).doc(diarioDocId(aulaIdDe(editState.blockNum, editState.aulaNum), turmaId, date)).delete();
       DIARIO_REGISTROS = (DIARIO_REGISTROS||[]).filter(r=>!(r.turmaId===turmaId && r.date===date));
       DIARIO_TODOS = null;
       alert('Registro excluído.');
@@ -8554,8 +8832,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     if(!date){ alert('Escolha a data da aula antes de salvar.'); return; }
     const absences = [...document.querySelectorAll('#diario-lista .diario-falta-cb')].filter(cb=>cb.checked).map(cb=>cb.dataset.uid);
     const totalCount = document.querySelectorAll('#diario-lista .diario-falta-cb').length;
+    const aulaId = aulaIdDe(editState.blockNum, editState.aulaNum);
     const payload = {
-      subjectId: activeSubjectId, aulaNum: editState.aulaNum, turmaId, date,
+      subjectId: activeSubjectId, aulaId, aulaNum: editState.aulaNum, turmaId, date,
       absences, totalCount, presentCount: totalCount - absences.length,
       conteudo: (document.getElementById('diario-conteudo').value||'').trim(),
       obs: (document.getElementById('diario-obs').value||'').trim(),
@@ -8563,10 +8842,10 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     };
     btn.disabled = true; btn.textContent = 'Salvando…';
     try{
-      await db.collection(`subjects/${activeSubjectId}/class_log`).doc(diarioDocId(editState.aulaNum, turmaId, date)).set(payload, {merge:true});
+      await db.collection(`subjects/${activeSubjectId}/class_log`).doc(diarioDocId(aulaId, turmaId, date)).set(payload, {merge:true});
       const i = (DIARIO_REGISTROS||[]).findIndex(r=>r.turmaId===turmaId && r.date===date);
       if(i>=0) DIARIO_REGISTROS[i] = {...DIARIO_REGISTROS[i], ...payload};
-      else (DIARIO_REGISTROS = DIARIO_REGISTROS||[]).push({id:diarioDocId(editState.aulaNum,turmaId,date), ...payload});
+      else (DIARIO_REGISTROS = DIARIO_REGISTROS||[]).push({id:diarioDocId(aulaId,turmaId,date), ...payload});
       DIARIO_REGISTROS.sort((x,y)=>String(x.date).localeCompare(String(y.date)));
       DIARIO_TODOS = null;
       editState.turmaId = turmaId; editState.date = date;
@@ -8774,8 +9053,11 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
   if(action==='save-student-note'){
     const texto = document.getElementById('student-note-text').value;
-    const aulaKey = String(btn.dataset.aula);
+    // Chave é o id estável da aula (não o número) — a anotação continua
+    // presa à MESMA aula mesmo que ela seja renumerada depois.
+    const aulaKey = aulaIdDe(state.block, +btn.dataset.aula);
     const statusEl = document.getElementById('student-note-status');
+    if(!aulaKey) return;
     try{
       await db.collection('users').doc(currentUser.uid)
         .update({ ['aulaNotes.'+activeSubjectId+'.'+aulaKey]: texto });
@@ -8795,7 +9077,8 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
   if(action==='toggle-aula-seen'){
     if(realIsAdmin || !STUDENT_PROGRESS) return;
-    const key = String(state.aula);
+    const key = aulaIdDe(state.block, state.aula);
+    if(!key) return;
     if(STUDENT_PROGRESS.seen[key]) delete STUDENT_PROGRESS.seen[key];
     else STUDENT_PROGRESS.seen[key] = Date.now();
     saveStudentProgressDebounced();
@@ -9021,6 +9304,11 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     URL.revokeObjectURL(url);
     return;
   }
+  if(action==='renumerar-aulas'){
+    await conferirEAplicarRenumeracao(false);
+    return;
+  }
+
   if(action==='save-org-screen'){
     const newSubjectName = document.getElementById('org-subject-name').value.trim();
     const rawPontos = (document.getElementById('org-pontos-atividades')||{}).value || '';
@@ -9097,22 +9385,35 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       const oldBlockNum = +row.dataset.orgAulaBlock;
       const origBlock = COURSE.find(x=>x.num===oldBlockNum);
       const origAula = origBlock ? origBlock.aulas.find(x=>x.num===oldAulaNum) : null;
-      const newNum = parsePositiveIntStrict(row.querySelector('.org-aula-num').value);
+      const valorSel0 = row.querySelector('.org-aula-block').value;
+      const vaiParaAbertura = (valorSel0 === '__abertura__') ||
+        (() => { const bd = COURSE.find(x=>x.num===+valorSel0); return !!(bd && bd.isIntro); })();
+      // A apresentacao da disciplina nao entra na sequencia: fica com num 0,
+      // deixando o numero 1 livre para a primeira aula de verdade.
+      const newNum = vaiParaAbertura ? 0 : parsePositiveIntStrict(row.querySelector('.org-aula-num').value);
       const newTitle = row.querySelector('.org-aula-title').value.trim();
       const valorSelecionado = row.querySelector('.org-aula-block').value;
       const targetBlock = (valorSelecionado === '__abertura__')
         ? blocoAberturaNovo
         : newBlockByOldSelectValue[+valorSelecionado];
       if(newNum===null || !newTitle){ alert('Toda aula precisa de um número inteiro positivo (sem letras, pontos ou romanos) e um título.'); return; }
-      if(seenAulaNums.has(newNum)){ alert(`Número de aula repetido: ${newNum}. Corrija antes de salvar.`); return; }
+      if(newNum !== 0 && seenAulaNums.has(newNum)){ alert(`Número de aula repetido: ${newNum}. Corrija antes de salvar, ou use "Renumerar em sequência".`); return; }
       if(!targetBlock){ alert('Uma aula está apontando para um bloco que foi excluído. Corrija antes de salvar.'); return; }
       seenAulaNums.add(newNum);
       const hidden = !row.querySelector('.org-aula-hidden').checked;
       targetBlock.aulas.push({
+        // Preserva o id que a aula já tinha — é o que mantém diário e
+        // respostas de atividade agarrados a ela mesmo depois de renumerar.
+        // Só ganha id novo se, por algum motivo, ainda não tinha nenhum.
+        id: (origAula && origAula.id) || genAulaId(),
         num:newNum, title:newTitle, hidden,
         subtitle:(origAula&&origAula.subtitle)||'', sources:(origAula&&origAula.sources)||'',
         intro:(origAula&&origAula.intro)||'', sections:(origAula&&origAula.sections)||[],
         isPractice:(origAula&&origAula.isPractice)||false,
+        contentModel:(origAula&&origAula.contentModel)||undefined,
+        atividadeEnabled:(origAula&&origAula.atividadeEnabled)||false,
+        roteiro:(origAula&&origAula.roteiro)||'',
+        updatedAt:(origAula&&origAula.updatedAt)||undefined,
       });
     }
     newCourse.forEach(b=>b.aulas.sort((x,y)=>x.num-y.num));
@@ -9124,7 +9425,12 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     editState = null;
     await saveCourseToStorage();
     render();
-    alert('Organização salva com sucesso.');
+
+    // Mover uma aula de bloco (ou excluir) costuma deixar buraco na sequencia.
+    // Em vez de arrumar sozinho — renumerar mexe em chave de dados —, o
+    // sistema mostra o que ficou torto e pergunta, com o mesmo detector de
+    // colisão usado no botão manual.
+    await conferirEAplicarRenumeracao(true);
     return;
   }
 
@@ -9322,6 +9628,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const alvo = COURSE.find(x=>x.num===state.block) || COURSE[0];
     if(!alvo){ alert('Crie um bloco antes de adicionar uma aula.'); return; }
     const novaAula = {
+      id: genAulaId(),
       num: maxNum + 1,
       title: dados.title.trim(),
       subtitle: (dados.subtitle||'').trim(),
@@ -9385,7 +9692,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='apply-aula-code'){
     const dados = parseAulaJsonOrAlert(document.getElementById('ef-aula-code').value);
     if(!dados) return;
-    if(!confirm(`Aplicar esta programação à aula ${a.num}?\n\nO conteúdo atual da aula será SUBSTITUÍDO pelo código colado (título, introdução, roteiro e todas as seções). O número da aula e a visibilidade não mudam.`)) return;
+    if(!confirm(`Aplicar esta programação a "${a.title}"?\n\nO conteúdo atual da aula será SUBSTITUÍDO pelo código colado (título, introdução, roteiro e todas as seções). O número da aula e a visibilidade não mudam.`)) return;
     // Cinto de segurança: se o JSON passou na validação mas ainda assim tiver
     // algo inesperado que eu não previ, isso mostra um erro em vez de travar a
     // tela silenciosamente — e nada na aula fica alterado.
@@ -9560,6 +9867,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     // COMPARTILHADAS entre original e cópia (mesma referência no banco) — não
     // ocupam espaço em dobro. A numeração de todas as aulas seguintes desliza.
     const clone = JSON.parse(JSON.stringify(a));
+    // Cópia é uma aula NOVA e distinta — precisa de id próprio, nunca do id
+    // da original (senão diário/atividades das duas se misturariam).
+    clone.id = genAulaId();
     clone.title = a.title + ' (cópia)';
     clone.updatedAt = Date.now();
     const idxInBlock = b.aulas.findIndex(x=>x.num===a.num);
@@ -10305,6 +10615,7 @@ function abrirGestaoGlobal(kind, grupo, aba){
   document.getElementById('edit-status-bar').classList.add('hidden'); // barra da MATERIA nao vale aqui
   document.getElementById('download-pdf-btn').classList.add('hidden');
   document.getElementById('presentation-btn').classList.add('hidden');
+  document.getElementById('presentation-2-telas-btn').classList.add('hidden');
   document.getElementById('my-notes-btn').classList.add('hidden');
   const avBtn0 = document.getElementById('avaliar-btn'); if(avBtn0) avBtn0.classList.add('hidden');
   render();
@@ -10815,6 +11126,7 @@ document.getElementById('restore-backup-input').addEventListener('change', async
       return;
     }
     COURSE = parsed;
+    garantirIdsDeAula();
     const ok = await saveCourseToStorage();
     if(ok){
       alert('Backup restaurado e salvo com sucesso.');
@@ -11053,6 +11365,7 @@ async function openSubject(subjectId){
   document.getElementById('my-notes-btn').classList.add('hidden'); // botão do aluno, não do professor
   document.getElementById('avaliar-btn').classList.add('hidden');
   document.getElementById('presentation-btn').classList.remove('hidden');
+  document.getElementById('presentation-2-telas-btn').classList.remove('hidden');
   applySubjectBranding(allSubjects && allSubjects.find(x=>x.id===subjectId));
   AULA_TEMPLATE_CACHE = undefined; // matéria pode ter mudado — rebusca o modelo quando precisar
   if(isAdmin){ checkLocalDraft(); updateCapacityIndicator(); autoPublicarAtividadesVencidas(); }
@@ -11075,6 +11388,7 @@ async function openStudentSubject(subjectId){
   showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit','version-tag']);
   document.getElementById('download-pdf-btn').classList.remove('hidden'); // aluno também baixa PDF — sai com marca d'água pessoal
   document.getElementById('presentation-btn').classList.add('hidden'); // Modo Aula é ferramenta de projeção — só professor/master
+  document.getElementById('presentation-2-telas-btn').classList.add('hidden');
   document.getElementById('my-notes-btn').classList.remove('hidden');
   document.getElementById('avaliar-btn').classList.remove('hidden');
   applySubjectBranding(allSubjects && allSubjects.find(x=>x.id===subjectId));
@@ -11531,6 +11845,12 @@ if(!firebaseReady || !auth){
 
   if(isAdmin){
     await ensureAtLeastOneSubjectExists();
+    // Esta aba nasceu para ser a tela do projetor (2 telas) — pula direto
+    // para a apresentação, sem passar pela tela de "escolher matéria".
+    if(PRESENTER_BOOT && PRESENTER_BOOT.materia){
+      await entrarComoTelaProjetada();
+      return;
+    }
     renderSubjectPicker();
     showOnly(['subject-picker-screen']);
   } else {
