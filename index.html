@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.1                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2935,7 +2935,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.0</div>
+<div class="version-tag hidden" id="version-tag">v4.9.1</div>
 
 
 <script>
@@ -8669,6 +8669,26 @@ function presGoAula(delta){
   window.scrollTo(0, 0);
   presClearCanvas(); // rabisco pertence à aula em que foi feito
 }
+// Botão "avançar/voltar" do Modo Aula (seta, PageUp/PageDown, clicker de
+// slide) — se ainda sobra conteúdo pra rolar na aula atual, rola a tela
+// primeiro. Só troca de aula (presGoAula) quando já está no fim (avançando)
+// ou no início (voltando) da rolagem. Sem isso, uma aula mais comprida que
+// a tela nunca dava pra ler inteira: o clique já pulava pra próxima.
+function presAvancar(delta){
+  const folga = 4; // tolerância de arredondamento de scroll
+  const doc = document.documentElement;
+  const noFim = (window.scrollY + window.innerHeight) >= (doc.scrollHeight - folga);
+  const noInicio = window.scrollY <= folga;
+  if(delta > 0 && !noFim){
+    window.scrollBy({top: window.innerHeight * 0.85, behavior:'smooth'});
+    return;
+  }
+  if(delta < 0 && !noInicio){
+    window.scrollBy({top: -window.innerHeight * 0.85, behavior:'smooth'});
+    return;
+  }
+  presGoAula(delta);
+}
 // Um ouvinte só para a barra toda — delegação, com stopPropagation para
 // nenhum outro ouvinte da página interferir nos cliques da barra.
 document.getElementById('pres-toolbar').addEventListener('click', (e)=>{
@@ -8678,8 +8698,8 @@ document.getElementById('pres-toolbar').addEventListener('click', (e)=>{
   e.preventDefault();
   const cmd = b.dataset.pres;
   if(cmd==='exit'){ if(presenterModeControl) encerrarSessao2Telas(); else exitPresentationMode(); }
-  else if(cmd==='prev') presGoAula(-1);
-  else if(cmd==='next') presGoAula(1);
+  else if(cmd==='prev') presAvancar(-1);
+  else if(cmd==='next') presAvancar(1);
   else if(cmd==='font-up'){
     presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale();
     if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'font-scale', value:presFontScale}); }catch(err){} }
@@ -8806,8 +8826,8 @@ document.addEventListener('keydown', (e)=>{
   // é a janela do professor, via BroadcastChannel. Só o Esc local continua
   // valendo, como saída de segurança.
   if(presenterModeDisplay) return;
-  if(e.key==='ArrowRight' || e.key==='PageDown'){ e.preventDefault(); presGoAula(1); return; }
-  if(e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); presGoAula(-1); return; }
+  if(e.key==='ArrowRight' || e.key==='PageDown'){ e.preventDefault(); presAvancar(1); return; }
+  if(e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); presAvancar(-1); return; }
   if(e.key==='+' || e.key==='='){ presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale(); return; }
   if(e.key==='-'){ presFontScale = Math.max(0.9, presFontScale - 0.1); applyPresFontScale(); return; }
   if(e.key==='l' || e.key==='L'){ presSetLaser(!presLaserOn); return; }
