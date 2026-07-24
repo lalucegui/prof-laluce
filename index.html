@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.1                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.2                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2935,7 +2935,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.1</div>
+<div class="version-tag hidden" id="version-tag">v4.9.2</div>
 
 
 <script>
@@ -3264,6 +3264,19 @@ let inactivityMinutes = 15;
 // Quando ligada, o botão "Modo Aula" tenta abrir na 2ª tela automaticamente
 // se houver monitor extra; senão cai sozinho no modo de uma tela, sem avisos.
 let duasTelasHabilitado = false;
+// Sensibilidade do avanço por clicker/teclado no Modo Aula (0 a 10): quanto
+// a tela rola a cada aperto de PageDown/PageUp/seta, antes de trocar de
+// aula. Preferência pessoal, mesmo padrão do duasTelasHabilitado — cada
+// professor ajusta a própria, de acordo com o clicker/monitor que usa.
+let clickerSensibilidade = 5;
+// 0 = rola pouquinho (10% da tela) a cada clique, 10 = rola quase a tela
+// inteira (90%) — assim dá pra ir de "quase não mexe" até "quase como era
+// antes desta configuração existir".
+function presScrollFracao(){
+  const s = (typeof clickerSensibilidade === 'number') ? clickerSensibilidade : 5;
+  const clamped = Math.max(0, Math.min(10, s));
+  return 0.10 + (clamped/10) * 0.80;
+}
 const IMAGE_CACHE = {};
 
 async function loadStorageImages(){
@@ -7387,6 +7400,12 @@ function modoAulaConfigForm(){
       </label>
       <div class="hint">Com isso ligado, o botão "Modo Aula" (ou a tecla F) abre direto em duas janelas: uma em tela cheia no monitor externo (o que o aluno vê) e esta tela livre para suas anotações. Só funciona no Chrome/Edge, com o monitor em modo "Estender". É uma preferência sua — cada professor liga a própria, sem afetar os demais.</div>
     </div>
+    <div class="config-grupo">
+      <div class="config-grupo-titulo">Passador de slides (clicker)</div>
+      <label>Sensibilidade do avanço <span id="cfg-clicker-sens-valor" style="text-transform:none;font-weight:400;color:var(--muted);">(${clickerSensibilidade})</span></label>
+      <input type="range" id="cfg-clicker-sens" min="0" max="10" step="1" value="${clickerSensibilidade}" style="width:100%;max-width:360px;">
+      <div class="hint">Cada aperto de avançar/voltar (setas, PageUp/PageDown, ou o botão do seu passador de slides) rola a tela antes de pular pra próxima aula. 0 rola bem pouco por clique; 10 rola quase a tela inteira. É uma preferência sua — ajuste até achar o ritmo confortável para o seu equipamento.</div>
+    </div>
     <div class="editor-actions">
       <button class="btn-secondary" data-action="cancel-edit">Fechar</button>
     </div>
@@ -7701,6 +7720,14 @@ function render(){
       const cbDuasTelas = document.getElementById('cfg-duas-telas');
       if(cbDuasTelas){
         cbDuasTelas.addEventListener('change', ()=>{ saveDuasTelasSetting(cbDuasTelas.checked); });
+      }
+      const sliderSens = document.getElementById('cfg-clicker-sens');
+      if(sliderSens){
+        const rotuloSens = document.getElementById('cfg-clicker-sens-valor');
+        sliderSens.addEventListener('input', ()=>{
+          if(rotuloSens) rotuloSens.textContent = '(' + sliderSens.value + ')';
+        });
+        sliderSens.addEventListener('change', ()=>{ saveClickerSensibilidade(sliderSens.value); });
       }
     }
     // Materias → Organizar curso: input de restaurar backup (o clique vem do
@@ -8680,11 +8707,11 @@ function presAvancar(delta){
   const noFim = (window.scrollY + window.innerHeight) >= (doc.scrollHeight - folga);
   const noInicio = window.scrollY <= folga;
   if(delta > 0 && !noFim){
-    window.scrollBy({top: window.innerHeight * 0.85, behavior:'smooth'});
+    window.scrollBy({top: window.innerHeight * presScrollFracao(), behavior:'smooth'});
     return;
   }
   if(delta < 0 && !noInicio){
-    window.scrollBy({top: -window.innerHeight * 0.85, behavior:'smooth'});
+    window.scrollBy({top: -window.innerHeight * presScrollFracao(), behavior:'smooth'});
     return;
   }
   presGoAula(delta);
@@ -12487,6 +12514,15 @@ async function saveDuasTelasSetting(habilitado){
     if(currentUserDoc){ currentUserDoc.prefs = currentUserDoc.prefs || {}; currentUserDoc.prefs.duasTelasHabilitado = habilitado; }
   }catch(e){}
 }
+async function saveClickerSensibilidade(valor){
+  const v = Math.max(0, Math.min(10, parseInt(valor, 10) || 0));
+  clickerSensibilidade = v;
+  if(!currentUser) return;
+  try{
+    await db.collection('users').doc(currentUser.uid).update({'prefs.clickerSensibilidade': v});
+    if(currentUserDoc){ currentUserDoc.prefs = currentUserDoc.prefs || {}; currentUserDoc.prefs.clickerSensibilidade = v; }
+  }catch(e){}
+}
 
 let lastActivityAt = Date.now();
 let inactivityCheckHandle = null;
@@ -12594,6 +12630,7 @@ if(!firebaseReady || !auth){
   }
   currentUserDoc = userDoc;
   duasTelasHabilitado = !!(userDoc.prefs && userDoc.prefs.duasTelasHabilitado);
+  clickerSensibilidade = (userDoc.prefs && typeof userDoc.prefs.clickerSensibilidade === 'number') ? userDoc.prefs.clickerSensibilidade : 5;
   if(userDoc.role !== 'admin' && !userDoc.approved){
     isAdmin = false;
     showOnly(['auth-pending-screen']);
