@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.3                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.5                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2904,7 +2904,7 @@
 <canvas id="pres-draw-canvas" class="hidden"></canvas>
 <div id="pres-laser-dot" class="hidden"></div>
 <div class="pres-toolbar hidden" id="pres-toolbar">
-  <button type="button" data-pres="prev" title="Aula anterior (seta ←)">←</button>
+  <button type="button" data-pres="prev" title="Aula anterior — as setas/PageUp só rolam a tela, não trocam de aula">←</button>
   <button type="button" data-pres="font-down" title="Diminuir fonte (-)">A−</button>
   <button type="button" data-pres="font-up" title="Aumentar fonte (+)">A+</button>
   <button type="button" data-pres="laser" id="pres-laser-btn" title="Apontador laser (L)">🔴</button>
@@ -2935,7 +2935,7 @@
     </div>
   </div>
   <button type="button" data-pres="clear" title="Limpar todos os rabiscos (C)">🧹</button>
-  <button type="button" data-pres="next" title="Próxima aula (seta →)">→</button>
+  <button type="button" data-pres="next" title="Próxima aula — as setas/PageDown só rolam a tela, não trocam de aula">→</button>
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
 
@@ -2952,7 +2952,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.3</div>
+<div class="version-tag hidden" id="version-tag">v4.9.5</div>
 
 
 <script>
@@ -8539,12 +8539,23 @@ function presSetDraw(on, remoto){
 function enterPresentationMode(){
   if(presentationMode) return;
   if(!realIsAdmin) return; // exclusivo de professor/master
-  // Projetar significa mostrar a AULA. Qualquer tela de edicao aberta fecha
-  // antes — senao ela ia para o datashow junto, com barra de acoes e abas.
-  if(editState){ editState = null; render(); }
+  // ALTERADO (v4.9.5) — À PROVA DE FALHAS, na ordem certa: liga a flag, a
+  // classe do body e a barra ANTES de qualquer redesenho. Antes, o
+  // redesenho (quando havia um editor aberto) rodava com presentationMode
+  // AINDA falso, então o conteúdo saía com a versão de admin (cartão de
+  // gerenciar atividade etc.) e só se corrigia na próxima troca de aula —
+  // era a causa do "projetando o professor". E se não havia editor aberto,
+  // o redesenho nem rodava de novo: ficava com o que já estava na tela.
+  // Agora SEMPRE fecha o editor e redesenha, com a flag já ligada — e um
+  // try/catch garante que, mesmo se o redesenho de uma aula específica
+  // travar por algum bug pontual, o Modo Aula continua "ligado" de
+  // verdade (barra, Esc e o passador de slides continuam respondendo, em
+  // vez de tudo parecer travado na tela anterior).
+  editState = null;
   presentationMode = true;
   document.body.classList.add('presentation-mode');
   document.getElementById('pres-toolbar').classList.remove('hidden');
+  try{ render(); }catch(e){ /* Modo Aula já está ligado — dá pra sair pelo Esc/botão mesmo assim */ }
   presResizeCanvas();
   presClearCanvas();
   presCanvas().classList.remove('hidden');
@@ -8693,10 +8704,12 @@ async function entrarComoTelaProjetada(){
       window.scrollTo(0,0);
       presClearCanvas(); // o rabisco pertence à aula em que foi feito
     } else if(d.type==='scroll'){
-      // O clicker do professor rolou a janela de controle antes de trocar
-      // de aula — a turma só vê esta janela (projetora), então rola aqui
-      // também, pelo mesmo tanto.
-      window.scrollBy({top: d.amount, behavior:'smooth'});
+      // O clicker do professor rolou a janela de controle — a turma só vê
+      // esta janela (projetora), então rola aqui também. Usa a FRAÇÃO
+      // recebida com o PRÓPRIO innerHeight desta janela (não um valor de
+      // pixels pronto) — assim a proporção fica igual nas duas janelas,
+      // mesmo que tenham resoluções diferentes (notebook vs. projetor).
+      window.scrollBy({top: d.sinal * window.innerHeight * d.fracao, behavior:'smooth'});
     } else if(d.type==='bye'){
       try{ presenterChannel.close(); }catch(e){}
       document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:22px;color:#555;background:#fff;">Apresentação encerrada pelo professor — pode fechar esta janela.</div>';
@@ -8745,29 +8758,32 @@ function presGoAula(delta){
   window.scrollTo(0, 0);
   presClearCanvas(); // rabisco pertence à aula em que foi feito
 }
-// Botão "avançar/voltar" do Modo Aula (seta, PageUp/PageDown, clicker de
-// slide) — se ainda sobra conteúdo pra rolar na aula atual, rola a tela
-// primeiro. Só troca de aula (presGoAula) quando já está no fim (avançando)
-// ou no início (voltando) da rolagem. Sem isso, uma aula mais comprida que
-// a tela nunca dava pra ler inteira: o clique já pulava pra próxima.
+// Teclado/passador de slides do Modo Aula (setas, PageUp/PageDown, clicker)
+// — SÓ rola a tela. Chegou na borda (fim ou início do conteúdo) e continuou
+// clicando? Não acontece nada — de propósito: o passador NUNCA troca de
+// aula sozinho (pedido explícito, pra ninguém "vazar" pra próxima aula sem
+// querer no meio de uma leitura). Pra trocar de aula de verdade, é só o
+// botão ←/→ da barra mesmo (presGoAula direto, sem passar por aqui).
+// Manda a FRAÇÃO (não um valor de pixels já pronto) pra janela projetora —
+// cada janela calcula a própria distância com o próprio innerHeight, senão
+// a proporção do scroll muda quando as duas janelas têm resoluções
+// diferentes (é exatamente o que causava "rolava mais no projetor").
 function presAvancar(delta){
   const folga = 4; // tolerância de arredondamento de scroll
   const doc = document.documentElement;
   const noFim = (window.scrollY + window.innerHeight) >= (doc.scrollHeight - folga);
   const noInicio = window.scrollY <= folga;
   if(delta > 0 && !noFim){
-    const dist = window.innerHeight * presScrollFracao();
-    window.scrollBy({top: dist, behavior:'smooth'});
-    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'scroll', amount:dist}); }catch(e){} }
+    window.scrollBy({top: window.innerHeight * presScrollFracao(), behavior:'smooth'});
+    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'scroll', fracao:presScrollFracao(), sinal:1}); }catch(e){} }
     return;
   }
   if(delta < 0 && !noInicio){
-    const dist = window.innerHeight * presScrollFracao();
-    window.scrollBy({top: -dist, behavior:'smooth'});
-    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'scroll', amount:-dist}); }catch(e){} }
+    window.scrollBy({top: -(window.innerHeight * presScrollFracao()), behavior:'smooth'});
+    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'scroll', fracao:presScrollFracao(), sinal:-1}); }catch(e){} }
     return;
   }
-  presGoAula(delta);
+  // já está na borda — não troca de aula sozinho, fica quieto.
 }
 // Um ouvinte só para a barra toda — delegação, com stopPropagation para
 // nenhum outro ouvinte da página interferir nos cliques da barra.
@@ -8778,8 +8794,8 @@ document.getElementById('pres-toolbar').addEventListener('click', (e)=>{
   e.preventDefault();
   const cmd = b.dataset.pres;
   if(cmd==='exit'){ if(presenterModeControl) encerrarSessao2Telas(); else exitPresentationMode(); }
-  else if(cmd==='prev') presAvancar(-1);
-  else if(cmd==='next') presAvancar(1);
+  else if(cmd==='prev') presGoAula(-1);
+  else if(cmd==='next') presGoAula(1);
   else if(cmd==='font-up'){
     presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale();
     if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'font-scale', value:presFontScale}); }catch(err){} }
@@ -12542,14 +12558,14 @@ async function loadInstConfig(){
   aplicarInstConfig();
 }
 function aplicarInstConfig(){
-  // O rodape (canto inferior esquerdo) NAO entra aqui de proposito: e a
-  // identidade fixa do sistema (Lume + "Gestão de Aulas"), sempre igual,
-  // nunca sobrescrita pela instituicao configurada.
+  // ALTERADO (v4.9.4) — só o cabeçalho DE DENTRO do app troca de logo pela
+  // instituição configurada. A tela de entrada (login) e o rodapé NÃO
+  // entram aqui de propósito: são a identidade fixa do sistema (Lume),
+  // sempre igual, nunca sobrescrita pela instituição — é o "logo da casa"
+  // de quem ainda nem escolheu/entrou numa instituição.
   if(instConfig.logoUrl){
-    ['header-logo-img','login-logo-img'].forEach(id=>{
-      const el = document.getElementById(id);
-      if(el) el.src = instConfig.logoUrl;
-    });
+    const headerImg = document.getElementById('header-logo-img');
+    if(headerImg) headerImg.src = instConfig.logoUrl;
   }
   // Ordem (cabeçalho E login, sempre a mesma): Faculdade > Curso > Professor.
   const loginInst = document.getElementById('login-inst-name');
