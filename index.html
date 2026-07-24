@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.7                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.8                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2744,9 +2744,7 @@
   <div class="auth-box">
     <div class="logo-badge" style="margin:0 auto 14px auto;"><img id="login-logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjM0QzRTc3IiBkPSJNNTAsMTIgQzYyLDI4IDY4LDQyIDYzLDU1IEM3MCw1MCA3NCw0MiA3MiwzMiBDODAsNDQgODQsNjAgNzIsNzQgQzY0LDg0IDM2LDg0IDI4LDc0IEMxNiw2MCAyMCw0NCAyOCwzMiBDMjYsNDIgMzAsNTAgMzcsNTUgQzMyLDQyIDM4LDI4IDUwLDEyIFoiLz48L3N2Zz4=" alt="Logo Lume"></div>
     <h2>Gestão de Aulas</h2>
-    <div class="auth-professor-name" id="login-inst-name">Faculdade da Fundação Educacional de Araçatuba</div>
-    <p class="auth-subtitle" id="login-curso-line">Administração de Empresas</p>
-    <p class="auth-subtitle auth-subtitle-prof" id="login-prof-name">Prof. Guilherme Laluce</p>
+    <p class="auth-subtitle">Plataforma de gestão de aulas</p>
     <div class="auth-tabs">
       <button class="auth-tab active" id="auth-tab-login" data-auth-tab="login">Entrar</button>
       <button class="auth-tab" id="auth-tab-register" data-auth-tab="register">Criar conta</button>
@@ -2952,7 +2950,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.7</div>
+<div class="version-tag hidden" id="version-tag">v4.9.8</div>
 
 
 <script>
@@ -8719,7 +8717,7 @@ async function entrarComoTelaProjetada(){
       // diferentes (notebook vs. projetor).
       const alt = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
       const max = Math.max(1, alt - window.innerHeight);
-      window.scrollTo(0, (d.progresso || 0) * max);
+      window.scrollTo({top: (d.progresso || 0) * max, behavior:'smooth'});
     } else if(d.type==='bye'){
       try{ presenterChannel.close(); }catch(e){}
       document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:22px;color:#555;background:#fff;">Apresentação encerrada pelo professor — pode fechar esta janela.</div>';
@@ -8789,15 +8787,18 @@ function presProgressoScroll(){
 function presAvancar(delta){
   const folga = 4; // tolerância de arredondamento de scroll
   // Salto instantâneo (sem "behavior:smooth"): clique rápido no clicker
-  // cancelava a animação anterior no meio e parecia "não fez nada".
+  // ALTERADO (v4.9.8) — rolagem suave (behavior:'smooth') de volta,
+  // acompanhando visualmente como o scroll do mouse — o corte anterior pra
+  // "instantâneo" era pra evitar clique rápido cancelando a animação, mas
+  // isso já foi resolvido nos bugs de fundo do Modo Aula.
   const scrollTopAtual = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
   const scrollHeightAtual = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
   const noFim = (scrollTopAtual + window.innerHeight) >= (scrollHeightAtual - folga);
   const noInicio = scrollTopAtual <= folga;
   if(delta > 0 && !noFim){
-    window.scrollBy(0, window.innerHeight * presScrollFracao());
+    window.scrollBy({top: window.innerHeight * presScrollFracao(), behavior:'smooth'});
   } else if(delta < 0 && !noInicio){
-    window.scrollBy(0, -(window.innerHeight * presScrollFracao()));
+    window.scrollBy({top: -(window.innerHeight * presScrollFracao()), behavior:'smooth'});
   } else {
     return; // na borda — o passador NUNCA troca de aula sozinho
   }
@@ -12596,13 +12597,9 @@ function aplicarInstConfig(){
     const headerImg = document.getElementById('header-logo-img');
     if(headerImg) headerImg.src = instConfig.logoUrl;
   }
-  // Ordem (cabeçalho E login, sempre a mesma): Faculdade > Curso > Professor.
-  const loginInst = document.getElementById('login-inst-name');
-  if(loginInst) loginInst.textContent = instConfig.instNome || 'Faculdade da Fundação Educacional de Araçatuba';
-  const loginCurso = document.getElementById('login-curso-line');
-  if(loginCurso) loginCurso.textContent = instConfig.cursoNome || 'Administração de Empresas';
-  const pNome = document.getElementById('login-prof-name');
-  if(pNome) pNome.textContent = instConfig.profNome || 'Prof. Guilherme Laluce';
+  // ALTERADO (v4.9.8) — a tela de LOGIN não mostra mais faculdade/curso/
+  // professor: essa informação só aparece DEPOIS de autenticado, no
+  // cabeçalho de dentro do app. Antes de entrar, é só a identidade do Lume.
   // Cabecalho de dentro do app (acima da lista de aulas): mostra a
   // identidade da instituicao/curso/professor — informacao do SITE INTEIRO,
   // igual em toda materia. O nome da materia (h1) continua por conta de
