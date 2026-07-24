@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.6                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.7                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2952,7 +2952,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.6</div>
+<div class="version-tag hidden" id="version-tag">v4.9.7</div>
 
 
 <script>
@@ -8538,23 +8538,24 @@ function presSetDraw(on, remoto){
 }
 function enterPresentationMode(){
   if(presentationMode) return;
-  // ALTERADO (v4.9.6) — só entra a partir de "ver como aluno" (isAdmin já
-  // false). É a MESMA versão que a turma vai ver — nunca a de edição, que
-  // pode ter mais conteúdo (roteiro, cartão de gerenciar atividade) e
-  // rolar diferente do que o aluno vê.
-  if(!realIsAdmin || isAdmin) return;
-  // ALTERADO (v4.9.5) — À PROVA DE FALHAS, na ordem certa: liga a flag, a
-  // classe do body e a barra ANTES de qualquer redesenho. Antes, o
-  // redesenho (quando havia um editor aberto) rodava com presentationMode
-  // AINDA falso, então o conteúdo saía com a versão de admin (cartão de
-  // gerenciar atividade etc.) e só se corrigia na próxima troca de aula —
-  // era a causa do "projetando o professor". E se não havia editor aberto,
-  // o redesenho nem rodava de novo: ficava com o que já estava na tela.
-  // Agora SEMPRE fecha o editor e redesenha, com a flag já ligada — e um
-  // try/catch garante que, mesmo se o redesenho de uma aula específica
-  // travar por algum bug pontual, o Modo Aula continua "ligado" de
-  // verdade (barra, Esc e o passador de slides continuam respondendo, em
-  // vez de tudo parecer travado na tela anterior).
+  if(!realIsAdmin) return; // exclusivo de professor/master
+  // ALTERADO (v4.9.7) — projeta SEMPRE a visão do ALUNO. Forçar isAdmin=false
+  // aqui resolve duas coisas de uma vez:
+  //  (a) o conteúdo projetado passa a ser exatamente o que a turma vê (sem
+  //      roteiro do professor, sem cartão de "gerenciar atividade"), então a
+  //      rolagem é a mesma;
+  //  (b) CONSERTA a janela projetora do modo 2 telas: ela nasce logada como
+  //      admin, e o guard antigo ("if(isAdmin) return") a barrava — por isso
+  //      ela aparecia como o app inteiro, com cabeçalho/rodapé/menu, feito
+  //      uma cópia da tela do professor. Agora ela entra limpa, como deve.
+  // O botão de Modo Aula continua aparecendo só em "ver como aluno" — isso é
+  // decidido em updateViewAsButtonLabel(), não aqui.
+  isAdmin = false;
+  document.body.classList.remove('admin-mode');
+  // Ordem à prova de falhas: liga a flag e a classe ANTES de redesenhar, pra
+  // o conteúdo já sair na versão de aluno; o try/catch garante que, mesmo se
+  // o redesenho de uma aula específica falhar, o Modo Aula continua ligado
+  // (barra, Esc e passador continuam respondendo).
   editState = null;
   presentationMode = true;
   document.body.classList.add('presentation-mode');
@@ -8663,6 +8664,9 @@ async function iniciarSessao2Telas(){
   presenterWatchTimer = setInterval(()=>{
     if(win.closed) encerrarSessao2Telas();
   }, 1000);
+  // O window.open() joga o foco do teclado pra janela do projetor; traz de
+  // volta pra ESTA (a de controle), que é de onde o professor comanda.
+  setTimeout(()=>{ try{ window.focus(); }catch(e){} }, 500);
 }
 function encerrarSessao2Telas(){
   presSetLaser(false, true);
@@ -8689,6 +8693,8 @@ function encerrarSessao2Telas(){
 async function entrarComoTelaProjetada(){
   if(!PRESENTER_BOOT || !PRESENTER_BOOT.materia) return;
   presenterModeDisplay = true;
+  isAdmin = false; // o projetor mostra SEMPRE a visão do aluno, desde o boot
+  document.body.classList.remove('admin-mode');
   await openSubject(PRESENTER_BOOT.materia);
   state.block = PRESENTER_BOOT.bloco;
   state.aula = PRESENTER_BOOT.aula;
@@ -8708,12 +8714,12 @@ async function entrarComoTelaProjetada(){
       window.scrollTo(0,0);
       presClearCanvas(); // o rabisco pertence à aula em que foi feito
     } else if(d.type==='scroll'){
-      // O clicker do professor rolou a janela de controle — a turma só vê
-      // esta janela (projetora), então rola aqui também. Usa a FRAÇÃO
-      // recebida com o PRÓPRIO innerHeight desta janela (não um valor de
-      // pixels pronto) — assim a proporção fica igual nas duas janelas,
-      // mesmo que tenham resoluções diferentes (notebook vs. projetor).
-      window.scrollBy(0, d.sinal * window.innerHeight * d.fracao);
+      // Vai para a MESMA porcentagem do conteúdo que a janela de controle —
+      // é o que mantém a proporção igual mesmo com telas de tamanhos
+      // diferentes (notebook vs. projetor).
+      const alt = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+      const max = Math.max(1, alt - window.innerHeight);
+      window.scrollTo(0, (d.progresso || 0) * max);
     } else if(d.type==='bye'){
       try{ presenterChannel.close(); }catch(e){}
       document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:22px;color:#555;background:#fff;">Apresentação encerrada pelo professor — pode fechar esta janela.</div>';
@@ -8772,28 +8778,35 @@ function presGoAula(delta){
 // cada janela calcula a própria distância com o próprio innerHeight, senão
 // a proporção do scroll muda quando as duas janelas têm resoluções
 // diferentes (é exatamente o que causava "rolava mais no projetor").
+function presProgressoScroll(){
+  // Onde estamos, de 0 (topo) a 1 (fim), dentro do conteúdo rolável desta
+  // janela. Base para sincronizar as duas telas "pela mesma proporção".
+  const alt = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+  const max = Math.max(1, alt - window.innerHeight);
+  const topo = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+  return Math.min(1, Math.max(0, topo / max));
+}
 function presAvancar(delta){
   const folga = 4; // tolerância de arredondamento de scroll
-  // ALTERADO (v4.9.6) — mede pelo maior entre documentElement e body (mais
-  // robusto entre navegadores/layouts) e larga o "behavior:smooth": clique
-  // rápido demais no clicker cancelava a animação anterior no meio, dando
-  // a impressão de "não fez nada". Agora o salto é instantâneo — sempre
-  // visível, sem depender de terminar uma animação antes do próximo clique.
+  // Salto instantâneo (sem "behavior:smooth"): clique rápido no clicker
+  // cancelava a animação anterior no meio e parecia "não fez nada".
   const scrollTopAtual = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
   const scrollHeightAtual = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
   const noFim = (scrollTopAtual + window.innerHeight) >= (scrollHeightAtual - folga);
   const noInicio = scrollTopAtual <= folga;
   if(delta > 0 && !noFim){
     window.scrollBy(0, window.innerHeight * presScrollFracao());
-    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'scroll', fracao:presScrollFracao(), sinal:1}); }catch(e){} }
-    return;
-  }
-  if(delta < 0 && !noInicio){
+  } else if(delta < 0 && !noInicio){
     window.scrollBy(0, -(window.innerHeight * presScrollFracao()));
-    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'scroll', fracao:presScrollFracao(), sinal:-1}); }catch(e){} }
-    return;
+  } else {
+    return; // na borda — o passador NUNCA troca de aula sozinho
   }
-  // já está na borda — não troca de aula sozinho, fica quieto.
+  // Sincroniza o projetor pela PORCENTAGEM do conteúdo (não pixels): as
+  // telas têm tamanhos diferentes, então "a mesma % do conteúdo" é o que
+  // mantém as duas na mesma proporção. Só a janela de controle envia.
+  if(presenterModeControl && presenterChannel){
+    try{ presenterChannel.postMessage({type:'scroll', progresso: presProgressoScroll()}); }catch(e){}
+  }
 }
 // Um ouvinte só para a barra toda — delegação, com stopPropagation para
 // nenhum outro ouvinte da página interferir nos cliques da barra.
@@ -8931,12 +8944,14 @@ document.addEventListener('keydown', (e)=>{
     if(presenterModeControl) encerrarSessao2Telas(); else exitPresentationMode();
     return;
   }
-  // A tela do PROJETOR (2 telas) não navega sozinha por teclado — quem manda
-  // é a janela do professor, via BroadcastChannel. Só o Esc local continua
-  // valendo, como saída de segurança.
-  if(presenterModeDisplay) return;
+  // Rolagem pelo clicker/teclado: vale nas DUAS janelas (o foco do teclado
+  // pode estar em qualquer uma). O projetor rola a si mesmo; a janela de
+  // controle rola e ainda avisa o projetor (dentro de presAvancar).
   if(e.key==='ArrowRight' || e.key==='PageDown'){ e.preventDefault(); presAvancar(1); return; }
   if(e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); presAvancar(-1); return; }
+  // Daqui pra baixo (fonte, laser, rabisco) é exclusivo da janela do
+  // professor — o projetor não mexe nisso sozinho.
+  if(presenterModeDisplay) return;
   if(e.key==='+' || e.key==='='){
     presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale();
     if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'font-scale', value:presFontScale}); }catch(err){} }
