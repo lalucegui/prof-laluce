@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.5                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.6                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2952,7 +2952,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.5</div>
+<div class="version-tag hidden" id="version-tag">v4.9.6</div>
 
 
 <script>
@@ -8538,7 +8538,11 @@ function presSetDraw(on, remoto){
 }
 function enterPresentationMode(){
   if(presentationMode) return;
-  if(!realIsAdmin) return; // exclusivo de professor/master
+  // ALTERADO (v4.9.6) — só entra a partir de "ver como aluno" (isAdmin já
+  // false). É a MESMA versão que a turma vai ver — nunca a de edição, que
+  // pode ter mais conteúdo (roteiro, cartão de gerenciar atividade) e
+  // rolar diferente do que o aluno vê.
+  if(!realIsAdmin || isAdmin) return;
   // ALTERADO (v4.9.5) — À PROVA DE FALHAS, na ordem certa: liga a flag, a
   // classe do body e a barra ANTES de qualquer redesenho. Antes, o
   // redesenho (quando havia um editor aberto) rodava com presentationMode
@@ -8610,7 +8614,7 @@ function exitPresentationMode(){
 
 // ===== Modo Aula em 2 telas: abrir, encerrar e virar a tela do projetor =====
 async function iniciarSessao2Telas(){
-  if(!realIsAdmin || !activeSubjectId) return;
+  if(!realIsAdmin || isAdmin || !activeSubjectId) return;
   if(presenterModeControl){ encerrarSessao2Telas(); return; } // clicar de novo encerra
   if(!('getScreenDetails' in window)){
     alert('A apresentação em 2 telas funciona no Chrome e no Edge — este navegador não tem esse recurso.\n\nVocê ainda pode usar o "Modo Aula" comum: arraste esta janela para o monitor do projetor (com o Windows em modo "Estender") e ative o Modo Aula lá.');
@@ -8709,7 +8713,7 @@ async function entrarComoTelaProjetada(){
       // recebida com o PRÓPRIO innerHeight desta janela (não um valor de
       // pixels pronto) — assim a proporção fica igual nas duas janelas,
       // mesmo que tenham resoluções diferentes (notebook vs. projetor).
-      window.scrollBy({top: d.sinal * window.innerHeight * d.fracao, behavior:'smooth'});
+      window.scrollBy(0, d.sinal * window.innerHeight * d.fracao);
     } else if(d.type==='bye'){
       try{ presenterChannel.close(); }catch(e){}
       document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:22px;color:#555;background:#fff;">Apresentação encerrada pelo professor — pode fechar esta janela.</div>';
@@ -8770,16 +8774,22 @@ function presGoAula(delta){
 // diferentes (é exatamente o que causava "rolava mais no projetor").
 function presAvancar(delta){
   const folga = 4; // tolerância de arredondamento de scroll
-  const doc = document.documentElement;
-  const noFim = (window.scrollY + window.innerHeight) >= (doc.scrollHeight - folga);
-  const noInicio = window.scrollY <= folga;
+  // ALTERADO (v4.9.6) — mede pelo maior entre documentElement e body (mais
+  // robusto entre navegadores/layouts) e larga o "behavior:smooth": clique
+  // rápido demais no clicker cancelava a animação anterior no meio, dando
+  // a impressão de "não fez nada". Agora o salto é instantâneo — sempre
+  // visível, sem depender de terminar uma animação antes do próximo clique.
+  const scrollTopAtual = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+  const scrollHeightAtual = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+  const noFim = (scrollTopAtual + window.innerHeight) >= (scrollHeightAtual - folga);
+  const noInicio = scrollTopAtual <= folga;
   if(delta > 0 && !noFim){
-    window.scrollBy({top: window.innerHeight * presScrollFracao(), behavior:'smooth'});
+    window.scrollBy(0, window.innerHeight * presScrollFracao());
     if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'scroll', fracao:presScrollFracao(), sinal:1}); }catch(e){} }
     return;
   }
   if(delta < 0 && !noInicio){
-    window.scrollBy({top: -(window.innerHeight * presScrollFracao()), behavior:'smooth'});
+    window.scrollBy(0, -(window.innerHeight * presScrollFracao()));
     if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'scroll', fracao:presScrollFracao(), sinal:-1}); }catch(e){} }
     return;
   }
@@ -8912,7 +8922,7 @@ document.addEventListener('mousemove', (e)=>{
 document.addEventListener('keydown', (e)=>{
   const t = e.target;
   if(t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT' || t.isContentEditable)) return;
-  if((e.key==='f' || e.key==='F') && !presentationMode && !presenterModeControl && realIsAdmin && currentUser && document.getElementById('app-body-wrap') && !document.getElementById('app-body-wrap').classList.contains('hidden')){
+  if((e.key==='f' || e.key==='F') && !presentationMode && !presenterModeControl && realIsAdmin && !isAdmin && currentUser && document.getElementById('app-body-wrap') && !document.getElementById('app-body-wrap').classList.contains('hidden')){
     ativarModoAula();
     return;
   }
@@ -12163,7 +12173,6 @@ async function openSubject(subjectId){
   render();
   document.getElementById('my-notes-btn').classList.add('hidden'); // botão do aluno, não do professor
   document.getElementById('avaliar-btn').classList.add('hidden');
-  document.getElementById('presentation-btn').classList.remove('hidden');
   document.getElementById('bar-professores-btn').classList.toggle('hidden', !isMaster);
   document.getElementById('bar-masters-btn').classList.toggle('hidden', !isMaster);
   document.getElementById('student-switch-subject-btn').classList.remove('hidden'); // admin sempre pode trocar/criar matéria
@@ -12479,6 +12488,13 @@ function updateViewAsButtonLabel(){
       profBtn.classList.remove('active');
     }
   }
+  // ALTERADO (v4.9.6) — Modo Aula só pode ligar a partir de "ver como
+  // aluno": é a MESMA versão que vai pra tela, então nunca diverge da
+  // visão de edição (que pode ter mais conteúdo e rolar diferente).
+  const presBtn = document.getElementById('presentation-btn');
+  if(presBtn){
+    presBtn.classList.toggle('hidden', !(realIsAdmin && currentUser && !isAdmin && !MODO_GLOBAL));
+  }
 }
 // Alternar o papel sempre devolve para a AULA normal — nunca pode deixar a
 // pessoa "presa" numa tela de gestão fantasma. Por isso reseta MODO_GLOBAL e
@@ -12492,7 +12508,6 @@ document.getElementById('user-badge-viewas-btn').addEventListener('click', ()=>{
   showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit','version-tag']);
   document.getElementById('edit-status-bar').classList.toggle('hidden', !isAdmin);
   document.getElementById('download-pdf-btn').classList.toggle('hidden', !isAdmin);
-  document.getElementById('presentation-btn').classList.toggle('hidden', !isAdmin);
   document.getElementById('my-notes-btn').classList.toggle('hidden', isAdmin);
   const avBtnT = document.getElementById('avaliar-btn'); if(avBtnT) avBtnT.classList.toggle('hidden', isAdmin);
   updateViewAsButtonLabel();
@@ -12512,7 +12527,6 @@ function irParaEditor(){
   showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit','version-tag']);
   document.getElementById('edit-status-bar').classList.remove('hidden');
   document.getElementById('download-pdf-btn').classList.remove('hidden');
-  document.getElementById('presentation-btn').classList.remove('hidden');
   document.getElementById('my-notes-btn').classList.add('hidden');
   const avBtnE = document.getElementById('avaliar-btn'); if(avBtnE) avBtnE.classList.add('hidden');
   updateViewAsButtonLabel();
