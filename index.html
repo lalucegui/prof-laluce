@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.2                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.3                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2207,6 +2207,18 @@
     box-shadow:0 8px 30px rgba(0,0,0,0.35);
   }
   .pres-toolbar.hidden{display:none;}
+  .pres-fs-aviso{
+    position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:10001;
+    display:flex;align-items:center;gap:12px;background:rgba(28,32,52,0.95);
+    color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.35);
+  }
+  .pres-fs-aviso.hidden{display:none;}
+  .pres-fs-aviso button{
+    background:#E5484D;border:none;border-radius:8px;color:#fff;
+    font-size:14px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:inherit;white-space:nowrap;
+  }
+  .pres-fs-aviso button:hover{background:#c93c40;}
   .pres-toolbar button{
     background:rgba(255,255,255,0.12);border:none;border-radius:8px;color:#fff;
     font-size:15px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:inherit;
@@ -2927,6 +2939,11 @@
   <button type="button" data-pres="exit" title="Sair do Modo Aula (Esc)">✕ Sair</button>
 </div>
 
+<div class="pres-fs-aviso hidden" id="pres-fs-aviso">
+  <span>A tela cheia não abriu sozinha (o navegador exige um clique aqui dentro).</span>
+  <button type="button" id="pres-fs-aviso-btn">Ativar tela cheia</button>
+</div>
+
 <!-- Faixa fixa que só aparece na tela do PROFESSOR quando há uma segunda
      tela (projetor) sendo controlada por aqui — a tela do projetor não tem
      isto, só o conteúdo limpo. -->
@@ -2935,7 +2952,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.2</div>
+<div class="version-tag hidden" id="version-tag">v4.9.3</div>
 
 
 <script>
@@ -3269,6 +3286,15 @@ let duasTelasHabilitado = false;
 // aula. Preferência pessoal, mesmo padrão do duasTelasHabilitado — cada
 // professor ajusta a própria, de acordo com o clicker/monitor que usa.
 let clickerSensibilidade = 5;
+// O que aparece no CONTEUDO da aula (não a navegação/edição por trás) tem
+// que ser SEMPRE a visão do aluno enquanto está projetando — nunca a visão
+// de administração (cartão "gerenciar respostas", rótulo de espaçador,
+// roteiro do professor, aula prática expandida). presentationMode fica true
+// tanto na janela única quanto na janela PROJETORA do modo 2 telas; a
+// janela de CONTROLE do professor não entra aqui de propósito.
+function isAdminNaTela(){
+  return isAdmin && !presentationMode;
+}
 // 0 = rola pouquinho (10% da tela) a cada clique, 10 = rola quase a tela
 // inteira (90%) — assim dá pra ir de "quase não mexe" até "quase como era
 // antes desta configuração existir".
@@ -3877,7 +3903,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
   // completo da tela (também no modo "ver como aluno", que já usa isAdmin=false
   // durante a pré-visualização). Para o professor (isAdmin=true), continua
   // aparecendo normalmente, para ele poder editar.
-  if(sec.type==='activity' && sec.visibleToStudent===false && !isAdmin) return '';
+  if(sec.type==='activity' && sec.visibleToStudent===false && !isAdminNaTela()) return '';
   const kicker = sec.kicker ? `<div class="section-kicker">${esc(sec.kicker)}</div>` : '';
   const title = sec.title ? `<h3 class="section-title">${esc(sec.title)}</h3>` : '';
   const draggableAttr = (isAdmin && contentModel==='v2' && (sec.type==='figure' || sec.type==='video')) ? ` draggable="true" data-drag-figure-idx="${idx}"` : '';
@@ -4022,7 +4048,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       `).join('')}</div>${sec.footerNote?`<div class="footer-note">${esc(sec.footerNote)}</div>`:''}`;
       break;
     case 'atividade': {
-      if(isAdmin){
+      if(isAdminNaTela()){
         body = `<div class="atividade-card atividade-preview">
           <div class="atividade-head"><span class="atividade-badge">📝 ATIVIDADE</span>${sec.required===false?'<span class="atividade-optional-tag">opcional</span>':''}</div>
           ${sec.title?`<div class="atividade-title">${esc(sec.title)}</div>`:''}
@@ -4045,7 +4071,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
     case 'spacer': {
       const sizePx = {sm:28, md:56, lg:96, xl:140}[sec.size] || 56;
       const sizeLabel = {sm:'pequeno', md:'médio', lg:'grande', xl:'extra grande'}[sec.size] || 'médio';
-      body = isAdmin
+      body = isAdminNaTela()
         ? `<div class="spacer-block spacer-admin" style="height:${sizePx}px;">↕ espaçamento (${sizeLabel})</div>`
         : `<div class="spacer-block" style="height:${sizePx}px;"></div>`;
       break;
@@ -8041,7 +8067,7 @@ function render(){
         <button class="aula-seen-toggle ${STUDENT_PROGRESS.seen[a.id]?'is-seen':''}" data-action="toggle-aula-seen">${STUDENT_PROGRESS.seen[a.id]?'✓ Aula assistida':'○ Marcar como assistida'}</button>
       </div>`:''}
       ${a.updatedAt?`<div class="aula-updated-at">Atualizado em ${new Date(a.updatedAt).toLocaleDateString('pt-BR')}</div>`:''}
-      ${(isAdmin && a.roteiro)?`
+      ${(isAdminNaTela() && a.roteiro)?`
       <details class="roteiro-professor">
         <summary>🗒 Roteiro do professor <span>(só você vê)</span></summary>
         <div class="roteiro-professor-body">${esc(a.roteiro)}</div>
@@ -8050,7 +8076,7 @@ function render(){
     </div>`;
   }
 
-  if(a.isPractice && !isAdmin){
+  if(a.isPractice && !isAdminNaTela()){
     inner += `<div class="practice-card">
       <span class="tag">Aula prática / avaliação</span>
       <p>Esta aula é dedicada à aplicação prática do conteúdo, à avaliação ou ao encerramento do curso — sem novo conteúdo conceitual.</p>
@@ -8526,11 +8552,29 @@ function enterPresentationMode(){
   applyPresFontScale();
   try{
     if(document.documentElement.requestFullscreen){
-      document.documentElement.requestFullscreen().catch(()=>{ /* melhor-esforço */ });
+      document.documentElement.requestFullscreen().catch(()=>{ mostrarAvisoTelaCheia(); });
+    } else {
+      mostrarAvisoTelaCheia();
     }
-  }catch(e){ /* alguns navegadores restringem — o modo funciona sem tela cheia */ }
+  }catch(e){ mostrarAvisoTelaCheia(); }
+}
+// O pedido automático de tela cheia só é aceito pelo navegador quando vem
+// de um clique/tecla DENTRO da própria janela — a janela projetora (modo 2
+// telas) abre sozinha, sem esse gesto, então o pedido automático é sempre
+// rejeitado ali. Em vez do professor ter que descobrir o F11 por conta
+// própria, mostra um botão: o clique nele já é um gesto válido, então
+// funciona de primeira.
+function mostrarAvisoTelaCheia(){
+  if(document.fullscreenElement) return; // já conseguiu por algum outro caminho
+  const aviso = document.getElementById('pres-fs-aviso');
+  if(aviso) aviso.classList.remove('hidden');
+}
+function esconderAvisoTelaCheia(){
+  const aviso = document.getElementById('pres-fs-aviso');
+  if(aviso) aviso.classList.add('hidden');
 }
 function exitPresentationMode(){
+  esconderAvisoTelaCheia();
   // À prova de falhas: primeiro restaura a interface, SEMPRE; a tela cheia
   // é desligada por último e qualquer erro dela não trava a saída.
   presentationMode = false;
@@ -8648,6 +8692,11 @@ async function entrarComoTelaProjetada(){
       render();
       window.scrollTo(0,0);
       presClearCanvas(); // o rabisco pertence à aula em que foi feito
+    } else if(d.type==='scroll'){
+      // O clicker do professor rolou a janela de controle antes de trocar
+      // de aula — a turma só vê esta janela (projetora), então rola aqui
+      // também, pelo mesmo tanto.
+      window.scrollBy({top: d.amount, behavior:'smooth'});
     } else if(d.type==='bye'){
       try{ presenterChannel.close(); }catch(e){}
       document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:22px;color:#555;background:#fff;">Apresentação encerrada pelo professor — pode fechar esta janela.</div>';
@@ -8707,11 +8756,15 @@ function presAvancar(delta){
   const noFim = (window.scrollY + window.innerHeight) >= (doc.scrollHeight - folga);
   const noInicio = window.scrollY <= folga;
   if(delta > 0 && !noFim){
-    window.scrollBy({top: window.innerHeight * presScrollFracao(), behavior:'smooth'});
+    const dist = window.innerHeight * presScrollFracao();
+    window.scrollBy({top: dist, behavior:'smooth'});
+    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'scroll', amount:dist}); }catch(e){} }
     return;
   }
   if(delta < 0 && !noInicio){
-    window.scrollBy({top: -window.innerHeight * presScrollFracao(), behavior:'smooth'});
+    const dist = window.innerHeight * presScrollFracao();
+    window.scrollBy({top: -dist, behavior:'smooth'});
+    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'scroll', amount:-dist}); }catch(e){} }
     return;
   }
   presGoAula(delta);
@@ -8847,24 +8900,48 @@ document.addEventListener('keydown', (e)=>{
     ativarModoAula();
     return;
   }
-  if(!presentationMode) return;
-  if(e.key==='Escape'){ exitPresentationMode(); return; }
+  if(!presentationMode && !presenterModeControl) return;
+  if(e.key==='Escape'){
+    if(presenterModeControl) encerrarSessao2Telas(); else exitPresentationMode();
+    return;
+  }
   // A tela do PROJETOR (2 telas) não navega sozinha por teclado — quem manda
   // é a janela do professor, via BroadcastChannel. Só o Esc local continua
   // valendo, como saída de segurança.
   if(presenterModeDisplay) return;
   if(e.key==='ArrowRight' || e.key==='PageDown'){ e.preventDefault(); presAvancar(1); return; }
   if(e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); presAvancar(-1); return; }
-  if(e.key==='+' || e.key==='='){ presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale(); return; }
-  if(e.key==='-'){ presFontScale = Math.max(0.9, presFontScale - 0.1); applyPresFontScale(); return; }
+  if(e.key==='+' || e.key==='='){
+    presFontScale = Math.min(2.2, presFontScale + 0.1); applyPresFontScale();
+    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'font-scale', value:presFontScale}); }catch(err){} }
+    return;
+  }
+  if(e.key==='-'){
+    presFontScale = Math.max(0.9, presFontScale - 0.1); applyPresFontScale();
+    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'font-scale', value:presFontScale}); }catch(err){} }
+    return;
+  }
   if(e.key==='l' || e.key==='L'){ presSetLaser(!presLaserOn); return; }
   if(e.key==='d' || e.key==='D'){ presSetDraw(!presDrawOn); return; }
-  if(e.key==='c' || e.key==='C'){ presClearCanvas(); return; }
+  if(e.key==='c' || e.key==='C'){
+    presClearCanvas();
+    if(presenterModeControl && presenterChannel){ try{ presenterChannel.postMessage({type:'draw-clear'}); }catch(err){} }
+    return;
+  }
 });
 window.addEventListener('resize', ()=>{ if(presentationUiAtiva()) presResizeCanvas(); });
+// Botão do aviso de tela cheia — clique aqui É um gesto válido, então o
+// pedido feito daqui sempre é aceito pelo navegador (diferente do pedido
+// automático que enterPresentationMode já tentou sozinho).
+document.getElementById('pres-fs-aviso-btn').addEventListener('click', ()=>{
+  try{
+    document.documentElement.requestFullscreen().then(esconderAvisoTelaCheia).catch(()=>{});
+  }catch(e){}
+});
 // Sair da tela cheia pelo navegador (Esc nativo) também desliga o modo
 document.addEventListener('fullscreenchange', ()=>{
-  if(!document.fullscreenElement && presentationMode) exitPresentationMode();
+  if(document.fullscreenElement) esconderAvisoTelaCheia();
+  else if(presentationMode) exitPresentationMode();
 });
 
 // O botão do caderno fica no MENU LATERAL — fora do #content onde vive o
