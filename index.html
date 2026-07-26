@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.1                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -243,6 +243,15 @@
     background:rgba(60,120,70,0.16) !important;
     border-color:rgba(127,168,130,0.45) !important;
   }
+  html[data-palette="noite"] .activity-card-oculto{
+    background:rgba(110,95,150,0.18) !important;
+    border-color:rgba(155,141,194,0.55) !important;
+  }
+  html[data-palette="noite"] .activity-card-oculto .activity-title,
+  html[data-palette="noite"] .activity-card-oculto .act-tag,
+  html[data-palette="noite"] .activity-card-oculto div{color:#DCD5F0 !important;}
+  html[data-palette="noite"] .activity-vis-aberto{background:rgba(60,120,70,0.4) !important;color:#CFE8D2 !important;}
+  html[data-palette="noite"] .activity-vis-oculto{background:rgba(110,95,150,0.4) !important;color:#DCD5F0 !important;}
   html[data-palette="noite"] .activity-title,
   html[data-palette="noite"] .activity-head,
   html[data-palette="noite"] .activity-card div,
@@ -1679,6 +1688,23 @@
   .act-row{display:flex;gap:10px;margin-top:10px;font-size:14px;line-height:1.55;color:var(--charcoal);}
   .act-row > div{white-space:pre-wrap;flex:1;}
   .act-tag{flex:0 0 118px;font-size:11px;font-weight:800;color:#2F5D33;text-transform:uppercase;letter-spacing:0.4px;padding-top:2px;}
+  /* NOVO (v4.10.1) — o roteiro mostra sozinho se o aluno o enxerga.
+     Visível = o verde de sempre. Só para o professor = borda tracejada e
+     fundo neutro, para destoar do conteúdo da aula à primeira vista. */
+  .activity-vis-tag{
+    font-size:10.5px;font-weight:800;letter-spacing:0.5px;
+    padding:3px 9px;border-radius:20px;white-space:nowrap;
+  }
+  .activity-vis-aberto{color:#2F5D33;background:#CFE6D2;border:1px solid #7FA882;}
+  .activity-vis-oculto{color:#5A4B7A;background:#E7E2F2;border:1px solid #9B8DC2;}
+  .activity-card-oculto{
+    background:#F5F3FA;
+    border:1.5px dashed #9B8DC2;
+  }
+  .activity-card-oculto .activity-badge{color:#5A4B7A;background:#E7E2F2;}
+  .activity-card-oculto .activity-title,
+  .activity-card-oculto .act-tag,
+  .activity-card-oculto .activity-time{color:#5A4B7A;}
   .activity-done-row{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px dashed #7FA882;cursor:pointer;font-size:13.5px;font-weight:700;color:#2F5D33;}
   .activity-done-row input{width:17px;height:17px;accent-color:#2F5D33;cursor:pointer;}
   /* ===== Bloco "Atividade" (respondivel, com nota) - v3, aulas novas ===== */
@@ -3016,7 +3042,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.0</div>
+<div class="version-tag hidden" id="version-tag">v4.10.1</div>
 
 
 <script>
@@ -4043,9 +4069,20 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
           <input type="checkbox" class="act-done-cb" data-secid="${sec.id}" ${feita?'checked':''}>
           <span>Concluí esta atividade${feita?' ✓':''}</span>
         </label>` : '';
-      body = `<div class="activity-card">
+      // NOVO (v4.10.1) — o roteiro passa a DIZER se o aluno o vê, sem
+      // precisar abrir a edição para conferir o botão. Só o professor na
+      // própria tela enxerga essa marca: no modo aula e no "ver como aluno"
+      // ela some junto com o resto do que é de bastidor.
+      const soProfessor = sec.visibleToStudent === false;
+      const marcaVis = isAdminNaTela()
+        ? (soProfessor
+            ? '<span class="activity-vis-tag activity-vis-oculto" title="Este roteiro não aparece para o aluno. Para mudar, edite a seção e marque \'Visível para o aluno\'.">🔒 SÓ PARA VOCÊ</span>'
+            : '<span class="activity-vis-tag activity-vis-aberto" title="Este roteiro aparece na aula do aluno. Para mudar, edite a seção e desmarque \'Visível para o aluno\'.">👁 O ALUNO VÊ</span>')
+        : '';
+      body = `<div class="activity-card${(isAdminNaTela() && soProfessor)?' activity-card-oculto':''}">
         <div class="activity-head">
           <span class="activity-badge">🛠 ATIVIDADE PRÁTICA</span>
+          ${marcaVis}
           ${sec.timeMin?`<span class="activity-time">⏱ ${esc(sec.timeMin)}</span>`:''}
         </div>
         ${sec.title?`<div class="activity-title">${esc(sec.title)}</div>`:''}
@@ -7726,25 +7763,29 @@ function orgScreenForm(){
     <div class="editing-type-banner">Organizar curso — blocos, aulas, numeração e visibilidade</div>
     <label>Nome da matéria (aparece como título no topo do site)</label>
     <input type="text" spellcheck="true" lang="pt-BR" id="org-subject-name" value="${escAttr(currentSubject.name||'')}">
-    <label>Pontos por entregar as atividades no prazo
-      <span class="tip has-tip" data-tip="Vale só para esta matéria. O total é dividido pelo número de atividades: com 3 atividades cada uma vale 1 ponto; com 6, cada uma vale 0,5.">?</span>
-    </label>
-    <input type="text" id="org-pontos-atividades" value="${String(pontosDaMateria()).replace('.',',')}" style="max-width:120px;">
-    <label>Aceitar respostas fora do prazo
-      <span class="tip has-tip" data-tip="Com Não, passou o prazo o aluno não consegue mais enviar nada — nem pelo navegador, nem por caminho nenhum: o banco de dados recusa. Com Sim, ele ainda envia depois do fechamento, e a entrega aparece no boletim marcada como fora do prazo (sem valer ponto).">?</span>
-    </label>
-    <select id="org-aceita-fora-prazo" style="max-width:220px;">
-      <option value="nao" ${aceitaForaDoPrazo()?'':'selected'}>Não — prazo encerrado, entrega bloqueada</option>
-      <option value="sim" ${aceitaForaDoPrazo()?'selected':''}>Sim — aceita, marcando como fora do prazo</option>
-    </select>
-    <label>Aulas por encontro
-      <span class="tip has-tip" data-tip="Quantas aulas cada lançamento de chamada representa. Numa aula de 1h40 são 2 aulas; num encontro de 50min, 1. Cada falta e cada presença do diário passa a valer esse número.">?</span>
-    </label>
-    <select id="org-aulas-por-encontro" style="max-width:220px;">
-      <option value="2" ${aulasPorEncontro()===2?'selected':''}>2 aulas por encontro (1h40)</option>
-      <option value="1" ${aulasPorEncontro()===1?'selected':''}>1 aula por encontro (50min)</option>
-    </select>
-    <div class="hint">Estas duas opções mudam a regra de avaliação da matéria inteira. Ao salvar, o sistema atualiza os prazos e os registros de chamada já gravados para seguirem a nova escolha — você não precisa refazer nada à mão.</div>
+    <div class="config-grupo" id="org-regras-avaliacao" style="margin:18px 0;">
+      <div class="config-grupo-titulo">⚖️ Regras de avaliação desta matéria</div>
+      <div class="hint">Estas três decisões valem só para <strong>esta</strong> matéria e mudam como o boletim é calculado. Ficam aqui, e não em Configurações, porque Configurações guarda o que é do sistema e da sua conta — o que é da matéria mora junto com a matéria.</div>
+      <label>Pontos por entregar as atividades no prazo
+        <span class="tip has-tip" data-tip="O total é dividido pelo número de atividades: com 3 atividades cada uma vale 1 ponto; com 6, cada uma vale 0,5.">?</span>
+      </label>
+      <input type="text" id="org-pontos-atividades" value="${String(pontosDaMateria()).replace('.',',')}" style="max-width:120px;">
+      <label>Aceitar respostas fora do prazo
+        <span class="tip has-tip" data-tip="Com Não, passou o prazo o aluno não consegue mais enviar nada — nem pelo navegador, nem por caminho nenhum: o banco de dados recusa. Com Sim, ele ainda envia depois do fechamento, e a entrega aparece no boletim marcada como fora do prazo (sem valer ponto).">?</span>
+      </label>
+      <select id="org-aceita-fora-prazo" style="max-width:340px;">
+        <option value="nao" ${aceitaForaDoPrazo()?'':'selected'}>Não — encerrado o prazo, a entrega é bloqueada</option>
+        <option value="sim" ${aceitaForaDoPrazo()?'selected':''}>Sim — aceita, marcando como fora do prazo (sem ponto)</option>
+      </select>
+      <label>Aulas por encontro
+        <span class="tip has-tip" data-tip="Quantas aulas cada lançamento de chamada representa. Numa aula de 1h40 são 2 aulas; num encontro de 50min, 1. Cada falta e cada presença do diário passa a valer esse número.">?</span>
+      </label>
+      <select id="org-aulas-por-encontro" style="max-width:340px;">
+        <option value="2" ${aulasPorEncontro()===2?'selected':''}>2 aulas por encontro (1h40)</option>
+        <option value="1" ${aulasPorEncontro()===1?'selected':''}>1 aula por encontro (50min)</option>
+      </select>
+      <div class="hint">Ao clicar em <strong>Salvar todas as alterações</strong> (no fim desta tela), o sistema atualiza também os prazos e os registros de chamada já gravados, para que a matéria inteira siga a mesma regra — você não precisa refazer nada à mão.</div>
+    </div>
     <label>Descrição do cabeçalho (linha pequena abaixo do título)</label>
     <input type="text" spellcheck="true" lang="pt-BR" id="org-subject-description" value="${escAttr(currentSubject.description||'')}" placeholder="Ex.: Administração de Empresas · 8º Semestre · Faculdade da Fundação Educacional de Araçatuba">
     <div class="hint">Para colocar uma aula ANTES do Bloco I (aula de apresentação da disciplina), escolha "★ Antes do Bloco I" no seletor de bloco daquela aula. Mude números, títulos, blocos e visibilidade à vontade. Nada é salvo até você clicar em "Salvar todas as alterações" no final. Excluir aqui também é definitivo (use um backup se quiser voltar atrás).</div>
@@ -7795,6 +7836,12 @@ function configGeralForm(){
       </label>
       <input type="text" id="cfg-inactivity-minutes" value="${inactivityMinutes}" style="max-width:120px;" ${isMaster?'':'disabled'}>
       ${isMaster?'':'<div class="hint">Só o administrador altera este tempo.</div>'}
+    </div>
+
+    <div class="config-grupo">
+      <div class="config-grupo-titulo">Regras de avaliação</div>
+      <div class="hint">Pontos das atividades, aceitar ou não entrega fora do prazo e quantas aulas cada encontro vale são regras de <strong>cada matéria</strong>, não do sistema — por isso ficam junto da matéria, e não aqui. Duas matérias podem ter regras diferentes.</div>
+      <button type="button" class="btn-secondary" data-action="ir-para-tela" data-tela="orgScreen" style="margin-top:10px;">⚖️ Abrir as regras de avaliação da matéria</button>
     </div>
 
     <div class="config-grupo">
