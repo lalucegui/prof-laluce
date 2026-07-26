@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.10                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.11                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1908,9 +1908,7 @@
   .student-notes .rich-toolbar{border-radius:8px 8px 0 0;margin-bottom:0;}
   /* Dica dentro do campo vazio do caderno (contenteditable nao aceita
      placeholder nativo, entao vem do atributo data-placeholder). */
-  .student-notes .rich-text:empty::before{
-    content:attr(data-placeholder);color:var(--muted);font-style:italic;pointer-events:none;
-  }
+  .student-notes-dica{font-size:12.5px;color:var(--muted);margin:2px 0 8px 0;line-height:1.5;}
   .atv-aviso-sem-turma{
     background:#FBF3E4;border:1px solid #E3C98D;border-left:3px solid #B5872B;
     border-radius:8px;padding:9px 12px;color:#7A5610;
@@ -3009,7 +3007,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.10</div>
+<div class="version-tag hidden" id="version-tag">v4.9.11</div>
 
 
 <script>
@@ -4326,41 +4324,46 @@ function atvEffectiveGrading(resp, draft){
 
 // aulaId é a CHAVE usada para achar a resposta já salva do aluno — fixa,
 // nunca muda com renumeração (diferente do número, que é só posição).
+// NOVO (v4.9.11) — le a agenda desta atividade AGORA, sem cache. Devolve
+// o objeto da agenda, null quando nao existe agenda nenhuma, e undefined
+// quando a leitura falhou (aí quem chama decide não bloquear por falta de
+// informação, em vez de travar o aluno por causa de uma queda de rede).
+async function lerAgendaAtual(sectionId){
+  if(!activeSubjectId) return undefined;
+  const turmaId = (currentUserDoc && currentUserDoc.turmaId) || null;
+  try{
+    if(turmaId){
+      const snap = await db.collection(`subjects/${activeSubjectId}/activity_schedules`).doc(`${sectionId}_${turmaId}`).get();
+      if(snap.exists) return snap.data();
+    }
+    // Sem turma (ou sem agenda da turma): vale a agenda mais folgada
+    // cadastrada para esta atividade — mesma regra do carregamento da tela.
+    const todos = await db.collection(`subjects/${activeSubjectId}/activity_schedules`)
+      .where('sectionId','==',sectionId).get();
+    const lista = todos.docs.map(d=>d.data()).filter(Boolean);
+    if(!lista.length) return null;
+    return lista.reduce((maisFolgado, atual)=>{
+      if(!maisFolgado) return atual;
+      return (atual.closesAt || Infinity) > (maisFolgado.closesAt || Infinity) ? atual : maisFolgado;
+    }, null);
+  }catch(e){ return undefined; }
+}
 async function loadActivityData(sectionId, aulaId){
   if(ACTIVITY_DATA_CACHE[sectionId] && ACTIVITY_DATA_CACHE[sectionId].loaded) return;
   ACTIVITY_DATA_CACHE[sectionId] = ACTIVITY_DATA_CACHE[sectionId] || {};
   if(!activeSubjectId || !currentUser || !aulaId){ ACTIVITY_DATA_CACHE[sectionId].loaded = true; return; }
   try{
     const uid = currentUser.uid;
-    const turmaId = (currentUserDoc && currentUserDoc.turmaId) || null;
     const respId = `${aulaId}_${sectionId}_${uid}`;
-    const respPromise = db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(respId).get();
-    const schedPromise = turmaId ? db.collection(`subjects/${activeSubjectId}/activity_schedules`).doc(`${sectionId}_${turmaId}`).get() : Promise.resolve(null);
-    const [respSnap, schedSnap] = await Promise.all([respPromise, schedPromise]);
+    // A agenda vem de lerAgendaAtual() — a MESMA regra usada na hora de
+    // gravar. Ter dois caminhos diferentes para descobrir o prazo era o tipo
+    // de coisa que faz a tela dizer uma coisa e o salvamento fazer outra.
+    const [respSnap, agenda] = await Promise.all([
+      db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(respId).get(),
+      lerAgendaAtual(sectionId),
+    ]);
     ACTIVITY_DATA_CACHE[sectionId].response = respSnap.exists ? respSnap.data() : null;
-    let agenda = (schedSnap && schedSnap.exists) ? schedSnap.data() : null;
-    // CORRIGIDO (v4.9.10) — o prazo e cadastrado POR TURMA. Aluno ainda sem
-    // turma atribuida nao encontrava prazo nenhum e conseguia responder para
-    // sempre, mesmo com a atividade encerrada para todo mundo. Agora, nesse
-    // caso, ele fica sujeito ao prazo MAIS FOLGADO cadastrado para a
-    // atividade — nunca bloqueia quem ainda teria direito de responder, e
-    // deixa de existir a brecha do "aluno sem turma responde eternamente".
-    if(!agenda){
-      try{
-        const todos = await db.collection(`subjects/${activeSubjectId}/activity_schedules`)
-          .where('sectionId','==',sectionId).get();
-        const lista = todos.docs.map(d=>d.data()).filter(Boolean);
-        if(lista.length){
-          agenda = lista.reduce((maisFolgado, atual)=>{
-            if(!maisFolgado) return atual;
-            const fimA = maisFolgado.closesAt || Infinity;
-            const fimB = atual.closesAt || Infinity;
-            return fimB > fimA ? atual : maisFolgado;
-          }, null);
-        }
-      }catch(e){ /* sem permissao ou sem rede: segue sem prazo, como antes */ }
-    }
-    ACTIVITY_DATA_CACHE[sectionId].schedule = agenda;
+    ACTIVITY_DATA_CACHE[sectionId].schedule = (agenda === undefined) ? null : agenda;
   }catch(e){ /* falha ao carregar não pode travar a aula — trata como rascunho vazio */ }
   ACTIVITY_DATA_CACHE[sectionId].loaded = true;
 }
@@ -4563,6 +4566,24 @@ async function persistAtividadeAnswer(sectionId, aulaId, aulaNum){
   if(realIsAdmin || !currentUser || !activeSubjectId) return false;
   const cache = ACTIVITY_DATA_CACHE[sectionId];
   if(atvIsLocked(cache && cache.response, cache && cache.schedule)) return false; // travado — não salva mais
+  // NOVO (v4.9.11) — relemos o prazo DIRETO do banco no instante da gravação,
+  // em vez de confiar no que estava em memória. A agenda pode ter sido
+  // cadastrada (ou mudada) pelo professor depois que esta tela carregou, e
+  // uma tela aberta desde antes não pode virar passe livre.
+  const agendaAgora = await lerAgendaAtual(sectionId);
+  if(agendaAgora !== undefined){
+    if(cache) cache.schedule = agendaAgora;
+    const janelaAgora = atvJanelaPrazo(agendaAgora);
+    if(janelaAgora !== 'aberta'){
+      LAST_ATV_SAVE_ERROR = (janelaAgora === 'antes')
+        ? 'esta atividade ainda não abriu para respostas'
+        : 'o prazo desta atividade já encerrou';
+      const stFechado = document.getElementById('atv-save-status-'+sectionId);
+      if(stFechado){ stFechado.textContent = '⚠ Não salvou: ' + LAST_ATV_SAVE_ERROR; stFechado.classList.add('atv-save-error'); }
+      render();
+      return false;
+    }
+  }
   const answers = collectAtividadeAnswersFromDom(sectionId);
   const docId = `${aulaId}_${sectionId}_${currentUser.uid}`;
   const payload = {
@@ -8361,11 +8382,16 @@ function render(){
   // ele aparece para o professor (mostraria as anotações da conta do professor, sem sentido).
   if(!realIsAdmin && currentUser){
     const minhaNota = (currentUserDoc && currentUserDoc.aulaNotes && currentUserDoc.aulaNotes[activeSubjectId] && currentUserDoc.aulaNotes[activeSubjectId][a.id]) || '';
-    const notaHtml = notaAlunoParaHtml(minhaNota);
+    // O campo precisa NASCER com um paragrafo. Um contenteditable
+    // completamente vazio engole a primeira tecla Enter (o navegador so cria
+    // o segundo bloco depois que existe um primeiro) — era esse o motivo de
+    // "nao consigo pular linha" no caderno.
+    const notaHtml = notaAlunoParaHtml(minhaNota) || '<p><br></p>';
     inner += `<div class="student-notes">
       <div class="student-notes-head">📝 Minhas anotações desta aula</div>
+      <div class="student-notes-dica">Anote seus pontos importantes, dúvidas para perguntar, ideias. Use a barra abaixo para negrito, cores, grifo e listas.</div>
       ${richToolbarHtml('student-note-text')}
-      <div id="student-note-text" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR" data-placeholder="Anote aqui seus pontos importantes, dúvidas para perguntar, ideias...">${notaHtml}</div>
+      <div id="student-note-text" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR">${notaHtml}</div>
       <div class="student-notes-actions">
         <span id="student-note-status"></span>
         <button class="btn-primary" data-action="save-student-note" data-aula="${a.num}">Salvar anotação</button>
@@ -9483,6 +9509,12 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       await db.collection(`subjects/${activeSubjectId}/activity_schedules`).doc(`${sectionId}_${turmaId}`)
         .set({sectionId, turmaId, aulaNum: editState.aulaNum, opensAt, closesAt, updatedAt: Date.now()});
       ATV_MANAGE_SCHEDULES[turmaId] = {sectionId, turmaId, aulaNum: editState.aulaNum, opensAt, closesAt};
+      // CORRIGIDO (v4.9.11) — o cache da tela do aluno guardava a agenda ANTIGA
+      // (normalmente "sem prazo", de antes do prazo existir) e nunca era
+      // limpo. Resultado: acabava de cadastrar o prazo, abria como aluno e a
+      // atividade continuava respondivel. Agora o cache daquela atividade cai
+      // junto com o salvamento.
+      delete ACTIVITY_DATA_CACHE[sectionId];
       alert('Prazo salvo para esta turma.');
     }catch(err){ alert('Não foi possível salvar o prazo: ' + (err && err.message ? err.message : String(err))); }
     render();
