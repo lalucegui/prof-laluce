@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.11                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1694,6 +1694,11 @@
     border-radius:8px;padding:10px 12px;color:#8A3B12;font-weight:500;line-height:1.5;
   }
   .atividade-prazo-fechado strong{font-weight:700;}
+  .atividade-prazo-atraso{
+    background:#FBF3E4;border:1px solid #E3C98D;border-left:3px solid #B5872B;
+    border-radius:8px;padding:10px 12px;color:#7A5610;font-weight:500;line-height:1.5;
+  }
+  .atividade-prazo-atraso strong{font-weight:700;}
   /* Resposta so de leitura (fora do prazo / ja entregue). */
   .atv-ans-lida{
     border:1px solid var(--line);border-radius:8px;padding:10px 12px;
@@ -1876,6 +1881,8 @@
   .atv-bol-ok{background:#E9F6EE;color:#1C7C4C;font-weight:700;}
   .atv-bol-mid{background:#FFF7E8;color:#8A5A0F;font-weight:700;}
   .atv-bol-low{background:#FDECEC;color:#B23B3B;font-weight:700;}
+  /* NOVO (v4.10.0) — entrega feita depois do prazo: registrada, mas sem ponto. */
+  .atv-bol-atraso{background:#FBF3E4;color:#8A5A0F;font-weight:700;}
   /* feedback visto pelo aluno */
   .atv-item-grade-fb-head{font-weight:800;font-size:12.5px;}
   .atv-fb-partial{border-color:#E8B36A;}
@@ -1921,6 +1928,8 @@
   .ai-import-box{margin-top:18px;background:var(--ice-tint);border-radius:12px;padding:14px 16px;}
   .ai-import-title{font-size:13.5px;font-weight:800;color:var(--navy);}
   .turma-assign-select{font-size:11.5px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-raised);color:var(--charcoal);max-width:230px;margin-top:4px;}
+  /* NOVO (v4.10.0) — campo obrigatorio ainda em branco. */
+  .campo-faltando{border-color:var(--err) !important;box-shadow:0 0 0 2px rgba(178,59,59,.12);}
   .turma-badge{font-size:11px;color:var(--navy);font-weight:700;}
   .turma-filter-row{display:flex;align-items:center;gap:8px;margin-top:12px;}
   .turma-filter-row select{font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-raised);}
@@ -3007,7 +3016,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.11</div>
+<div class="version-tag hidden" id="version-tag">v4.10.0</div>
 
 
 <script>
@@ -3616,6 +3625,16 @@ document.addEventListener('change', async (e)=>{
   if(e.target && e.target.classList && e.target.classList.contains('turma-assign-select')){
     const uid = e.target.dataset.uid;
     const novo = e.target.value || null;
+    // NOVO (v4.10.0) — turma virou obrigatoria para aluno. Sem ela o aluno
+    // fica fora do boletim, fora da chamada e fora de qualquer prazo (que e
+    // cadastrado por turma). Deixar "sem turma" disponivel era um convite a
+    // um aluno invisivel no sistema.
+    const alvoU = (cachedUsersList||[]).find(x=>x.id===uid);
+    if(!novo && alvoU && !roleIsStaff(alvoU.role)){
+      alert('Todo aluno precisa estar em uma turma.\n\nSem turma ele não aparece no boletim, não entra na chamada e não fica sujeito a nenhum prazo de atividade — os prazos são cadastrados por turma.\n\nEscolha uma turma na lista. Se a turma certa ainda não existe, crie em Gestão › Turmas.');
+      render();
+      return;
+    }
     try{
       await db.collection('users').doc(uid).update({turmaId: novo});
       const u = (cachedUsersList||[]).find(x=>x.id===uid);
@@ -4280,25 +4299,62 @@ const ATV_STATUS_LABEL = {
 // Sem prazo cadastrado a atividade fica sempre aberta, como antes. Ate a
 // v4.9.9 a data de ABERTURA era gravada mas nunca conferida — a atividade
 // ficava respondivel antes da hora.
+// ALTERADO (v4.10.0) — quatro situacoes possiveis:
+//   'antes'    = a data de abertura ainda nao chegou. Ninguem responde, em
+//                nenhuma hipotese (aceitar atraso libera o FIM do prazo,
+//                nunca o comeco).
+//   'aberta'   = dentro da janela.
+//   'atrasada' = passou do fechamento, mas a materia aceita entrega fora do
+//                prazo. O aluno responde, e a entrega nasce marcada.
+//   'depois'   = passou do fechamento e a materia NAO aceita atraso.
+// A permissao de atraso e lida do PROPRIO documento do prazo (e nao da
+// materia) de proposito: e o mesmo dado que as regras do Firestore conferem,
+// entao navegador e banco decidem sempre pela mesma fonte.
 function atvJanelaPrazo(schedule){
   if(!schedule) return 'aberta';
   const agora = Date.now();
   if(schedule.opensAt && agora < schedule.opensAt) return 'antes';
-  if(schedule.closesAt && agora > schedule.closesAt) return 'depois';
+  if(schedule.closesAt && agora > schedule.closesAt){
+    return schedule.aceitaForaPrazo === true ? 'atrasada' : 'depois';
+  }
   return 'aberta';
 }
 function atvIsLocked(response, schedule){
   const g = response && response.grading;
   if(g && g.published) return true;
   if(response && response.submittedAt) return true;
-  if(atvJanelaPrazo(schedule) !== 'aberta') return true;
+  const j = atvJanelaPrazo(schedule);
+  if(j === 'antes' || j === 'depois') return true;
   return false;
+}
+// A entrega foi feita fora do prazo? Usado pelo boletim para separar
+// "Entregue" de "Fora do prazo". Sem prazo cadastrado, nada e atrasado.
+function atvEntregaAtrasada(resposta, agenda){
+  if(!resposta || !resposta.submittedAt) return false;
+  if(!agenda || !agenda.closesAt) return false;
+  return resposta.submittedAt > agenda.closesAt;
 }
 // Quanto valem, no total, as entregas no prazo desta materia. Ate a v3.6.0
 // eram 3 pontos fixos, escritos direto na formula em dois lugares. Cada
 // professor avalia do seu jeito, entao virou configuracao da materia.
 // A regra em si continua a mesma: proporcional as atividades existentes —
 // 3 atividades valem 1 ponto cada, 6 valem 0,5, e assim por diante.
+// ===== CONFIGURACOES DA MATERIA (v4.10.0) =====
+// Duas decisoes que mudam a regra de avaliacao inteira e por isso moram na
+// materia, nao no codigo: se entrega atrasada e aceita, e quantas aulas cada
+// encontro vale. Ambas tem padrao seguro para materias criadas antes disso:
+// atraso NAO aceito (era o comportamento ate aqui) e 2 aulas por encontro
+// (o formato de 1h40 desta faculdade).
+function materiaAtual(){
+  return (allSubjects||[]).find(x=>x.id===activeSubjectId) || {};
+}
+function aceitaForaDoPrazo(){
+  return materiaAtual().aceitaForaPrazo === true;
+}
+function aulasPorEncontro(){
+  const v = materiaAtual().aulasPorEncontro;
+  return (v === 1 || v === 2) ? v : 2;
+}
 function pontosDaMateria(){
   const s = (allSubjects||[]).find(x=>x.id===activeSubjectId);
   const v = s && s.pontosAtividades;
@@ -4389,12 +4445,15 @@ function renderAtividadeStudentForm(sec, response, schedule){
     : (janela==='depois' ? '🔒 Fora do prazo para respostas'
     : (janela==='antes' ? '🔒 Ainda não abriu para respostas'
     : (status==='entregue' ? '📨 Entregue — aguardando correção do professor'
-    : '✏️ Em andamento — salva sozinho enquanto você digita')));
+    : (janela==='atrasada' ? '⏰ Prazo encerrado — entrega será marcada como fora do prazo'
+    : '✏️ Em andamento — salva sozinho enquanto você digita'))));
   let prazoInfo = '';
   if(janela === 'antes'){
     prazoInfo = `<div class="atividade-prazo atividade-prazo-fechado">🔒 <strong>Ainda fora do prazo para respostas.</strong> Esta atividade abre em ${fmtPrazo(schedule.opensAt)}${schedule.closesAt?` e fecha em ${fmtPrazo(schedule.closesAt)}`:''}.</div>`;
   } else if(janela === 'depois'){
     prazoInfo = `<div class="atividade-prazo atividade-prazo-fechado">🔒 <strong>Fora do prazo para respostas.</strong> O prazo encerrou em ${fmtPrazo(schedule.closesAt)}. Você ainda pode ler o enunciado${(response&&response.answers)?' e o que respondeu':''}, mas não é mais possível enviar resposta.</div>`;
+  } else if(janela === 'atrasada'){
+    prazoInfo = `<div class="atividade-prazo atividade-prazo-atraso">⏰ <strong>O prazo encerrou em ${fmtPrazo(schedule.closesAt)}.</strong> Esta matéria ainda aceita entrega atrasada, mas ela vai constar no boletim como <strong>fora do prazo</strong> e não conta ponto de atividade. Entregue mesmo assim — o professor consegue ver o seu trabalho.</div>`;
   } else if(schedule && schedule.closesAt){
     prazoInfo = `<div class="atividade-prazo">Prazo para responder: até ${fmtPrazo(schedule.closesAt)}</div>`;
   }
@@ -4574,7 +4633,7 @@ async function persistAtividadeAnswer(sectionId, aulaId, aulaNum){
   if(agendaAgora !== undefined){
     if(cache) cache.schedule = agendaAgora;
     const janelaAgora = atvJanelaPrazo(agendaAgora);
-    if(janelaAgora !== 'aberta'){
+    if(janelaAgora === 'antes' || janelaAgora === 'depois'){
       LAST_ATV_SAVE_ERROR = (janelaAgora === 'antes')
         ? 'esta atividade ainda não abriu para respostas'
         : 'o prazo desta atividade já encerrou';
@@ -5369,82 +5428,166 @@ function baixarCsv(linhas, nomeArquivo){
   URL.revokeObjectURL(url);
 }
 
-// ===== BOLETIM: todas as atividades x todos os alunos de uma turma =====
+// ===== BOLETIM DA TURMA (reescrito na v4.10.0) =====
+// A versão anterior era um quadro de NOTAS: uma coluna por atividade com o
+// valor que o professor tinha publicado. O modelo de avaliação desta matéria
+// não usa isso — a nota vem do CUMPRIMENTO (entregou no prazo, esteve
+// presente), não do acerto. Então o boletim virou o que ele precisa ser:
+// frequência e entrega, na mesma tela, com o cálculo dos pontos pronto.
+//
+// São três blocos: resumo (o que fecha o semestre), presença por data
+// (o diário tradicional) e entregas por atividade.
+
+// Quantas aulas um lançamento de chamada representa. O número fica gravado no
+// próprio registro — assim um semestre lançado com 2 aulas por encontro não
+// muda de significado se a configuração da matéria mudar depois.
+function aulasDoRegistro(r){
+  const v = r && r.aulasPorEncontro;
+  return (v === 1 || v === 2) ? v : aulasPorEncontro();
+}
+
+// Situação da entrega de um aluno numa atividade: 'ok' (no prazo),
+// 'atraso' (entregue depois do fechamento, só existe se a matéria aceitar)
+// ou 'nao' (não entregue).
+function atvSituacaoEntrega(resposta, agenda){
+  if(!resposta || !resposta.submittedAt) return 'nao';
+  return atvEntregaAtrasada(resposta, agenda) ? 'atraso' : 'ok';
+}
+
+// Reúne, de uma vez, tudo que os três blocos e o CSV precisam. Ter um único
+// lugar que calcula evita o clássico "a tela mostra um número e o CSV mostra
+// outro".
+function boletimDadosDaTurma(turmaId){
+  const atividades = collectAllAtividades();
+  const alunos = (cachedUsersList||[])
+    .filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId)
+    .sort((x,y)=> String(atvNomeAluno(x)).localeCompare(String(atvNomeAluno(y))));
+  const chamadas = (DIARIO_TODOS||[])
+    .filter(r=>r.turmaId===turmaId)
+    .sort((x,y)=>String(x.date).localeCompare(String(y.date)));
+  const prazoPorSecao = {};
+  (ATV_BOLETIM_SCHEDULES||[]).forEach(s=>{ if(s.turmaId===turmaId) prazoPorSecao[s.sectionId] = s; });
+  const entregaPorSecao = {};
+  (ATV_BOLETIM_DATA||[]).forEach(r=>{
+    entregaPorSecao[r.sectionId] = entregaPorSecao[r.sectionId] || {};
+    entregaPorSecao[r.sectionId][r.studentUid] = r;
+  });
+  const aulasTotais = chamadas.reduce((s,r)=> s + aulasDoRegistro(r), 0);
+  const totalPontos = pontosDaMateria();
+
+  const linhas = alunos.map(u=>{
+    const situacoes = atividades.map(at=>
+      atvSituacaoEntrega((entregaPorSecao[at.sectionId]||{})[u.id], prazoPorSecao[at.sectionId]));
+    const noPrazo = situacoes.filter(s=>s==='ok').length;
+    const atrasadas = situacoes.filter(s=>s==='atraso').length;
+    const presencas = chamadas.map(r=> (r.absences||[]).includes(u.id) ? 'F' : 'P');
+    const aulasFalta = chamadas.reduce((s,r,i)=> s + (presencas[i]==='F' ? aulasDoRegistro(r) : 0), 0);
+    const pctPresenca = aulasTotais ? Math.round(((aulasTotais-aulasFalta)/aulasTotais)*100) : null;
+    // Só entrega NO PRAZO vale ponto. Atrasada aparece para o professor ver
+    // que o aluno fez, mas não entra na conta — foi decisão explícita.
+    const pontosAtv = atividades.length
+      ? Math.round((totalPontos * (noPrazo/atividades.length))*10)/10
+      : 0;
+    return {u, situacoes, noPrazo, atrasadas, presencas, aulasFalta, pctPresenca, pontosAtv};
+  });
+  return {atividades, alunos, chamadas, aulasTotais, totalPontos, linhas};
+}
+
 function atividadesBoletimForm(){
-  if(allTurmas===null || cachedUsersList===null || ATV_BOLETIM_DATA===null || ATV_BOLETIM_SCHEDULES===null){
-    return `<div class="editor-form"><div class="editing-type-banner">📊 Boletim de atividades</div><p>Carregando notas…</p></div>`;
+  if(allTurmas===null || cachedUsersList===null || ATV_BOLETIM_DATA===null
+     || ATV_BOLETIM_SCHEDULES===null || DIARIO_TODOS===null){
+    return `<div class="editor-form"><div class="editing-type-banner">📊 Boletim da turma</div><p>Carregando frequência e entregas…</p></div>`;
   }
   const turmaId = editState.turmaId || (allTurmas[0] && allTurmas[0].id) || null;
   const turmaOptions = allTurmas.map(t=>`<option value="${t.id}" ${t.id===turmaId?'selected':''}>${esc(t.name)}</option>`).join('')
     || '<option value="">(sem turmas)</option>';
-  const atividades = collectAllAtividades();
-  const alunos = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId)
-    .sort((x,y)=> String((x.profile&&x.profile.fullName)||x.name||'').localeCompare(String((y.profile&&y.profile.fullName)||y.name||'')));
-  if(!atividades.length) return `<div class="editor-form"><div class="editing-type-banner">📊 Boletim de atividades</div><p class="hint">Nenhuma atividade criada no curso ainda.</p><div class="editor-actions"><button class="btn-secondary" data-action="open-atividades-central">🗂️ Central de Atividades</button></div></div>`;
+  const d = boletimDadosDaTurma(turmaId);
+  const {atividades, chamadas, aulasTotais, totalPontos, linhas} = d;
 
-  // Mapa: sectionId -> uid -> resposta publicada
-  const porSecao = {};
-  (ATV_BOLETIM_DATA||[]).forEach(r=>{
-    if(!r.grading || !r.grading.published) return;
-    (porSecao[r.sectionId] = porSecao[r.sectionId] || {})[r.studentUid] = r;
-  });
-  // Entregas no prazo — vale os 3 pontos do bimestre. Considera entregue no prazo
-  // quando o aluno marcou "entregar" antes do fechamento configurado para a turma.
-  // Sem prazo cadastrado, qualquer entrega conta como no prazo.
-  const entregaPorSecao = {};
-  (ATV_BOLETIM_DATA||[]).forEach(r=>{
-    (entregaPorSecao[r.sectionId] = entregaPorSecao[r.sectionId] || {})[r.studentUid] = r;
-  });
-  const prazoPorSecao = {};
-  (ATV_BOLETIM_SCHEDULES||[]).forEach(s=>{
-    if(s.turmaId===turmaId) prazoPorSecao[s.sectionId] = s;
-  });
-  const secMap = {};
-  atividades.forEach(at=>{
-    const b = COURSE.find(x=>x.num===at.blockNum);
-    const a = b && b.aulas.find(x=>x.num===at.aulaNum);
-    secMap[at.sectionId] = a && (a.sections||[]).find(s=>s.id===at.sectionId);
-  });
+  if(!linhas.length){
+    return `<div class="editor-form">
+      <div class="editing-type-banner">📊 Boletim da turma</div>
+      <div class="atv-turma-row"><label>Turma</label><select id="atv-boletim-turma-select">${turmaOptions}</select></div>
+      <p class="painel-vazio">Nenhum aluno nesta turma ainda. Atribua a turma dos alunos em Alunos → Ativos.</p>
+    </div>`;
+  }
 
-  const head = `<tr><th class="atv-bol-name">Aluno</th>${atividades.map(at=>`<th title="${escAttr(at.title)} — Aula ${at.aulaNum}">A${at.aulaNum}</th>`).join('')}<th>Total</th><th>%</th><th title="Atividades entregues dentro do prazo">No prazo</th><th title="Pontuação de atividades (0 a 3), proporcional às entregas no prazo">Pts atv.</th></tr>`;
-  const body = alunos.map(u=>{
-    let soma=0, somaMax=0;
-    const cells = atividades.map(at=>{
-      const sec = secMap[at.sectionId];
-      if(!sec) return '<td>—</td>';
-      const r = (porSecao[at.sectionId]||{})[u.id];
-      const maxT = atvMaxScore(sec);
-      if(!r || !r.grading){ return `<td class="atv-bol-empty" title="Sem nota publicada">·</td>`; }
-      const nota = r.grading.score!=null ? r.grading.score : 0;
-      soma += nota; somaMax += maxT;
-      const pct = maxT ? (nota/maxT) : 0;
-      const cls = pct>=0.7 ? 'atv-bol-ok' : (pct>=0.5 ? 'atv-bol-mid' : 'atv-bol-low');
-      return `<td class="${cls}" title="${escAttr(at.title)}: ${nota} de ${maxT}">${nota}</td>`;
+  const aceitaAtraso = aceitaForaDoPrazo();
+  const simbolo = {ok:'✓', atraso:'⏰', nao:'·'};
+  const classeSit = {ok:'atv-bol-ok', atraso:'atv-bol-atraso', nao:'atv-bol-empty'};
+  const rotuloSit = {ok:'Entregue no prazo', atraso:'Entregue fora do prazo', nao:'Não entregue'};
+
+  // ---------- BLOCO 1: resumo ----------
+  const resumoLinhas = linhas.map(l=>{
+    const clsFreq = l.pctPresenca==null ? '' : (l.pctPresenca>=75 ? 'atv-bol-ok' : 'atv-bol-low');
+    const clsEnt = atividades.length && l.noPrazo===atividades.length ? 'atv-bol-ok'
+                 : (l.noPrazo>0 ? 'atv-bol-mid' : 'atv-bol-low');
+    return `<tr>
+      <td class="atv-bol-name">${esc(atvNomeAluno(l.u))}</td>
+      <td class="${clsFreq}">${l.aulasFalta}</td>
+      <td class="${clsFreq}">${l.pctPresenca==null?'—':l.pctPresenca+'%'}</td>
+      <td class="${clsEnt}">${l.noPrazo} de ${atividades.length}</td>
+      <td>${l.atrasadas || '—'}</td>
+      <td class="${clsEnt}"><strong>${String(l.pontosAtv).replace('.',',')}</strong></td>
+    </tr>`;
+  }).join('');
+
+  // ---------- BLOCO 2: presença por data ----------
+  let freqHtml;
+  if(!chamadas.length){
+    freqHtml = `<p class="hint">Nenhuma chamada lançada para esta turma ainda. A chamada é feita em Diário de classe, dentro de cada aula.</p>`;
+  } else {
+    const freqHead = `<tr><th class="atv-bol-name">Aluno</th>${chamadas.map(r=>`<th title="${escAttr(dataBR(r.date))} — vale ${aulasDoRegistro(r)} aula(s)">${esc(dataBR(r.date).slice(0,5))}</th>`).join('')}<th>Faltas</th><th>%</th></tr>`;
+    const freqBody = linhas.map(l=>{
+      const cells = l.presencas.map((p,i)=>{
+        const cls = p==='F' ? 'atv-bol-low' : 'atv-bol-ok';
+        return `<td class="${cls}" title="${escAttr(dataBR(chamadas[i].date))}: ${p==='F'?'falta':'presença'} (${aulasDoRegistro(chamadas[i])} aula(s))">${p}</td>`;
+      }).join('');
+      const clsFreq = l.pctPresenca==null ? '' : (l.pctPresenca>=75 ? 'atv-bol-ok' : 'atv-bol-low');
+      return `<tr><td class="atv-bol-name">${esc(atvNomeAluno(l.u))}</td>${cells}<td class="${clsFreq}"><strong>${l.aulasFalta}</strong></td><td class="${clsFreq}">${l.pctPresenca==null?'—':l.pctPresenca+'%'}</td></tr>`;
     }).join('');
-    const pctTotal = somaMax ? Math.round((soma/somaMax)*100) : null;
-    // Contagem de entregas no prazo
-    let noPrazo = 0;
-    atividades.forEach(at=>{
-      const r = (entregaPorSecao[at.sectionId]||{})[u.id];
-      if(!r || !r.submittedAt) return;
-      const sched = prazoPorSecao[at.sectionId];
-      if(!sched || !sched.closesAt || r.submittedAt <= sched.closesAt) noPrazo++;
-    });
-    const totalPontos = pontosDaMateria();
-    const pontosAtv = atividades.length ? Math.round((totalPontos * (noPrazo/atividades.length))*10)/10 : 0;
-    const clsPrazo = atividades.length && noPrazo===atividades.length ? 'atv-bol-ok' : (noPrazo>0 ? 'atv-bol-mid' : 'atv-bol-low');
-    return `<tr><td class="atv-bol-name">${esc(atvNomeAluno(u))}</td>${cells}<td><strong>${Math.round(soma*100)/100}</strong>${somaMax?` / ${Math.round(somaMax*100)/100}`:''}</td><td>${pctTotal!=null?pctTotal+'%':'—'}</td><td class="${clsPrazo}" title="Entregou ${noPrazo} de ${atividades.length} atividades dentro do prazo">${noPrazo}/${atividades.length}</td><td class="${clsPrazo}"><strong>${String(pontosAtv).replace('.',',')}</strong></td></tr>`;
-  }).join('') || `<tr><td colspan="${atividades.length+3}" class="hint">Nenhum aluno nesta turma.</td></tr>`;
+    freqHtml = `<div class="atv-bol-wrap"><table class="atv-bol-table">${freqHead}${freqBody}</table></div>`;
+  }
+
+  // ---------- BLOCO 3: entregas por atividade ----------
+  let entHtml;
+  if(!atividades.length){
+    entHtml = `<p class="hint">Nenhuma atividade criada no curso ainda.</p>`;
+  } else {
+    const entHead = `<tr><th class="atv-bol-name">Aluno</th>${atividades.map(at=>`<th title="${escAttr(at.title)} — Aula ${at.aulaNum}">A${at.aulaNum}</th>`).join('')}<th>No prazo</th></tr>`;
+    const entBody = linhas.map(l=>{
+      const cells = l.situacoes.map((s,i)=>
+        `<td class="${classeSit[s]}" title="${escAttr(atividades[i].title)}: ${rotuloSit[s]}">${simbolo[s]}</td>`).join('');
+      const clsEnt = atividades.length && l.noPrazo===atividades.length ? 'atv-bol-ok'
+                   : (l.noPrazo>0 ? 'atv-bol-mid' : 'atv-bol-low');
+      return `<tr><td class="atv-bol-name">${esc(atvNomeAluno(l.u))}</td>${cells}<td class="${clsEnt}"><strong>${l.noPrazo}/${atividades.length}</strong></td></tr>`;
+    }).join('');
+    entHtml = `<div class="atv-bol-wrap"><table class="atv-bol-table">${entHead}${entBody}</table></div>`;
+  }
 
   return `<div class="editor-form">
-    <div class="editing-type-banner">📊 Boletim de atividades</div>
-    <p class="hint">Só entram notas <strong>publicadas</strong>. Cada coluna é uma aula (passe o mouse para ver o nome da atividade). Um ponto “·” significa que ainda não há nota publicada para aquele aluno.</p>
-    <p class="hint">As duas últimas colunas implementam a regra de avaliação desta matéria: <strong>${String(pontosDaMateria()).replace('.',',')} ponto(s) por entregar as atividades no prazo</strong>, calculados proporcionalmente (entregou 8 de 10 no prazo → ${String(Math.round((pontosDaMateria()*0.8)*10)/10).replace('.',',')}). Atividades sem prazo cadastrado contam como entregues no prazo. Você altera esse total em "Organizar curso".</p>
+    <div class="editing-type-banner">📊 Boletim da turma — frequência e entregas</div>
     <div class="atv-turma-row">
       <label>Turma</label>
       <select id="atv-boletim-turma-select">${turmaOptions}</select>
     </div>
-    <div class="atv-bol-wrap"><table class="atv-bol-table">${head}${body}</table></div>
+
+    <div class="gestao-sub">Resumo do semestre</div>
+    <p class="hint">A nota de atividades vale <strong>${String(totalPontos).replace('.',',')} ponto(s)</strong> e é proporcional às entregas <strong>no prazo</strong>: entregou todas, fica com o total; entregou 8 de 10, fica com ${String(Math.round((totalPontos*0.8)*10)/10).replace('.',',')}. ${aceitaAtraso ? 'Esta matéria aceita entrega fora do prazo — ela aparece registrada, mas <strong>não conta ponto</strong>.' : 'Esta matéria <strong>não aceita</strong> entrega fora do prazo: encerrado o prazo, o envio é bloqueado.'} Você muda as duas coisas em Organizar curso.</p>
+    <div class="atv-bol-wrap"><table class="atv-bol-table">
+      <tr><th class="atv-bol-name">Aluno</th><th title="Faltas contadas em aulas, não em dias">Faltas (aulas)</th><th title="Abaixo de 75% costuma reprovar por frequência">Presença</th><th>Entregues no prazo</th><th title="Entregues depois do prazo — não contam ponto">Atrasadas</th><th>Pts atv. (0–${String(totalPontos).replace('.',',')})</th></tr>
+      ${resumoLinhas}
+    </table></div>
+    <p class="hint">Total de ${chamadas.length} chamada(s) lançada(s), somando ${aulasTotais} aula(s). Presença abaixo de 75% aparece em vermelho.</p>
+
+    <div class="gestao-sub" style="margin-top:26px;">Presença por data</div>
+    <p class="hint">P = presente, F = falta. Cada lançamento vale ${aulasPorEncontro()} aula(s) — configurável em Organizar curso. A chamada em si é feita no Diário de classe, dentro de cada aula.</p>
+    ${freqHtml}
+
+    <div class="gestao-sub" style="margin-top:26px;">Entregas por atividade</div>
+    <p class="hint">✓ entregue no prazo · ⏰ entregue fora do prazo · · não entregue. Cada coluna é uma aula (passe o mouse para ver o nome da atividade).</p>
+    ${entHtml}
+
     <div class="editor-actions">
       <button class="btn-secondary" data-action="atv-boletim-csv">⬇ Exportar boletim em CSV</button>
       <button class="btn-secondary" data-action="open-atividades-central">🗂️ Central de Atividades</button>
@@ -5475,6 +5618,46 @@ function diarioDocId(aulaId, turmaId, date){ return `${aulaId}_${turmaId}_${date
 async function fetchDiarioDaAula(aulaId){
   const snap = await db.collection(`subjects/${activeSubjectId}/class_log`).where('aulaId','==',aulaId).get();
   return snap.docs.map(d=>({id:d.id, ...d.data()})).sort((x,y)=>String(x.date).localeCompare(String(y.date)));
+}
+// NOVO (v4.10.0) — leva a escolha do professor para dentro dos registros que
+// ja existem. Duas razoes para gravar a regra em cada documento em vez de
+// consultar a materia toda vez:
+//   1) as REGRAS do Firestore conferem o prazo lendo o documento do prazo.
+//      Se a permissao de atraso morasse so na materia, o banco precisaria de
+//      uma leitura extra a cada gravacao de resposta — e ha um teto de
+//      leituras por regra. Assim a conferencia sai de graca.
+//   2) o boletim consegue calcular tudo com o que ja carregou, sem cruzar
+//      cada linha com a configuracao atual.
+async function propagarConfigDaMateria({atraso, aulasEnc}){
+  if(!activeSubjectId) return;
+  const avisos = [];
+  try{
+    if(atraso !== null && atraso !== undefined){
+      const snap = await db.collection(`subjects/${activeSubjectId}/activity_schedules`).get();
+      const docs = snap.docs;
+      for(let i=0; i<docs.length; i+=400){
+        const lote = db.batch();
+        docs.slice(i, i+400).forEach(d=> lote.update(d.ref, {aceitaForaPrazo: atraso}));
+        await lote.commit();
+      }
+      avisos.push(`${docs.length} prazo(s) atualizado(s)`);
+      ATV_MANAGE_SCHEDULES = {}; ATV_BOLETIM_SCHEDULES = null; ACTIVITY_DATA_CACHE = {};
+    }
+    if(aulasEnc !== null && aulasEnc !== undefined){
+      const snap = await db.collection(`subjects/${activeSubjectId}/class_log`).get();
+      const docs = snap.docs;
+      for(let i=0; i<docs.length; i+=400){
+        const lote = db.batch();
+        docs.slice(i, i+400).forEach(d=> lote.update(d.ref, {aulasPorEncontro: aulasEnc}));
+        await lote.commit();
+      }
+      avisos.push(`${docs.length} registro(s) de chamada atualizado(s)`);
+      DIARIO_TODOS = null; DIARIO_REGISTROS = null;
+    }
+    if(avisos.length) alert('Configuração aplicada também ao que já estava gravado:\n\n• ' + avisos.join('\n• '));
+  }catch(e){
+    alert('A configuração da matéria foi salva, mas não consegui atualizar os registros antigos.\n\nMotivo: ' + (e && e.message ? e.message : String(e)) + '\n\nTente salvar de novo — nada foi perdido.');
+  }
 }
 async function fetchDiarioCompleto(){
   const snap = await db.collection(`subjects/${activeSubjectId}/class_log`).get();
@@ -7058,12 +7241,14 @@ function userDetailForm(u){
         <label>Endereço completo</label><input type="text" spellcheck="true" lang="pt-BR" id="ud-address" value="${escAttr(p.address||'')}">
       </div>
     </div>
-    <label>Turma</label>
-    <select class="turma-assign-select" data-uid="${u.id}" style="max-width:340px;">
-      <option value="">— Sem turma —</option>
+    <label>Turma <span style="color:var(--err);">*</span></label>
+    <select class="turma-assign-select${u.turmaId?'':' campo-faltando'}" data-uid="${u.id}" style="max-width:340px;">
+      <option value="" ${u.turmaId?'':'selected'}>— Escolha a turma —</option>
       ${(allTurmas||[]).map(t=>`<option value="${t.id}" ${u.turmaId===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}
     </select>
-    <div class="hint">A troca salva na hora, sem precisar de botão. Para criar ou renomear turmas, vá em Gestão &rsaquo; Turmas.</div>
+    ${u.turmaId
+      ? '<div class="hint">A troca salva na hora, sem precisar de botão. Para criar ou renomear turmas, vá em Gestão &rsaquo; Turmas.</div>'
+      : '<div class="hint atv-aviso-sem-turma">⚠ Este aluno ainda não tem turma. Sem turma ele não aparece no boletim, não entra na chamada e não fica sujeito aos prazos das atividades. O cadastro não salva enquanto isso não for preenchido.</div>'}
     <label>Anotações do professor <span style="text-transform:none;font-weight:400;color:var(--muted);">(o aluno nunca vê isso)</span></label>
     <textarea id="ud-admin-notes" style="min-height:90px;">${esc((u.adminNotes&&u.adminNotes.notes)||'')}</textarea>
 
@@ -7545,6 +7730,21 @@ function orgScreenForm(){
       <span class="tip has-tip" data-tip="Vale só para esta matéria. O total é dividido pelo número de atividades: com 3 atividades cada uma vale 1 ponto; com 6, cada uma vale 0,5.">?</span>
     </label>
     <input type="text" id="org-pontos-atividades" value="${String(pontosDaMateria()).replace('.',',')}" style="max-width:120px;">
+    <label>Aceitar respostas fora do prazo
+      <span class="tip has-tip" data-tip="Com Não, passou o prazo o aluno não consegue mais enviar nada — nem pelo navegador, nem por caminho nenhum: o banco de dados recusa. Com Sim, ele ainda envia depois do fechamento, e a entrega aparece no boletim marcada como fora do prazo (sem valer ponto).">?</span>
+    </label>
+    <select id="org-aceita-fora-prazo" style="max-width:220px;">
+      <option value="nao" ${aceitaForaDoPrazo()?'':'selected'}>Não — prazo encerrado, entrega bloqueada</option>
+      <option value="sim" ${aceitaForaDoPrazo()?'selected':''}>Sim — aceita, marcando como fora do prazo</option>
+    </select>
+    <label>Aulas por encontro
+      <span class="tip has-tip" data-tip="Quantas aulas cada lançamento de chamada representa. Numa aula de 1h40 são 2 aulas; num encontro de 50min, 1. Cada falta e cada presença do diário passa a valer esse número.">?</span>
+    </label>
+    <select id="org-aulas-por-encontro" style="max-width:220px;">
+      <option value="2" ${aulasPorEncontro()===2?'selected':''}>2 aulas por encontro (1h40)</option>
+      <option value="1" ${aulasPorEncontro()===1?'selected':''}>1 aula por encontro (50min)</option>
+    </select>
+    <div class="hint">Estas duas opções mudam a regra de avaliação da matéria inteira. Ao salvar, o sistema atualiza os prazos e os registros de chamada já gravados para seguirem a nova escolha — você não precisa refazer nada à mão.</div>
     <label>Descrição do cabeçalho (linha pequena abaixo do título)</label>
     <input type="text" spellcheck="true" lang="pt-BR" id="org-subject-description" value="${escAttr(currentSubject.description||'')}" placeholder="Ex.: Administração de Empresas · 8º Semestre · Faculdade da Fundação Educacional de Araçatuba">
     <div class="hint">Para colocar uma aula ANTES do Bloco I (aula de apresentação da disciplina), escolha "★ Antes do Bloco I" no seletor de bloco daquela aula. Mude números, títulos, blocos e visibilidade à vontade. Nada é salvo até você clicar em "Salvar todas as alterações" no final. Excluir aqui também é definitivo (use um backup se quiser voltar atrás).</div>
@@ -7970,7 +8170,9 @@ function render(){
       }
       if(editState.turmaId===null && allTurmas && allTurmas.length){ editState.turmaId = allTurmas[0].id; }
     }
-    if(abaAtual === 'frequencia' || abaAtual === 'estatisticas' || abaAtual === 'relatorios'){
+    // ALTERADO (v4.10.0) — o boletim passou a mostrar frequencia tambem,
+    // entao precisa dos registros de chamada, nao so das respostas.
+    if(abaAtual === 'boletim' || abaAtual === 'frequencia' || abaAtual === 'estatisticas' || abaAtual === 'relatorios'){
       if(DIARIO_TODOS===null){
         fetchDiarioCompleto().then(l=>{ DIARIO_TODOS = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ DIARIO_TODOS = []; });
       }
@@ -8165,6 +8367,9 @@ function render(){
   }
   if(editState && editState.kind==='atividadesBoletim'){
     content.innerHTML = comCabecalho('atividadesBoletim', atividadesBoletimForm());
+    if(DIARIO_TODOS===null){
+      fetchDiarioCompleto().then(l=>{ DIARIO_TODOS = l; if(editState && editState.kind==='atividadesBoletim') render(); }).catch(()=>{ DIARIO_TODOS = []; });
+    }
     if(allTurmas===null){
       fetchTurmas().then(()=>{ if(editState && editState.kind==='atividadesBoletim') render(); }).catch(()=>{ allTurmas = []; });
     }
@@ -9506,9 +9711,12 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const closesAt = closesVal ? new Date(closesVal).getTime() : null;
     const sectionId = editState.sectionId;
     try{
+      // A regra de atraso viaja JUNTO com o prazo — e o dado que as regras do
+      // Firestore consultam na hora de aceitar ou recusar a resposta.
+      const permiteAtraso = aceitaForaDoPrazo();
       await db.collection(`subjects/${activeSubjectId}/activity_schedules`).doc(`${sectionId}_${turmaId}`)
-        .set({sectionId, turmaId, aulaNum: editState.aulaNum, opensAt, closesAt, updatedAt: Date.now()});
-      ATV_MANAGE_SCHEDULES[turmaId] = {sectionId, turmaId, aulaNum: editState.aulaNum, opensAt, closesAt};
+        .set({sectionId, turmaId, aulaNum: editState.aulaNum, opensAt, closesAt, aceitaForaPrazo: permiteAtraso, updatedAt: Date.now()});
+      ATV_MANAGE_SCHEDULES[turmaId] = {sectionId, turmaId, aulaNum: editState.aulaNum, opensAt, closesAt, aceitaForaPrazo: permiteAtraso};
       // CORRIGIDO (v4.9.11) — o cache da tela do aluno guardava a agenda ANTIGA
       // (normalmente "sem prazo", de antes do prazo existir) e nunca era
       // limpo. Resultado: acabava de cadastrar o prazo, abria como aluno e a
@@ -9797,6 +10005,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const payload = {
       subjectId: activeSubjectId, aulaId, aulaNum: editState.aulaNum, turmaId, date,
       absences, totalCount, presentCount: totalCount - absences.length,
+      aulasPorEncontro: aulasPorEncontro(),   // quanto vale este lançamento (v4.10.0)
       conteudo: (document.getElementById('diario-conteudo').value||'').trim(),
       obs: (document.getElementById('diario-obs').value||'').trim(),
       updatedAt: Date.now(), updatedBy: currentUser.uid,
@@ -9855,42 +10064,33 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='atv-boletim-csv'){
+    // O CSV sai do MESMO calculo da tela (boletimDadosDaTurma) — nao ha uma
+    // segunda conta paralela que possa divergir do que o professor viu.
     const turmaId = editState.turmaId;
-    const atividades = collectAllAtividades();
-    const alunos = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId)
-      .sort((x,y)=> String((x.profile&&x.profile.fullName)||x.name||'').localeCompare(String((y.profile&&y.profile.fullName)||y.name||'')));
-    const porSecao = {};
-    (ATV_BOLETIM_DATA||[]).forEach(r=>{
-      if(!r.grading || !r.grading.published) return;
-      (porSecao[r.sectionId] = porSecao[r.sectionId] || {})[r.studentUid] = r;
-    });
-    const prazoPorSecaoCsv = {};
-    (ATV_BOLETIM_SCHEDULES||[]).forEach(s=>{ if(s.turmaId===turmaId) prazoPorSecaoCsv[s.sectionId] = s; });
-    const entregaPorSecaoCsv = {};
-    (ATV_BOLETIM_DATA||[]).forEach(r=>{ (entregaPorSecaoCsv[r.sectionId] = entregaPorSecaoCsv[r.sectionId]||{})[r.studentUid] = r; });
-    const linhas = [['Aluno', ...atividades.map(at=>`Aula ${at.aulaNum} - ${at.title}`), 'Total', 'Maximo', 'Entregues no prazo', 'Total atividades', `Pontos atividades (0-${pontosDaMateria()})`]];
-    alunos.forEach(u=>{
-      let soma=0, somaMax=0;
-      const cells = atividades.map(at=>{
-        const r = (porSecao[at.sectionId]||{})[u.id];
-        if(!r || !r.grading) return '';
-        const nota = r.grading.score!=null ? r.grading.score : 0;
-        soma += nota; somaMax += (r.grading.maxScore||0);
-        return String(nota).replace('.',',');
-      });
-      let noPrazo = 0;
-      atividades.forEach(at=>{
-        const r = (entregaPorSecaoCsv[at.sectionId]||{})[u.id];
-        if(!r || !r.submittedAt) return;
-        const sc = prazoPorSecaoCsv[at.sectionId];
-        if(!sc || !sc.closesAt || r.submittedAt <= sc.closesAt) noPrazo++;
-      });
-      const pontosAtv = atividades.length ? Math.round((pontosDaMateria()*(noPrazo/atividades.length))*10)/10 : 0;
-      linhas.push([atvNomeAluno(u), ...cells, String(Math.round(soma*100)/100).replace('.',','), String(Math.round(somaMax*100)/100).replace('.',','),
-                   String(noPrazo), String(atividades.length), String(pontosAtv).replace('.',',')]);
+    const d = boletimDadosDaTurma(turmaId);
+    const rotSit = {ok:'No prazo', atraso:'Fora do prazo', nao:'Nao entregue'};
+    const cab = ['Aluno', 'Faltas (aulas)', 'Aulas dadas', 'Presenca %',
+                 'Entregues no prazo', 'Entregues fora do prazo', 'Total de atividades',
+                 `Pontos atividades (0-${d.totalPontos})`,
+                 ...d.chamadas.map(r=>`Chamada ${dataBR(r.date)}`),
+                 ...d.atividades.map(at=>`Aula ${at.aulaNum} - ${at.title}`)];
+    const linhasCsv = [cab];
+    d.linhas.forEach(l=>{
+      linhasCsv.push([
+        atvNomeAluno(l.u),
+        String(l.aulasFalta),
+        String(d.aulasTotais),
+        l.pctPresenca==null ? '' : String(l.pctPresenca),
+        String(l.noPrazo),
+        String(l.atrasadas),
+        String(d.atividades.length),
+        String(l.pontosAtv).replace('.',','),
+        ...l.presencas,
+        ...l.situacoes.map(s=>rotSit[s]),
+      ]);
     });
     const t = (allTurmas||[]).find(x=>x.id===turmaId);
-    baixarCsv(linhas, `boletim-atividades-${(t&&t.name?t.name:'turma').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}.csv`);
+    baixarCsv(linhasCsv, `boletim-${(t&&t.name?t.name:'turma').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}.csv`);
     return;
   }
   if(action==='open-atv-boletim'){
@@ -9999,6 +10199,14 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const uid = btn.dataset.uid;
     const u = cachedUsersList.find(x=>x.id===uid);
     if(!u) return;
+    // A trava vale no Salvar tambem, e nao so no seletor: e aqui que o
+    // professor conclui o cadastro, entao e aqui que a falta precisa doer.
+    if(!roleIsStaff(u.role) && !u.turmaId){
+      alert('Não dá para salvar este cadastro sem turma.\n\nEscolha a turma do aluno no campo "Turma" acima e salve de novo. Se a turma ainda não existe, crie em Gestão › Turmas.');
+      const selTurma = document.querySelector(`.turma-assign-select[data-uid="${uid}"]`);
+      if(selTurma){ selTurma.focus(); selTurma.classList.add('campo-faltando'); }
+      return;
+    }
     const profile = {
       fullName: document.getElementById('ud-fullname').value.trim(),
       ra: document.getElementById('ud-ra').value.trim(),
@@ -10350,17 +10558,31 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       return;
     }
     const newSubjectDescription = document.getElementById('org-subject-description').value.trim();
+    // NOVO (v4.10.0) — as duas regras de avaliacao da materia.
+    const novoAceitaAtraso = ((document.getElementById('org-aceita-fora-prazo')||{}).value || 'nao') === 'sim';
+    const novoAulasEnc = parseInt((document.getElementById('org-aulas-por-encontro')||{}).value, 10) === 1 ? 1 : 2;
+    const mudouAtraso = novoAceitaAtraso !== aceitaForaDoPrazo();
+    const mudouAulasEnc = novoAulasEnc !== aulasPorEncontro();
     if(newSubjectName && activeSubjectId){
       try{
-        const patch = {name: newSubjectName, description: newSubjectDescription};
+        const patch = {name: newSubjectName, description: newSubjectDescription,
+                       aceitaForaPrazo: novoAceitaAtraso, aulasPorEncontro: novoAulasEnc};
         if(!isNaN(novoPontos) && novoPontos > 0) patch.pontosAtividades = novoPontos;
         await db.collection('subjects').doc(activeSubjectId).update(patch);
         const s = allSubjects.find(x=>x.id===activeSubjectId);
         if(s){ s.name = newSubjectName; s.description = newSubjectDescription;
+               s.aceitaForaPrazo = novoAceitaAtraso; s.aulasPorEncontro = novoAulasEnc;
                if(patch.pontosAtividades) s.pontosAtividades = patch.pontosAtividades; }
         document.getElementById('site-title-text').textContent = newSubjectName;
       }catch(e){
         alert('Não foi possível salvar o nome/descrição da matéria: ' + (e && e.message ? e.message : String(e)));
+      }
+      // As duas opcoes acima nao valem so daqui pra frente: elas reescrevem o
+      // que ja esta gravado, senao a materia ficaria com metade dos prazos
+      // numa regra e metade em outra.
+      if(mudouAtraso || mudouAulasEnc){
+        await propagarConfigDaMateria({atraso: mudouAtraso ? novoAceitaAtraso : null,
+                                       aulasEnc: mudouAulasEnc ? novoAulasEnc : null});
       }
     }
     const blockCards = [...document.querySelectorAll('.org-block-card')];
