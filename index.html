@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.9                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.10                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -517,7 +517,11 @@
   /* Altura fixa: sem isso, ir de Matérias (7 abas) para Configurações (1) fazia
      a tela inteira pular para cima. */
   .gestao-abas-linha{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;min-height:34px;}
-  .gestao-abas{display:flex;gap:4px;flex-wrap:wrap;align-items:center;}
+  /* ALTERADO (v4.9.10) — a altura minima e o respiro estavam declarados em
+     .gestao-abas-linha, uma classe que nenhum HTML gera (sobra de refatoracao).
+     Na pratica a faixa ficava colada no conteudo e a tela pulava ao ir de um
+     grupo com varias abas para um com uma so. Agora estao onde sao usados. */
+  .gestao-abas{display:flex;gap:4px;flex-wrap:wrap;align-items:center;min-height:34px;margin-bottom:16px;}
   .gestao-acoes-topo{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   .gestao-aba{
     background:none;border:none;
@@ -1684,6 +1688,40 @@
   .atividade-title{font-size:17px;font-weight:800;color:#5C3D0A;margin:10px 0 4px 0;}
   .atividade-statement{font-size:14px;line-height:1.55;color:var(--charcoal);white-space:pre-wrap;margin-bottom:6px;}
   .atividade-prazo{font-size:12.5px;font-weight:700;color:#8A5A0F;margin:4px 0 10px 0;}
+  /* NOVO (v4.9.10) — aviso de prazo encerrado / ainda nao aberto. */
+  .atividade-prazo-fechado{
+    background:#FBEFE6;border:1px solid #E0B79A;border-left:3px solid #B5622B;
+    border-radius:8px;padding:10px 12px;color:#8A3B12;font-weight:500;line-height:1.5;
+  }
+  .atividade-prazo-fechado strong{font-weight:700;}
+  /* Resposta so de leitura (fora do prazo / ja entregue). */
+  .atv-ans-lida{
+    border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+    background:var(--tint-soft);font-size:13.5px;line-height:1.6;
+  }
+  .atv-ans-lida em{color:var(--muted);}
+  /* Alternativa correta revelada depois da correcao publicada. */
+  .atv-option-row.atv-option-correta{
+    border-color:#2E7D32;background:#EAF6EC;box-shadow:inset 3px 0 0 #2E7D32;
+  }
+  .atv-option-row.atv-option-correta .atv-option-text{color:#1B5E20;font-weight:600;}
+  .atv-option-tag-certa{
+    margin-left:auto;font-size:11px;font-weight:700;color:#1B5E20;
+    background:#CDEBD3;border-radius:999px;padding:2px 9px;white-space:normal;
+  }
+  .atv-vf-row label.atv-vf-correta{
+    color:#1B5E20;font-weight:700;background:#EAF6EC;border-radius:6px;padding:2px 7px;
+  }
+  /* Gabarito escrito pelo professor — visto pelo aluno apos a publicacao. */
+  .atv-gabarito{
+    margin-top:10px;border:1px solid #A9D3B0;border-left:3px solid #2E7D32;
+    background:#F1F9F2;border-radius:8px;padding:10px 12px;
+  }
+  .atv-gabarito-head{font-size:12px;font-weight:700;color:#1B5E20;margin-bottom:5px;}
+  .atv-gabarito-text{font-size:13.5px;line-height:1.6;color:var(--ink);}
+  .atv-gabarito-prof{margin:8px 0;}
+  .atv-sem-gabarito{margin:8px 0;}
+  .atv-publicar-explica{margin-top:14px;}
   .atividade-status{font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:20px;background:#EEE;color:#555;}
   .atividade-status-rascunho{background:#FFF3D0;color:#8A6A0F;}
   .atividade-status-enviado{background:#E3E8FB;color:#333F8A;}
@@ -1859,6 +1897,27 @@
   .student-notes-head span{font-weight:400;font-size:11.5px;color:#A8944A;}
   .student-notes textarea{width:100%;min-height:110px;border:1px solid #E4D9A8;border-radius:8px;padding:10px 12px;font-size:13.5px;font-family:inherit;line-height:1.55;background:var(--surface-raised);resize:vertical;}
   .student-notes textarea:focus{outline:none;border-color:#B8A54E;}
+  /* NOVO (v4.9.10) — o caderno do aluno virou texto formatado, com a mesma
+     barra de ferramentas que o professor usa para escrever a aula. */
+  .student-notes .rich-text{
+    width:100%;min-height:110px;border:1px solid #E4D9A8;border-radius:0 0 8px 8px;
+    border-top:none;padding:10px 12px;font-size:13.5px;line-height:1.6;
+    background:var(--surface-raised);
+  }
+  .student-notes .rich-text:focus{outline:none;border-color:#B8A54E;}
+  .student-notes .rich-toolbar{border-radius:8px 8px 0 0;margin-bottom:0;}
+  /* Dica dentro do campo vazio do caderno (contenteditable nao aceita
+     placeholder nativo, entao vem do atributo data-placeholder). */
+  .student-notes .rich-text:empty::before{
+    content:attr(data-placeholder);color:var(--muted);font-style:italic;pointer-events:none;
+  }
+  .atv-aviso-sem-turma{
+    background:#FBF3E4;border:1px solid #E3C98D;border-left:3px solid #B5872B;
+    border-radius:8px;padding:9px 12px;color:#7A5610;
+  }
+  .my-note-text{line-height:1.6;}
+  .my-note-text p{margin:0 0 8px 0;}
+  .my-note-text p:last-child{margin-bottom:0;}
   .student-notes-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:8px;}
   #student-note-status{font-size:12px;font-weight:700;}
   .ai-import-box{margin-top:18px;background:var(--ice-tint);border-radius:12px;padding:14px 16px;}
@@ -2950,7 +3009,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.9</div>
+<div class="version-tag hidden" id="version-tag">v4.9.10</div>
 
 
 <script>
@@ -4216,11 +4275,25 @@ const ATV_STATUS_LABEL = {
 };
 // O aluno só perde o direito de editar quando entrega, quando o prazo fecha ou
 // quando a nota já foi publicada.
+// NOVO (v4.9.10) — em que ponto da janela de resposta a turma esta.
+//   'antes'  = o professor marcou uma data de abertura que ainda nao chegou
+//   'aberta' = pode responder
+//   'depois' = o prazo encerrou
+// Sem prazo cadastrado a atividade fica sempre aberta, como antes. Ate a
+// v4.9.9 a data de ABERTURA era gravada mas nunca conferida — a atividade
+// ficava respondivel antes da hora.
+function atvJanelaPrazo(schedule){
+  if(!schedule) return 'aberta';
+  const agora = Date.now();
+  if(schedule.opensAt && agora < schedule.opensAt) return 'antes';
+  if(schedule.closesAt && agora > schedule.closesAt) return 'depois';
+  return 'aberta';
+}
 function atvIsLocked(response, schedule){
   const g = response && response.grading;
   if(g && g.published) return true;
   if(response && response.submittedAt) return true;
-  if(schedule && schedule.closesAt && Date.now() > schedule.closesAt) return true;
+  if(atvJanelaPrazo(schedule) !== 'aberta') return true;
   return false;
 }
 // Quanto valem, no total, as entregas no prazo desta materia. Ate a v3.6.0
@@ -4265,7 +4338,29 @@ async function loadActivityData(sectionId, aulaId){
     const schedPromise = turmaId ? db.collection(`subjects/${activeSubjectId}/activity_schedules`).doc(`${sectionId}_${turmaId}`).get() : Promise.resolve(null);
     const [respSnap, schedSnap] = await Promise.all([respPromise, schedPromise]);
     ACTIVITY_DATA_CACHE[sectionId].response = respSnap.exists ? respSnap.data() : null;
-    ACTIVITY_DATA_CACHE[sectionId].schedule = (schedSnap && schedSnap.exists) ? schedSnap.data() : null;
+    let agenda = (schedSnap && schedSnap.exists) ? schedSnap.data() : null;
+    // CORRIGIDO (v4.9.10) — o prazo e cadastrado POR TURMA. Aluno ainda sem
+    // turma atribuida nao encontrava prazo nenhum e conseguia responder para
+    // sempre, mesmo com a atividade encerrada para todo mundo. Agora, nesse
+    // caso, ele fica sujeito ao prazo MAIS FOLGADO cadastrado para a
+    // atividade — nunca bloqueia quem ainda teria direito de responder, e
+    // deixa de existir a brecha do "aluno sem turma responde eternamente".
+    if(!agenda){
+      try{
+        const todos = await db.collection(`subjects/${activeSubjectId}/activity_schedules`)
+          .where('sectionId','==',sectionId).get();
+        const lista = todos.docs.map(d=>d.data()).filter(Boolean);
+        if(lista.length){
+          agenda = lista.reduce((maisFolgado, atual)=>{
+            if(!maisFolgado) return atual;
+            const fimA = maisFolgado.closesAt || Infinity;
+            const fimB = atual.closesAt || Infinity;
+            return fimB > fimA ? atual : maisFolgado;
+          }, null);
+        }
+      }catch(e){ /* sem permissao ou sem rede: segue sem prazo, como antes */ }
+    }
+    ACTIVITY_DATA_CACHE[sectionId].schedule = agenda;
   }catch(e){ /* falha ao carregar não pode travar a aula — trata como rascunho vazio */ }
   ACTIVITY_DATA_CACHE[sectionId].loaded = true;
 }
@@ -4282,14 +4377,28 @@ function renderAtividadeStudentForm(sec, response, schedule){
   const answers = (response && response.answers) || {};
   const locked = atvIsLocked(response, schedule);
   const publicada = !!(response && response.grading && response.grading.published);
+  // NOVO (v4.9.10) — fora do prazo a atividade continua VISIVEL (o aluno
+  // precisa poder reler o enunciado e o que respondeu), mas sem nenhum campo
+  // de resposta e com o motivo escrito em cima, sem rodeios.
+  const janela = atvJanelaPrazo(schedule);
+  const fmtPrazo = ts => new Date(ts).toLocaleString('pt-BR');
   const statusLabel = publicada ? '✅ Corrigida — veja a nota e os comentários abaixo'
+    : (janela==='depois' ? '🔒 Fora do prazo para respostas'
+    : (janela==='antes' ? '🔒 Ainda não abriu para respostas'
     : (status==='entregue' ? '📨 Entregue — aguardando correção do professor'
-    : '✏️ Em andamento — salva sozinho enquanto você digita');
-  const prazoInfo = (schedule && schedule.closesAt) ? `<div class="atividade-prazo">Prazo: até ${new Date(schedule.closesAt).toLocaleString('pt-BR')}</div>` : '';
+    : '✏️ Em andamento — salva sozinho enquanto você digita')));
+  let prazoInfo = '';
+  if(janela === 'antes'){
+    prazoInfo = `<div class="atividade-prazo atividade-prazo-fechado">🔒 <strong>Ainda fora do prazo para respostas.</strong> Esta atividade abre em ${fmtPrazo(schedule.opensAt)}${schedule.closesAt?` e fecha em ${fmtPrazo(schedule.closesAt)}`:''}.</div>`;
+  } else if(janela === 'depois'){
+    prazoInfo = `<div class="atividade-prazo atividade-prazo-fechado">🔒 <strong>Fora do prazo para respostas.</strong> O prazo encerrou em ${fmtPrazo(schedule.closesAt)}. Você ainda pode ler o enunciado${(response&&response.answers)?' e o que respondeu':''}, mas não é mais possível enviar resposta.</div>`;
+  } else if(schedule && schedule.closesAt){
+    prazoInfo = `<div class="atividade-prazo">Prazo para responder: até ${fmtPrazo(schedule.closesAt)}</div>`;
+  }
   // O aluno só vê nota/feedback depois que o professor PUBLICA a correção.
   const gForItems = publicada ? (response.grading || {}) : null;
   const itemsHtml = (sec.items||[]).map((item,i)=>{
-    const inputHtml = renderAtividadeItemInput(sec.id, item, i, answers[item.itemId], locked);
+    const inputHtml = renderAtividadeItemInput(sec.id, item, i, answers[item.itemId], locked, publicada);
     if(!gForItems) return inputHtml;
     const maxPts = atvItemMaxPoints(item);
     const pi = (gForItems.perItem && gForItems.perItem[item.itemId]) || null;
@@ -4340,32 +4449,53 @@ function atvTableHtml(sectionId, item, rows, locked){
   return html;
 }
 
-function renderAtividadeItemInput(sectionId, item, idx, value, locked){
+// ALTERADO (v4.9.10) — dois comportamentos novos:
+//   locked  : nao existe mais campo digitavel. O aluno ve o que respondeu
+//             (ou "sem resposta") como texto, nunca uma caixa desativada —
+//             era pedido explicito: fora do prazo, nada de campo para digitar.
+//   revelar : depois da correcao PUBLICADA, a alternativa correta das questoes
+//             fechadas aparece marcada em verde. Sem isso, quem errava nunca
+//             descobria qual era a certa.
+function renderAtividadeItemInput(sectionId, item, idx, value, locked, revelar){
   const head = `<div class="atv-item-prompt">${idx+1}. ${esc(item.prompt||'')}</div>`;
+  const TIPOS_ABERTOS = ['dissertativa','curta','lista','tabela'];
   let body = '';
-  if(item.type==='dissertativa'){
+  if(locked && TIPOS_ABERTOS.includes(item.type)){
+    // Resposta so de leitura — mesma apresentacao que o professor ve ao corrigir.
+    body = `<div class="atv-ans-lida">${renderAtividadeAnswerReadonly(item, value)}</div>`;
+  } else if(item.type==='dissertativa'){
     const paras = (value && value.length) ? value : [''];
     const html = paras.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${p}</p>`).join('');
     const fieldId = 'atv-ans-'+sectionId+'-'+item.itemId;
-    body = locked
-      ? `<div class="rich-content">${paras.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${richOut(p)}</p>`).join('')}</div>`
-      : `${richToolbarHtml(fieldId)}<div id="${fieldId}" class="rich-text atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="dissertativa" contenteditable="true" spellcheck="true" lang="pt-BR">${html}</div>`;
+    body = `${richToolbarHtml(fieldId)}<div id="${fieldId}" class="rich-text atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="dissertativa" contenteditable="true" spellcheck="true" lang="pt-BR">${html}</div>`;
   } else if(item.type==='curta'){
-    body = `<input type="text" class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="curta" value="${escAttr(value||'')}" ${locked?'disabled':''}>`;
+    body = `<input type="text" class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="curta" value="${escAttr(value||'')}">`;
   } else if(item.type==='lista'){
-    body = `<textarea class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="lista" placeholder="Um item por linha" ${locked?'disabled':''}>${esc((value||[]).join('\n'))}</textarea>`;
+    body = `<textarea class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="lista" placeholder="Um item por linha">${esc((value||[]).join('\n'))}</textarea>`;
   } else if(item.type==='tabela'){
     body = atvTableHtml(sectionId, item, value, locked);
   } else if(item.type==='checklist'){
-    body = (item.options||[]).map((opt,oi)=>`<label class="atv-option-row"><span class="atv-option-letter">${String.fromCharCode(65+oi)}</span><input type="checkbox" class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="checklist" data-opt="${escAttr(opt)}" ${(value||[]).includes(opt)?'checked':''} ${locked?'disabled':''}><span class="atv-option-text">${esc(opt)}</span></label>`).join('');
+    const certas = (revelar && item.correctOptions && item.correctOptions.length)
+      ? new Set(item.correctOptions.map(v=>String(v).trim())) : null;
+    body = (item.options||[]).map((opt,oi)=>{
+      const ehCerta = certas && certas.has(String(opt).trim());
+      return `<label class="atv-option-row${ehCerta?' atv-option-correta':''}"><span class="atv-option-letter">${String.fromCharCode(65+oi)}</span><input type="checkbox" class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="checklist" data-opt="${escAttr(opt)}" ${(value||[]).includes(opt)?'checked':''} ${locked?'disabled':''}><span class="atv-option-text">${esc(opt)}</span>${ehCerta?'<span class="atv-option-tag-certa">resposta correta</span>':''}</label>`;
+    }).join('');
   } else if(item.type==='multipla_escolha'){
-    body = (item.options||[]).map((opt,oi)=>`<label class="atv-option-row"><span class="atv-option-letter">${String.fromCharCode(65+oi)}</span><input type="radio" class="atv-ans-field" name="atv-mc-${esc(sectionId)}-${esc(item.itemId)}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="multipla_escolha" value="${escAttr(opt)}" ${value===opt?'checked':''} ${locked?'disabled':''}><span class="atv-option-text">${esc(opt)}</span></label>`).join('');
+    const certa = (revelar && item.correctOption) ? String(item.correctOption).trim() : null;
+    body = (item.options||[]).map((opt,oi)=>{
+      const ehCerta = certa && String(opt).trim() === certa;
+      return `<label class="atv-option-row${ehCerta?' atv-option-correta':''}"><span class="atv-option-letter">${String.fromCharCode(65+oi)}</span><input type="radio" class="atv-ans-field" name="atv-mc-${esc(sectionId)}-${esc(item.itemId)}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="multipla_escolha" value="${escAttr(opt)}" ${value===opt?'checked':''} ${locked?'disabled':''}><span class="atv-option-text">${esc(opt)}</span>${ehCerta?'<span class="atv-option-tag-certa">resposta correta</span>':''}</label>`;
+    }).join('');
   } else if(item.type==='verdadeiro_falso'){
+    const gabVF = (revelar && item.correctAnswers && item.correctAnswers.length) ? item.correctAnswers : null;
     body = (item.statements||[]).map((st,si)=>{
       const v = (value||[])[si];
+      const certa = gabVF ? gabVF[si] : null;
       return `<div class="atv-vf-row"><span class="atv-vf-statement">${esc(st)}</span>
-        <label><input type="radio" class="atv-ans-field" name="atv-vf-${esc(sectionId)}-${esc(item.itemId)}-${si}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="verdadeiro_falso" data-si="${si}" value="V" ${v==='V'?'checked':''} ${locked?'disabled':''}> Verdadeiro</label>
-        <label><input type="radio" class="atv-ans-field" name="atv-vf-${esc(sectionId)}-${esc(item.itemId)}-${si}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="verdadeiro_falso" data-si="${si}" value="F" ${v==='F'?'checked':''} ${locked?'disabled':''}> Falso</label>
+        <label class="${certa==='V'?'atv-vf-correta':''}"><input type="radio" class="atv-ans-field" name="atv-vf-${esc(sectionId)}-${esc(item.itemId)}-${si}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="verdadeiro_falso" data-si="${si}" value="V" ${v==='V'?'checked':''} ${locked?'disabled':''}> Verdadeiro</label>
+        <label class="${certa==='F'?'atv-vf-correta':''}"><input type="radio" class="atv-ans-field" name="atv-vf-${esc(sectionId)}-${esc(item.itemId)}-${si}" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="verdadeiro_falso" data-si="${si}" value="F" ${v==='F'?'checked':''} ${locked?'disabled':''}> Falso</label>
+        ${certa?`<span class="atv-option-tag-certa">correta: ${certa==='V'?'Verdadeiro':'Falso'}</span>`:''}
       </div>`;
     }).join('');
   } else if(item.type==='associacao'){
@@ -4375,7 +4505,16 @@ function renderAtividadeItemInput(sectionId, item, idx, value, locked){
       return `<div class="atv-assoc-row"><span class="atv-assoc-left">${esc(lft)}</span><select class="atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="associacao" data-li="${li}" ${locked?'disabled':''}><option value="">Selecione…</option>${opts}</select></div>`;
     }).join('');
   }
-  return `<div class="atv-item">${head}${body}</div>`;
+  // NOVO (v4.9.10) — a resposta esperada que o professor escreveu ao montar a
+  // questao. Aparece SEMPRE que a correcao ja foi publicada, em qualquer tipo
+  // de questao — inclusive nas abertas, onde antes nao havia gabarito nenhum.
+  const gabarito = (revelar && item.modelAnswer && String(item.modelAnswer).trim())
+    ? `<div class="atv-gabarito">
+         <div class="atv-gabarito-head">✅ Resposta esperada (gabarito do professor)</div>
+         <div class="atv-gabarito-text">${esc(String(item.modelAnswer)).replace(/\n/g,'<br>')}</div>
+       </div>`
+    : '';
+  return `<div class="atv-item">${head}${body}${gabarito}</div>`;
 }
 
 function collectAtividadeAnswersFromDom(sectionId){
@@ -4592,6 +4731,12 @@ function atvGradingPanelHtml(sec, resp, user, draft){
       <div class="atv-grade-answer-label">Resposta do aluno</div>
       <div class="atv-grade-answer${semResposta?' atv-sem-resposta':''}">${renderAtividadeAnswerReadonly(it, val)}</div>
       ${atvVerdictControlsHtml(it, saved, auto)}
+      ${(it.modelAnswer && String(it.modelAnswer).trim())
+        ? `<div class="atv-gabarito atv-gabarito-prof">
+             <div class="atv-gabarito-head">✅ Gabarito que o aluno vai ler ao publicar</div>
+             <div class="atv-gabarito-text">${esc(String(it.modelAnswer)).replace(/\n/g,'<br>')}</div>
+           </div>`
+        : `<div class="hint atv-sem-gabarito">Esta questão não tem resposta esperada cadastrada — o aluno vai ver só o seu feedback abaixo. Para incluir um gabarito, edite a atividade na aula e preencha "Resposta esperada".</div>`}
       <label class="atv-fb-label">Feedback desta questão (o aluno só vê depois de publicada)</label>
       <textarea class="atv-item-grade-feedback" data-key="${escAttr(keyBase)}" data-item-id="${escAttr(it.itemId)}" placeholder="Onde errou, o que faltou, o que você esperava da resposta...">${esc(saved.feedback||'')}</textarea>
       ${atvFeedbackBankHtml(keyBase)}
@@ -4608,8 +4753,9 @@ function atvGradingPanelHtml(sec, resp, user, draft){
     <div class="atv-grading-section-label atv-grading-divider">Comentário geral da atividade (opcional)</div>
     ${richToolbarHtml('atv-grade-comment')}
     <div id="atv-grade-comment" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR">${commentHtml}</div>
+    <div class="hint atv-publicar-explica">Enquanto você não publicar, o aluno <strong>não vê nada</strong> — nem nota, nem feedback, nem gabarito. <strong>Salvar rascunho</strong> guarda a correção só para você; <strong>Salvar e publicar para o aluno</strong> é o botão que libera tudo de uma vez para ele.</div>
     <div class="editor-actions atv-grading-actions">
-      <button class="btn-secondary" data-action="save-atv-grading" data-uid="${escAttr(user.id)}" data-publish="0">💾 Salvar rascunho</button>
+      <button class="btn-secondary" data-action="save-atv-grading" data-uid="${escAttr(user.id)}" data-publish="0">💾 Salvar rascunho (o aluno não vê)</button>
       <button class="btn-primary" data-action="save-atv-grading" data-uid="${escAttr(user.id)}" data-publish="1">📤 Salvar e publicar para o aluno</button>
       ${(resp && resp.submittedAt) ? `<button class="btn-secondary" data-action="atv-reopen-student" data-uid="${escAttr(user.id)}">🔓 Reabrir para o aluno</button>` : ''}
       ${jaPublicada ? `<span class="atv-published-tag">Publicada em ${new Date(resp.grading.gradedAt).toLocaleString('pt-BR')}</span>` : ''}
@@ -5092,6 +5238,14 @@ function atvAnaliseHtml(sec, ctx){
 }
 
 // ---------- ABA: PRAZO ----------
+// NOVO (v4.9.10) — o prazo e por turma. Quem nao tem turma nao entra em
+// nenhuma agenda, entao o professor precisa saber que essas contas existem.
+function atvAvisoAlunosSemTurmaHtml(){
+  const semTurma = (cachedUsersList||[]).filter(u=> !roleIsStaff(u.role) && !u.archived && !u.turmaId);
+  if(!semTurma.length) return '';
+  const nomes = semTurma.slice(0,6).map(u=>esc((u.profile&&u.profile.fullName)||u.name||u.email||'aluno')).join(', ');
+  return `<div class="hint atv-aviso-sem-turma">⚠ ${semTurma.length} aluno(s) ainda sem turma: ${nomes}${semTurma.length>6?' e outros':''}. Como o prazo é cadastrado por turma, essas contas ficam sujeitas ao prazo mais folgado desta atividade. Atribua a turma em Alunos → Ativos para o prazo valer corretamente.</div>`;
+}
 function atvPrazoHtml(sec, ctx){
   if(!ctx.turmaId) return '<p class="hint">Esta matéria ainda não tem turmas cadastradas (crie turmas no Painel de alunos).</p>';
   const s = ctx.schedule;
@@ -5100,7 +5254,8 @@ function atvPrazoHtml(sec, ctx){
       <div><label>Fecha em (opcional)</label><input type="datetime-local" id="atv-closes-at" value="${s&&s.closesAt?toDatetimeLocal(s.closesAt):''}"></div>
       <button type="button" class="btn-secondary" data-action="save-atv-schedule" data-turma="${escAttr(ctx.turmaId)}">Salvar prazo desta turma</button>
     </div>
-    <div class="hint">Deixe os dois campos em branco para a atividade ficar sempre aberta (sem prazo). Quando o prazo fecha, o aluno não consegue mais editar — mas você continua podendo corrigir e reabrir individualmente.</div>
+    <div class="hint">Deixe os dois campos em branco para a atividade ficar sempre aberta (sem prazo). Fora da janela de resposta o aluno continua vendo o enunciado e o que respondeu, mas os campos de resposta somem e aparece "Fora do prazo para respostas". Você continua podendo corrigir e reabrir individualmente.</div>
+    ${atvAvisoAlunosSemTurmaHtml()}
     <div class="hint">✨ Se TODAS as questões desta atividade forem de múltipla escolha / verdadeiro-falso / checklist e tiverem gabarito cadastrado, a correção é aplicada e publicada sozinha assim que o prazo desta turma vencer e alguém da equipe abrir a matéria — você não precisa clicar em nada. Atividades com alguma questão dissertativa (ou outra aberta) continuam esperando sua correção manual.</div>`;
 }
 
@@ -6020,6 +6175,23 @@ function sanitizeRichHtml(html){
 }
 function richOut(html){ return html ? sanitizeRichHtml(html) : ''; }
 
+// ===== CADERNO DO ALUNO (v4.9.10) =====
+// A anotacao passou a ser texto FORMATADO (negrito, cores, listas, grifo — a
+// mesma barra que o professor usa para escrever a aula). As anotacoes antigas
+// foram gravadas como texto puro; por isso a conversao abaixo, que reconhece
+// os dois formatos e nunca perde o que ja estava escrito.
+function notaAlunoParaHtml(txt){
+  const s = String(txt||'');
+  if(!s.trim()) return '';
+  if(/<(p|div|ul|ol|li|br|span|b|i|u|strong|em|mark|font)[\s>\/]/i.test(s)) return sanitizeRichHtml(s);
+  return s.split(/\n+/).map(l=>`<p>${esc(l)}</p>`).join('');
+}
+// "Tem conteudo de verdade?" — <p><br></p> e outros restos do editor contam
+// como vazio, senao a tela "Minhas anotacoes" encheria de cartoes em branco.
+function notaAlunoTemTexto(txt){
+  return !!String(txt||'').replace(/<[^>]*>/g,'').replace(/&nbsp;/gi,' ').trim();
+}
+
 function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
 
 const TYPE_LABELS = {
@@ -6190,6 +6362,9 @@ function atvItemsEditorHtml(items){
       <label>Pontos desta questão (usado para somar a nota final)</label>
       <input type="text" inputmode="decimal" class="atv-item-points-field" value="${it.points!=null?escAttr(String(it.points)):'1'}" placeholder="Ex.: 1">
       <div class="atv-item-extra" data-i="${i}">${atvItemExtraFieldsHtml(it)}</div>
+      <label>Resposta esperada — o gabarito que o aluno vai ler (opcional)</label>
+      <textarea class="atv-item-model-answer-field" placeholder="Escreva aqui a resposta que você espera. Ex.: 'Espera-se que o aluno cite as três restrições do projeto — escopo, prazo e custo — e explique o trade-off entre elas (Kerzner, 2006).'">${esc(it.modelAnswer||'')}</textarea>
+      <div class="hint">Este texto vai para o aluno automaticamente assim que você publicar a correção — inclusive nas questões dissertativas, que não têm gabarito automático. Deixe em branco se não quiser mostrar nada.</div>
     </div>`).join('');
 }
 function collectAtvItemsFromDom(){
@@ -6203,6 +6378,8 @@ function collectAtvItemsFromDom(){
     const ptsField = row.querySelector('.atv-item-points-field');
     const ptsRaw = ptsField ? parseFloat(ptsField.value.replace(',', '.')) : 1;
     item.points = (ptsRaw!=null && !isNaN(ptsRaw) && ptsRaw>=0) ? ptsRaw : 1;
+    const maField = row.querySelector('.atv-item-model-answer-field');
+    item.modelAnswer = (maField && maField.value.trim()) ? maField.value.trim() : null;
     if(type==='multipla_escolha'){
       const f = row.querySelector('.atv-item-options-field');
       item.options = f ? f.value.split('\n').map(s=>s.trim()).filter(Boolean) : [];
@@ -6941,6 +7118,45 @@ const ABAS_COM_MATERIA = ['boletim','frequencia','organizar','ia','atividades','
 const ABAS_SO_MASTER = ['instituicao'];
 function abaVisivelPara(aba){ return !ABAS_SO_MASTER.includes(aba) || isMaster; }
 
+// ============ NAVEGACAO SEMPRE VISIVEL (v4.9.10) ============
+// Toda a navegacao do professor mora dentro de um GRUPO da Gestao (Alunos,
+// Turmas, Professores, Masters, Materias, Configuracoes). Por motivos
+// historicos varias telas tinham um "kind" proprio e abriam SEM a faixa de
+// grupos/abas — quem entrava nelas ficava sem para onde ir, so com o botao
+// "Voltar". Os dois mapas abaixo fecham esse buraco de duas formas
+// diferentes, conforme a natureza da tela.
+//
+// ABA_EQUIVALENTE: telas que sao EXATAMENTE a mesma coisa que uma aba que ja
+// existe (o Boletim, por exemplo, e a aba Alunos > Boletim). Em vez de manter
+// duas versoes da mesma tela, a versao antiga passa a redirecionar para a aba
+// — mesma tela, agora com a navegacao no lugar de sempre.
+const ABA_EQUIVALENTE = {
+  usersScreen:       ['alunos','ativos'],
+  classStats:        ['alunos','estatisticas'],
+  atividadesBoletim: ['alunos','boletim'],
+  diarioFrequencia:  ['alunos','frequencia'],
+  turmasScreen:      ['turmas','ativos'],
+  professorsScreen:  ['professores','ativos'],
+  orgScreen:         ['materias','organizar'],
+  iaScreen:          ['materias','ia'],
+  atividadesCentral: ['materias','atividades'],
+  avaliacao:         ['materias','avaliacao'],
+  configScreen:      ['config','geral'],
+};
+// TELA_GRUPO_PAI: telas que NAO podem virar aba porque dependem de um
+// contexto especifico (um aluno, uma aula, uma atividade). Elas continuam
+// sendo tela propria, mas passam a exibir a faixa de grupos/abas do grupo a
+// que pertencem — a aba do grupo fica marcada, e clicar nela e o caminho de
+// volta para a lista de onde a tela foi aberta.
+const TELA_GRUPO_PAI = {
+  userDetail:      ['alunos','ativos'],
+  diarioAula:      ['alunos','frequencia'],
+  atividadeManage: ['materias','atividades'],
+  aulaCode:        ['materias','organizar'],
+  newAula:         ['materias','organizar'],
+  newBlock:        ['materias','organizar'],
+};
+
 function gestaoAbaPadrao(grupo){
   const g = GESTAO_GRUPOS[grupo];
   if(!g) return 'ativos';
@@ -6959,7 +7175,7 @@ function gestaoNavHtml(grupo, aba){
   // para a tela nao pular quando voce troca de grupo.
   const abas = abasVisiveis.length > 1
     ? abasVisiveis
-        .map(([id,rot]) => `<button type="button" class="gestao-aba ${id===aba?'is-ativa':''}" data-action="gestao-aba" data-aba="${id}">${esc(rot)}</button>`)
+        .map(([id,rot]) => `<button type="button" class="gestao-aba ${id===aba?'is-ativa':''}" data-action="gestao-aba" data-grupo="${grupo}" data-aba="${id}">${esc(rot)}</button>`)
         .join('')
     : '';
   return `<div class="gestao-grupos">${grupos}</div><div class="gestao-abas">${abas}</div>`;
@@ -7547,10 +7763,13 @@ const TYPE_DESCRIPTIONS = {
 };
 
 function newSectionForm(aula){
-  // O bloco "Atividade" só pode ser adicionado em aulas novas (marcadas com
-  // atividadeEnabled na criação) — aulas antigas não ganham esse tipo, para não
-  // mexer no que já está construído e funcionando.
-  const tiposDisponiveis = [...FRIENDLY_TYPES, ...ADVANCED_TYPES].filter(t=> t!=='atividade' || (aula && aula.atividadeEnabled));
+  // ALTERADO (v4.9.10) — o bloco "Atividade" era liberado so em aulas criadas
+  // depois que o recurso existiu (flag atividadeEnabled). Na pratica isso
+  // impedia colocar atividade nas primeiras aulas do curso, que sao
+  // justamente as que ja estao prontas. Como oferecer o tipo na lista nao
+  // altera nada da aula (so aparece se o professor escolher adicionar), a
+  // trava saiu: qualquer aula pode receber uma atividade.
+  const tiposDisponiveis = [...FRIENDLY_TYPES, ...ADVANCED_TYPES];
   const opts = tiposDisponiveis.map(t=>`<option value="${t}">${esc(TYPE_LABELS[t])}</option>`).join('');
   const firstType = tiposDisponiveis[0];
   return `<div class="editor-form" data-kind="newSectionPicker">
@@ -7683,6 +7902,19 @@ function render(){
       const lbl = document.getElementById('presenter-control-label');
       if(lbl) lbl.textContent = `Projetando: ${rotuloAula(a)} — ${a.title}`;
     }
+  }
+
+  // NOVO (v4.9.10) — telas que hoje sao abas da Gestao redirecionam para a
+  // aba equivalente, para nunca abrirem sem a faixa de grupos/abas. Fica
+  // ANTES de tudo de proposito: assim vale para qualquer caminho de entrada
+  // (botao, atalho de tela relacionada, link antigo), nao so para os que
+  // passam pelo irParaTela().
+  if(editState && isAdmin && ABA_EQUIVALENTE[editState.kind]){
+    const [gDest, abDest] = ABA_EQUIVALENTE[editState.kind];
+    const turmaAnterior = (editState.turmaId !== undefined) ? editState.turmaId : null;
+    editState = {kind:'gestao', grupo:gDest, aba:abDest, turmaId:turmaAnterior};
+    render();
+    return;
   }
 
   if(editState && editState.kind!=='newBlock' && COURSE.length===0
@@ -7856,12 +8088,6 @@ function render(){
     content.innerHTML = comCabecalho('iaScreen', iaScreenForm());
     return;
   }
-  // Compatibilidade: Configuracoes virou grupo da gestao.
-  if(editState && editState.kind==='configScreen'){
-    editState = {kind:'gestao', grupo:'config', aba:'geral'};
-    render();
-    return;
-  }
   if(editState && editState.kind==='orgScreen'){
     if(!allSubjects){
       content.innerHTML = '<div class="editor-form"><p>Carregando…</p></div>';
@@ -7869,15 +8095,6 @@ function render(){
       return;
     }
     content.innerHTML = comCabecalho('orgScreen', orgScreenForm());
-    return;
-  }
-  // Compatibilidade: os kinds antigos agora caem na gestao unificada.
-  if(editState && ['usersScreen','turmasScreen','professorsScreen','classStats'].includes(editState.kind)){
-    const paraGrupo = {usersScreen:['alunos','ativos'], turmasScreen:['turmas','ativos'],
-                       professorsScreen:['professores','ativos'], classStats:['alunos','estatisticas']};
-    const [g, ab] = paraGrupo[editState.kind];
-    editState = {kind:'gestao', grupo:g, aba:ab};
-    render();
     return;
   }
   if(editState && editState.kind==='atividadesCentral'){
@@ -8015,7 +8232,7 @@ function render(){
       bb.aulas.forEach(aa=>{
         if(aa.hidden) return;
         const txt = notas[aa.id];
-        if(txt && txt.trim()) aulasComNota.push({blockNum: bb.num, num: aa.num, title: aa.title, texto: txt});
+        if(notaAlunoTemTexto(txt)) aulasComNota.push({blockNum: bb.num, num: aa.num, title: aa.title, texto: txt});
       });
     });
     const cards = aulasComNota.map(n=>`
@@ -8024,7 +8241,7 @@ function render(){
           <strong>Aula ${n.num} — ${esc(n.title)}</strong>
           <button class="btn-tiny btn-approve" data-action="goto-note-aula" data-block="${n.blockNum}" data-aula="${n.num}">Ir para a aula →</button>
         </div>
-        <div class="my-note-text">${esc(n.texto)}</div>
+        <div class="my-note-text rich-content">${notaAlunoParaHtml(n.texto)}</div>
       </div>`).join('');
     content.innerHTML = comCabecalho('myNotes', `<div class="editor-form">
       <div class="hint">Tudo que você anotou nesta matéria, reunido num lugar só — ótimo para revisar antes da prova. Para editar uma anotação, vá até a aula (botão ao lado de cada uma).</div>
@@ -8144,9 +8361,11 @@ function render(){
   // ele aparece para o professor (mostraria as anotações da conta do professor, sem sentido).
   if(!realIsAdmin && currentUser){
     const minhaNota = (currentUserDoc && currentUserDoc.aulaNotes && currentUserDoc.aulaNotes[activeSubjectId] && currentUserDoc.aulaNotes[activeSubjectId][a.id]) || '';
+    const notaHtml = notaAlunoParaHtml(minhaNota);
     inner += `<div class="student-notes">
       <div class="student-notes-head">📝 Minhas anotações desta aula</div>
-      <textarea id="student-note-text" placeholder="Anote aqui seus pontos importantes, dúvidas para perguntar, ideias...">${esc(minhaNota)}</textarea>
+      ${richToolbarHtml('student-note-text')}
+      <div id="student-note-text" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR" data-placeholder="Anote aqui seus pontos importantes, dúvidas para perguntar, ideias...">${notaHtml}</div>
       <div class="student-notes-actions">
         <span id="student-note-status"></span>
         <button class="btn-primary" data-action="save-student-note" data-aula="${a.num}">Salvar anotação</button>
@@ -9777,7 +9996,12 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='save-student-note'){
-    const texto = document.getElementById('student-note-text').value;
+    // ALTERADO (v4.9.10) — o campo virou area de texto formatado. Salvamos o
+    // HTML ja higienizado (mesmo saneamento do conteudo de aula), nunca o
+    // HTML cru vindo do navegador.
+    const notaEl = document.getElementById('student-note-text');
+    const bruto = notaEl ? (notaEl.innerHTML || '') : '';
+    const texto = notaAlunoTemTexto(bruto) ? sanitizeRichHtml(bruto) : '';
     // Chave é o id estável da aula (não o número) — a anotação continua
     // presa à MESMA aula mesmo que ela seja renumerada depois.
     const aulaKey = aulaIdDe(state.block, +btn.dataset.aula);
@@ -10327,7 +10551,10 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='gestao-aba'){
-    const g = (editState && editState.grupo) || 'alunos';
+    // ALTERADO (v4.9.10) — o grupo vem do proprio botao. Antes vinha do
+    // editState, que nao existe nas telas de contexto (ficha do aluno etc.),
+    // e ali a aba caia sempre em "alunos", mesmo vindo de Materias.
+    const g = btn.dataset.grupo || (editState && editState.grupo) || 'alunos';
     editState = {kind:'gestao', grupo:g, aba:btn.dataset.aba, turmaId:(editState && editState.turmaId) || null};
     // Cada aba come com dados diferentes — limpa o cache do que ela vai buscar.
     if(btn.dataset.aba === 'boletim'){ ATV_BOLETIM_DATA = null; ATV_BOLETIM_SCHEDULES = null; }
@@ -11592,7 +11819,14 @@ function telaCabecalho(kind, acoesExtras){
 // Envolve o HTML que a tela ja produzia. Nenhuma das 15 funcoes de tela
 // precisou ser reescrita — elas continuam devolvendo o que sempre devolveram.
 function comCabecalho(kind, html, acoesExtras){
-  return `<div class="tela tela-nivel-${(TELAS[kind]||{}).nivel||'materia'}">${telaCabecalho(kind, acoesExtras)}${html}</div>`;
+  // ALTERADO (v4.9.10) — telas de contexto (ficha do aluno, diario de uma
+  // aula, gerenciar uma atividade, novo bloco/aula, codigo da aula) ganham a
+  // faixa de grupos/abas do grupo a que pertencem. Antes elas eram becos sem
+  // saida: a unica saida era o "Voltar". A faixa vem DEPOIS do cabecalho da
+  // tela, na mesma posicao em que aparece dentro da Gestao.
+  const pai = (isAdmin && TELA_GRUPO_PAI[kind]) ? TELA_GRUPO_PAI[kind] : null;
+  const nav = pai ? gestaoNavHtml(pai[0], pai[1]) : '';
+  return `<div class="tela tela-nivel-${(TELAS[kind]||{}).nivel||'materia'}">${telaCabecalho(kind, acoesExtras)}${nav}${html}</div>`;
 }
 
 // ===================== ICONES NA INTERFACE (v3.0.0) =====================
