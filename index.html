@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.9.8                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.9.9                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2950,7 +2950,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.9.8</div>
+<div class="version-tag hidden" id="version-tag">v4.9.9</div>
 
 
 <script>
@@ -4444,9 +4444,27 @@ async function persistAtividadeAnswer(sectionId, aulaId, aulaNum){
     // uma mensagem genérica de internet quando o problema é outro (ex.: as
     // regras do Firestore ainda não foram publicadas).
     console.error('Falha ao salvar resposta de atividade:', e);
-    const detalhe = (e && e.code==='permission-denied')
-      ? 'sem permissão para salvar (avise o professor — pode ser as regras do banco de dados)'
-      : ((e && e.message) || 'erro desconhecido');
+    let detalhe;
+    if(e && e.code==='permission-denied'){
+      // DIAGNÓSTICO (v4.9.9) — as regras já foram testadas e comprovadamente
+      // permitem essa escrita para um UID aprovado. Se mesmo assim vier
+      // permission-denied, o suspeito nº1 é o UID da sessão do navegador
+      // estar desatualizado (dessincronizado) em relação ao Firebase Auth
+      // no exato instante da gravação. Comparamos os dois aqui para o
+      // professor conseguir ver isso na hora, sem precisar de DevTools.
+      const liveUser = (firebase.auth && firebase.auth().currentUser) || null;
+      const liveUid = (liveUser && liveUser.uid) || 'nenhum (sessão perdida)';
+      const usadoUid = (currentUser && currentUser.uid) || 'nenhum';
+      const uidBate = (liveUid === usadoUid);
+      detalhe = 'sem permissão para salvar [permission-denied]. '
+        + 'UID usado no envio: ' + usadoUid + '. '
+        + 'UID logado agora: ' + liveUid + '. '
+        + (uidBate
+            ? 'Os dois UIDs batem — avise o professor (pode ser as regras do banco de dados).'
+            : 'Os UIDs são DIFERENTES — a sessão ficou desatualizada. Saia (Sair) e entre de novo, depois tente salvar outra vez.');
+    } else {
+      detalhe = (e && e.code ? '['+e.code+'] ' : '') + ((e && e.message) || 'erro desconhecido');
+    }
     LAST_ATV_SAVE_ERROR = detalhe;
     if(st){ st.textContent = '⚠ Não salvou: ' + detalhe; st.classList.add('atv-save-error'); }
     return false;
