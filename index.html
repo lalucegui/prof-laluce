@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.7                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.9                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -3135,7 +3135,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.7</div>
+<div class="version-tag hidden" id="version-tag">v4.10.9</div>
 
 
 <script>
@@ -9348,18 +9348,140 @@ function applyPresFontScale(){
   document.documentElement.style.setProperty('--pres-scale', presFontScale);
 }
 function presCanvas(){ return document.getElementById('pres-draw-canvas'); }
+// ===== RABISCO ANCORADO NO CONTEÚDO (v4.10.8) =====
+// Antes o traço era pintado direto nos pixels do canvas, que é fixo na tela.
+// Rolar a página deixava o rabisco para trás: ele ficava parado, marcando
+// outro trecho. Agora cada traço é guardado como uma sequência de pontos em
+// coordenadas do DOCUMENTO (a posição na tela + o quanto já foi rolado), e o
+// canvas é redesenhado a cada rolagem descontando a rolagem atual. O efeito é
+// o rabisco grudar no conteúdo, como se estivesse escrito em cima dele.
+//
+// O canvas continua do tamanho da janela — guardar um canvas da altura da
+// aula inteira custaria dezenas de megabytes numa aula longa.
+let presTracos = [];        // [{mode, color, pontos:[{x, y}]}] — y é do documento
+let presTracoAtual = null;
+let presHlInicio = null;    // onde o arrasto do marca-texto começou, no texto
+let presRedesenhoAgendado = false;
+
+function presScrollTopAtual(){
+  return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+}
+// Configura o contexto a partir de um traço JÁ FEITO (e não da ferramenta
+// ativa agora) — no redesenho, cada traço precisa voltar com a caneta com que
+// nasceu, mesmo que você já tenha trocado de cor ou de ferramenta.
+function presConfigurarTracoDe(ctx, t){
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if(t.mode === 'eraser'){
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 26;
+  } else if(t.mode === 'highlight'){
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 16;
+    ctx.strokeStyle = t.color;
+  } else {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = t.color;
+  }
+}
+// NOVO (v4.10.9) — o marca-texto deixou de ser pincel. Ele agora descobre
+// QUAL TEXTO está debaixo do arrasto e pinta faixas em cima das linhas, como
+// uma seleção feita com o cursor. Estas duas funções acham a posição do texto
+// num ponto da tela; o canvas precisa sair da frente por um instante, senão
+// o navegador devolve o próprio canvas em vez do texto.
+function presTextoNoPonto(x, y){
+  const c = presCanvas();
+  const antes = c ? c.style.pointerEvents : null;
+  if(c) c.style.pointerEvents = 'none';
+  let r = null;
+  try{
+    if(document.caretRangeFromPoint){
+      r = document.caretRangeFromPoint(x, y);
+    } else if(document.caretPositionFromPoint){
+      const p = document.caretPositionFromPoint(x, y);
+      if(p){ r = document.createRange(); r.setStart(p.offsetNode, p.offset); r.collapse(true); }
+    }
+  }catch(e){ r = null; }
+  if(c) c.style.pointerEvents = antes;
+  return r;
+}
+// Faixas (uma por linha de texto) cobrindo o intervalo entre dois pontos.
+// Devolvidas em coordenada do DOCUMENTO, para grudarem no conteúdo.
+function presFaixasDeTexto(inicio, fim){
+  if(!inicio || !fim) return [];
+  let r;
+  try{
+    r = document.createRange();
+    r.setStart(inicio.startContainer, inicio.startOffset);
+    r.setEnd(fim.startContainer, fim.startOffset);
+    if(r.collapsed){
+      r = document.createRange();
+      r.setStart(fim.startContainer, fim.startOffset);
+      r.setEnd(inicio.startContainer, inicio.startOffset);
+    }
+  }catch(e){ return []; }
+  const off = presScrollTopAtual();
+  return [...r.getClientRects()]
+    .filter(k=> k.width > 1 && k.height > 1)
+    .map(k=>({x:k.left, y:k.top + off, w:k.width, h:k.height}));
+}
+function presRedesenharTracos(){
+  const c = presCanvas();
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  const off = presScrollTopAtual();
+  // A borracha é um traço como os outros: apaga o que foi desenhado ANTES
+  // dela. Por isso o redesenho respeita a ordem original.
+  presTracos.forEach(t=>{
+    // Marca-texto: faixas cheias sobre as linhas, em vez de rabisco.
+    if(t.faixas && t.faixas.length){
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = t.color;
+      t.faixas.forEach(f=>{ ctx.fillRect(f.x, f.y - off, f.w, f.h); });
+      ctx.globalAlpha = 1;
+      return;
+    }
+    if(!t.pontos || !t.pontos.length) return;
+    presConfigurarTracoDe(ctx, t);
+    ctx.beginPath();
+    if(t.pontos.length === 1){
+      // Um toque só: um pontinho, senão o clique simples não marcaria nada.
+      ctx.moveTo(t.pontos[0].x, t.pontos[0].y - off);
+      ctx.lineTo(t.pontos[0].x + 0.1, t.pontos[0].y - off);
+    } else {
+      t.pontos.forEach((p, i)=>{
+        const y = p.y - off;
+        if(i === 0) ctx.moveTo(p.x, y); else ctx.lineTo(p.x, y);
+      });
+    }
+    ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+function presAgendarRedesenho(){
+  if(presRedesenhoAgendado) return;
+  presRedesenhoAgendado = true;
+  requestAnimationFrame(()=>{ presRedesenhoAgendado = false; presRedesenharTracos(); });
+}
 function presResizeCanvas(){
   const c = presCanvas();
   if(!c) return;
-  // Redimensionar apaga o desenho — preserva o traço copiando antes
-  const copia = document.createElement('canvas');
-  copia.width = c.width; copia.height = c.height;
-  if(c.width && c.height) copia.getContext('2d').drawImage(c, 0, 0);
   c.width = window.innerWidth;
   c.height = window.innerHeight;
-  if(copia.width && copia.height) c.getContext('2d').drawImage(copia, 0, 0);
+  presRedesenharTracos();   // vem dos pontos guardados, não de uma cópia de pixels
 }
 function presClearCanvas(){
+  // "Limpar" apaga TUDO, inclusive o que está fora da tela agora — era
+  // pedido explícito: nada de rabisco esquecido lá em cima da aula.
+  presTracos = [];
+  presTracoAtual = null;
   const c = presCanvas();
   if(c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
 }
@@ -9600,15 +9722,46 @@ async function entrarComoTelaProjetada(){
       presTool.mode = d.mode;
       if(d.color) presTool.color = d.color;
     } else if(d.type==='draw-start'){
-      const ctx = presCanvas().getContext('2d');
-      presConfigurarTraco(ctx);
-      ctx.beginPath();
-      ctx.moveTo(d.xPct * window.innerWidth, d.yPct * window.innerHeight);
+      // A mensagem vem em porcentagem da TELA do professor. Aqui ela vira
+      // ponto no documento DESTA janela (posição na tela + rolagem atual),
+      // para o traço grudar no conteúdo do projetor e acompanhar a rolagem
+      // dele — que agora é independente da do notebook.
+      presTracoAtual = {mode: presTool.mode, color: presTool.color,
+                        pontos: [{x: d.xPct * window.innerWidth,
+                                  y: d.yPct * window.innerHeight + presScrollTopAtual()}]};
+      presTracos.push(presTracoAtual);
+      presRedesenharTracos();
     } else if(d.type==='draw-move'){
+      if(!presTracoAtual) return;
+      presTracoAtual.pontos.push({x: d.xPct * window.innerWidth,
+                                  y: d.yPct * window.innerHeight + presScrollTopAtual()});
       const ctx = presCanvas().getContext('2d');
-      ctx.lineTo(d.xPct * window.innerWidth, d.yPct * window.innerHeight);
+      const pts = presTracoAtual.pontos;
+      const off = presScrollTopAtual();
+      presConfigurarTracoDe(ctx, presTracoAtual);
+      ctx.beginPath();
+      ctx.moveTo(pts[pts.length-2].x, pts[pts.length-2].y - off);
+      ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y - off);
       ctx.stroke();
+    } else if(d.type==='draw-faixas'){
+      // Marca-texto: chegam as faixas já calculadas na tela do professor.
+      // Aqui viram coordenada do documento DESTA janela, para grudarem no
+      // conteúdo e acompanharem a rolagem do projetor.
+      const off = presScrollTopAtual();
+      if(!presTracoAtual || presTracoAtual.mode!=='highlight'){
+        presTracoAtual = {mode:'highlight', color: d.color || presTool.color, faixas: []};
+        presTracos.push(presTracoAtual);
+      }
+      presTracoAtual.color = d.color || presTracoAtual.color;
+      presTracoAtual.faixas = (d.faixas||[]).map(f=>({
+        x: f.xPct * window.innerWidth,
+        y: f.yPct * window.innerHeight + off,
+        w: f.wPct * window.innerWidth,
+        h: f.hPct * window.innerHeight,
+      }));
+      presRedesenharTracos();
     } else if(d.type==='draw-end'){
+      presTracoAtual = null;
       const ctx = presCanvas().getContext('2d');
       ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'source-over';
@@ -9714,20 +9867,32 @@ function presIniciarRolagemContinua(delta, fracao){
   const fr = (typeof fracao === 'number' && fracao > 0) ? fracao : presScrollFracao();
   const estado = {ativo:true, raf:null};
   let ultimo = null;
-  let paradas = 0;                 // quadros seguidos sem sair do lugar
   const limite = Date.now() + 60000; // trava: nunca rola para sempre
+  // CORRIGIDO (v4.10.9) — o loop mantém a PRÓPRIA posição-alvo e usa
+  // scrollTo absoluto a cada quadro, em vez de scrollBy relativo.
+  //
+  // Era esse o motivo de "segurar não faz nada": o toque inicial dispara uma
+  // rolagem SUAVE, que leva alguns décimos de segundo para terminar. O modo
+  // contínuo entrava no meio dessa animação e, como o navegador dá
+  // preferência para a animação em curso, os pequenos scrollBy de cada
+  // quadro eram engolidos — a tela simplesmente não andava. Com scrollTo
+  // absoluto, cada quadro define onde a página deve estar, o que cancela a
+  // animação anterior e assume o comando.
+  let alvo = presScrollTopAtual();
   function passo(agora){
     if(!estado.ativo) return;
-    if(ultimo === null) ultimo = agora;
+    if(ultimo === null){ ultimo = agora; alvo = presScrollTopAtual(); }
     const dt = Math.min(0.05, (agora - ultimo) / 1000);
     ultimo = agora;
+    const altura = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    const maximo = Math.max(0, altura - window.innerHeight);
     // Velocidade proporcional à mesma sensibilidade do clique: quem gosta de
     // passo curto também prefere rolagem contínua mais devagar.
-    const antes = window.scrollY || document.documentElement.scrollTop || 0;
-    window.scrollBy(0, window.innerHeight * fr * 1.2 * dt * sentido);
-    const depois = window.scrollY || document.documentElement.scrollTop || 0;
-    if(Math.abs(depois - antes) < 0.4){ paradas++; } else { paradas = 0; }
-    if(paradas > 3 || Date.now() > limite){ presPararRolagemContinua(); return; }
+    alvo += window.innerHeight * fr * 1.2 * dt * sentido;
+    if(alvo <= 0 && sentido < 0){ window.scrollTo(0, 0); presPararRolagemContinua(); return; }
+    if(alvo >= maximo && sentido > 0){ window.scrollTo(0, maximo); presPararRolagemContinua(); return; }
+    window.scrollTo(0, alvo);
+    if(Date.now() > limite){ presPararRolagemContinua(); return; }
     estado.raf = requestAnimationFrame(passo);
   }
   estado.raf = requestAnimationFrame(passo);
@@ -9826,25 +9991,8 @@ document.getElementById('presentation-btn').addEventListener('click', ativarModo
 document.getElementById('presenter-control-end-btn').addEventListener('click', encerrarSessao2Telas);
 // Aplica o estilo do lápis/marca-texto/borracha ATUAL no contexto — usado
 // tanto pelo traço local quanto pelo traço replicado na tela do projetor.
-function presConfigurarTraco(ctx){
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  if(presTool.mode === 'eraser'){
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.globalAlpha = 1;
-    ctx.lineWidth = 26;
-  } else if(presTool.mode === 'highlight'){
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 0.35;
-    ctx.lineWidth = 16;
-    ctx.strokeStyle = presTool.color;
-  } else {
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 1;
-    ctx.lineWidth = 3.5;
-    ctx.strokeStyle = presTool.color;
-  }
-}
+// Configura com a ferramenta ATIVA agora — atalho para o traço em curso.
+function presConfigurarTraco(ctx){ presConfigurarTracoDe(ctx, presTool); }
 let presUltimoEnvioLaser = 0, presUltimoEnvioTraco = 0;
 // Laser: o ponto segue o mouse
 document.addEventListener('mousemove', (e)=>{
@@ -9866,18 +10014,56 @@ document.addEventListener('mousemove', (e)=>{
   c.addEventListener('mousedown', (e)=>{
     if(!presentationUiAtiva() || !presDrawOn) return;
     presDrawing = true;
-    const ctx = c.getContext('2d');
-    presConfigurarTraco(ctx);
-    ctx.beginPath();
-    ctx.moveTo(e.clientX, e.clientY);
+    // Marca-texto trabalha por SELEÇÃO: guarda onde o arrasto começou dentro
+    // do texto e, a cada movimento, recalcula as linhas cobertas.
+    if(presTool.mode === 'highlight'){
+      presHlInicio = presTextoNoPonto(e.clientX, e.clientY);
+      presTracoAtual = {mode:'highlight', color: presTool.color, faixas: []};
+      presTracos.push(presTracoAtual);
+      presRedesenharTracos();
+      return;
+    }
+    // Guarda o ponto já convertido para coordenada do documento — é isso que
+    // faz o traço continuar no mesmo lugar do texto depois de rolar a página.
+    presTracoAtual = {mode: presTool.mode, color: presTool.color,
+                      pontos: [{x: e.clientX, y: e.clientY + presScrollTopAtual()}]};
+    presTracos.push(presTracoAtual);
+    presRedesenharTracos();
     if(presenterModeControl && presenterChannel){
       try{ presenterChannel.postMessage({type:'draw-start', xPct: e.clientX/window.innerWidth, yPct: e.clientY/window.innerHeight}); }catch(err){}
     }
   });
   c.addEventListener('mousemove', (e)=>{
-    if(!presDrawing) return;
+    if(!presDrawing || !presTracoAtual) return;
+    if(presTracoAtual.mode === 'highlight'){
+      const fim = presTextoNoPonto(e.clientX, e.clientY);
+      presTracoAtual.faixas = presFaixasDeTexto(presHlInicio, fim);
+      presRedesenharTracos();
+      if(presenterModeControl && presenterChannel){
+        const agoraH = Date.now();
+        if(agoraH - presUltimoEnvioTraco > 40){
+          presUltimoEnvioTraco = agoraH;
+          const off = presScrollTopAtual();
+          try{
+            presenterChannel.postMessage({type:'draw-faixas', color: presTracoAtual.color,
+              faixas: presTracoAtual.faixas.map(f=>({
+                xPct: f.x/window.innerWidth, yPct: (f.y-off)/window.innerHeight,
+                wPct: f.w/window.innerWidth, hPct: f.h/window.innerHeight }))});
+          }catch(err){}
+        }
+      }
+      return;
+    }
+    presTracoAtual.pontos.push({x: e.clientX, y: e.clientY + presScrollTopAtual()});
+    // Desenha só o último segmento agora (barato); o redesenho completo fica
+    // para quando a página rolar ou a janela mudar de tamanho.
     const ctx = c.getContext('2d');
-    ctx.lineTo(e.clientX, e.clientY);
+    const pts = presTracoAtual.pontos;
+    const off = presScrollTopAtual();
+    presConfigurarTracoDe(ctx, presTracoAtual);
+    ctx.beginPath();
+    ctx.moveTo(pts[pts.length-2].x, pts[pts.length-2].y - off);
+    ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y - off);
     ctx.stroke();
     if(presenterModeControl && presenterChannel){
       const agora = Date.now();
@@ -9897,6 +10083,14 @@ document.addEventListener('mousemove', (e)=>{
       }
     }
     presDrawing = false;
+    // Grifo que não pegou texto nenhum (arrasto numa área vazia) não fica
+    // guardado como traço fantasma.
+    if(presTracoAtual && presTracoAtual.mode==='highlight' && !(presTracoAtual.faixas||[]).length){
+      presTracos = presTracos.filter(t=>t!==presTracoAtual);
+      presRedesenharTracos();
+    }
+    presTracoAtual = null;
+    presHlInicio = null;
   }));
 })();
 // Soltou o botão do passador: cancela a espera e para a rolagem contínua.
@@ -9932,10 +10126,14 @@ document.addEventListener('keydown', (e)=>{
   if(e.key==='ArrowRight' || e.key==='PageDown' || e.key==='ArrowLeft' || e.key==='PageUp'){
     e.preventDefault();
     const sentido = (e.key==='ArrowRight' || e.key==='PageDown') ? 1 : -1;
-    // Repetição automática do teclado é ignorada: quem comanda o modo
-    // contínuo é o cronômetro abaixo, para funcionar igual em passador que
-    // repete e em passador que manda um toque só.
-    if(e.repeat) return;
+    // Passador que REPETE a tecla sozinho enquanto o botão está apertado:
+    // a repetição é a prova de que está sendo segurado, então já entra em
+    // modo contínuo sem esperar o cronômetro. Passador que manda um toque só
+    // não gera repetição — para esse, quem resolve é o cronômetro abaixo.
+    if(e.repeat){
+      if(!presRolagemContinua) presAvancarContinuo(sentido, true);
+      return;
+    }
     presAvancar(sentido);                       // o passo de sempre, na hora
     if(presTimerSegurar) clearTimeout(presTimerSegurar);
     presTimerSegurar = setTimeout(()=>{          // segurou? passa a descer sozinho
@@ -9965,7 +10163,14 @@ document.addEventListener('keydown', (e)=>{
     return;
   }
 });
-window.addEventListener('resize', ()=>{ if(presentationUiAtiva()) presResizeCanvas(); });
+window.addEventListener('resize', ()=>{ if(presentationUiAtiva() || presenterModeDisplay) presResizeCanvas(); });
+// Rolou a página? O rabisco precisa ser redesenhado deslocado, senão ele fica
+// parado marcando outro trecho — que era exatamente o defeito. Uma vez por
+// quadro, no máximo, para a rolagem contínua do passador não pesar.
+window.addEventListener('scroll', ()=>{
+  if(!presTracos.length) return;
+  presAgendarRedesenho();
+}, {passive:true});
 // Botão do aviso de tela cheia — clique aqui É um gesto válido, então o
 // pedido feito daqui sempre é aceito pelo navegador (diferente do pedido
 // automático que enterPresentationMode já tentou sozinho).
