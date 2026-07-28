@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.5                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.6                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -3102,7 +3102,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.5</div>
+<div class="version-tag hidden" id="version-tag">v4.10.6</div>
 
 
 <script>
@@ -3298,6 +3298,11 @@ let presenterChannel = null;
 let presenterProjectorWin = null;
 let presenterWatchTimer = null;
 let presenterLastSent = '';
+// NOVO (v4.10.6) — o que está NO PROJETOR agora, {bloco, aula}. Guardado
+// separado de state.block/state.aula de propósito: as duas telas passaram a
+// ser independentes, então o notebook pode navegar à vontade sem arrastar a
+// projeção junto.
+let presenterAlvo = null;
 // Se a URL trouxer ?modoaula=projetor, esta aba nasceu para ser o projetor —
 // lido uma vez, no carregamento, antes mesmo do login terminar.
 const PRESENTER_BOOT = (function(){
@@ -6090,8 +6095,12 @@ const FONT_OPTIONS = [
   ["'Inter',sans-serif", 'Sem serifa (padrão)'], ["Georgia,serif", 'Georgia'],
   ["'Courier New',monospace", 'Monoespaçada'],
 ];
+// ALTERADO (v4.10.6) — seis degraus em vez de quatro. 15px continua sendo o
+// "Normal" porque é o tamanho real do parágrafo na aula (.prose p) — escolher
+// Normal devolve o texto ao padrão em vez de deixá-lo levemente diferente.
 const SIZE_OPTIONS = [
-  ['12px','Pequeno'], ['15px','Normal'], ['19px','Grande'], ['24px','Muito grande'],
+  ['11px','Muito pequeno'], ['13px','Pequeno'], ['15px','Normal'],
+  ['18px','Médio'], ['22px','Grande'], ['28px','Muito grande'],
 ];
 
 let richInit = false;
@@ -6143,6 +6152,36 @@ function restoreRichSelection(){
   }
 }
 
+// NOVO (v4.10.6) — tira uma propriedade de estilo dos trechos que estão
+// INTEIRAMENTE dentro da seleção, antes de aplicar a nova.
+//
+// Era esta a causa de "coloco grande, depois pequeno, e nada muda": ao
+// formatar uma linha já formatada, o novo <span> era colocado POR FORA do
+// antigo — e, em CSS, quem vale é o de dentro. O tamanho antigo continuava
+// mandando, escondido embaixo do novo. Empilhando três trocas, a linha ficava
+// com o tamanho da PRIMEIRA vez.
+//
+// A limpeza só alcança trechos totalmente contidos na seleção. Quando você
+// seleciona só um pedaço de um trecho já formatado, nada é apagado — ali o
+// span novo fica por dentro e vence naturalmente, que é o comportamento certo.
+function limparEstiloNaSelecao(styleProp){
+  const sel = window.getSelection();
+  if(!sel || sel.rangeCount===0 || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  const base = range.commonAncestorContainer;
+  const container = base.nodeType===1 ? base : base.parentElement;
+  const raiz = container && container.closest ? container.closest('.rich-text') : null;
+  if(!raiz) return;
+  const alvos = [...raiz.querySelectorAll('span[style], font[style]')].filter(el=>{
+    if(!el.style || !el.style.getPropertyValue(styleProp)) return false;
+    try{ return sel.containsNode(el, false); }catch(e){ return false; }
+  });
+  // Só remove a propriedade; spans que ficam sem estilo nenhum são
+  // desembrulhados depois, no sanitizeRichHtml — mexer na árvore agora
+  // destruiria a seleção que ainda vamos usar para embrulhar.
+  alvos.forEach(el=>{ el.style.removeProperty(styleProp); });
+}
+
 // Wrap the current selection (within a contenteditable field) in a <span style="...">
 function removeHighlightFromSelection(){
   restoreRichSelection();
@@ -6168,6 +6207,7 @@ function removeHighlightFromSelection(){
 
 function wrapSelectionStyle(styleProp, value){
   restoreRichSelection();
+  limparEstiloNaSelecao(styleProp);   // v4.10.6 — ver comentário acima
   const sel = window.getSelection();
   if(!sel || sel.rangeCount===0 || sel.isCollapsed) return;
   const range = sel.getRangeAt(0);
@@ -6529,6 +6569,13 @@ function sanitizeRichHtml(html){
           Object.entries(kept).forEach(([k,v])=>child.style.setProperty(k,v));
         }
         clean(child);
+        // NOVO (v4.10.6) — <span> que sobrou sem estilo nenhum (por exemplo,
+        // depois de trocar o tamanho de um trecho) vira só ruído no HTML
+        // salvo. Some, mantendo o texto de dentro intacto.
+        if(child.tagName==='SPAN' && child.attributes.length===0){
+          child.replaceWith(...child.childNodes);
+          return;
+        }
       }
     });
   })(tpl.content);
@@ -8061,7 +8108,8 @@ function modoAulaConfigForm(){
         <input type="checkbox" id="cfg-duas-telas" ${duasTelasHabilitado?'checked':''} style="width:auto;">
         <span style="text-transform:none;font-weight:600;color:var(--charcoal);letter-spacing:normal;">Habilitar apresentação em 2 telas</span>
       </label>
-      <div class="hint">Com isso ligado, o botão "Modo Aula" (ou a tecla F) abre direto em duas janelas: uma em tela cheia no monitor externo, sempre com <strong>a visão do aluno</strong>, e esta aqui livre. A partir da v4.10.5 você pode ficar no <strong>modo de edição</strong> no notebook enquanto projeta — é assim que as anotações do professor, os roteiros ocultos e as barras de edição ficam visíveis só para você. O passador de slides rola as duas telas juntas, alinhadas pela seção em que você está.</div>
+      <div class="hint">Com isso ligado, o botão "Modo Aula" (ou a tecla F) abre direto em duas janelas: uma em tela cheia no monitor externo, sempre com <strong>a visão do aluno</strong>, e esta aqui livre. Você pode ficar no <strong>modo de edição</strong> no notebook enquanto projeta — é assim que as anotações do professor, os roteiros ocultos e as barras de edição ficam visíveis só para você.</div>
+      <div class="hint">As duas telas são <strong>independentes</strong>: rolar ou navegar no notebook não mexe na projeção, e vice-versa. O <strong>passador de slides mexe só na tela projetada</strong>, mesmo com o foco aqui no notebook. Para trocar a aula que está sendo projetada, use os botões ←/→ da barra do Modo Aula.</div>
       <div class="hint">Com isso <strong>desligado</strong>, o Modo Aula transforma esta própria janela na tela de projeção — e aí ele só liga a partir de "ver como aluno", senão seria a sua tela de edição indo para o projetor. Só funciona no Chrome/Edge, com o monitor em modo "Estender". É uma preferência sua — cada professor liga a própria, sem afetar os demais.</div>
     </div>
     <div class="config-grupo">
@@ -8293,22 +8341,27 @@ function render(){
       if(!realIsAdmin) window.scrollTo(0, 0);
     }
     if(!realIsAdmin) scheduleShortAulaCheck();
-    // Modo Aula em 2 telas: esta janela é a do professor controlando o
-    // projetor — toda vez que a posição muda, avisa a outra janela.
-    if(presenterModeControl && presenterChannel){
-      const chavePresenter = b.num + '-' + a.num;
-      if(presenterLastSent !== chavePresenter){
-        presenterLastSent = chavePresenter;
-        try{ presenterChannel.postMessage({type:'nav', bloco:b.num, aula:a.num}); }catch(e){}
-      }
-    }
+    // REMOVIDO (v4.10.6) — aqui o notebook avisava o projetor toda vez que
+    // mudava de aula, e o projetor obedecia. Era isso que fazia a projeção
+    // "correr atrás" do professor: bastava consultar outra aula no notebook
+    // para o aluno ver a tela trocar. Agora a projeção só muda pelos botões
+    // ←/→ da barra do Modo Aula, que são um comando explícito.
   }
   const presenterBar = document.getElementById('presenter-control-bar');
   if(presenterBar){
     presenterBar.classList.toggle('hidden', !presenterModeControl);
-    if(presenterModeControl && a && b){
+    if(presenterModeControl){
+      // O rótulo mostra o que está NO PROJETOR — que pode ser outra aula
+      // diferente da que você está lendo aqui no notebook.
       const lbl = document.getElementById('presenter-control-label');
-      if(lbl) lbl.textContent = `Projetando: ${rotuloAula(a)} — ${a.title}`;
+      const alvo = presenterAlvo || (b && a ? {bloco:b.num, aula:a.num} : null);
+      let texto = 'Projetando na 2ª tela';
+      if(alvo){
+        const bp = COURSE.find(x=>x.num===alvo.bloco);
+        const ap = bp && bp.aulas.find(x=>x.num===alvo.aula);
+        if(ap) texto = `Projetando: ${rotuloAula(ap)} — ${ap.title}`;
+      }
+      if(lbl) lbl.textContent = texto;
     }
   }
 
@@ -9355,6 +9408,9 @@ async function iniciarSessao2Telas(){
   presenterModeControl = true;
   presenterChannel = new BroadcastChannel('modoaula-2telas-' + activeSubjectId);
   presenterLastSent = '';
+  // A projeção nasce na aula em que você estava — e daqui pra frente segue a
+  // própria vida: só muda pelos botões ←/→ da barra.
+  presenterAlvo = {bloco: state.block, aula: state.aula};
   render();
   document.getElementById('pres-toolbar').classList.remove('hidden');
   presResizeCanvas();
@@ -9386,6 +9442,7 @@ function encerrarSessao2Telas(){
   clearInterval(presenterWatchTimer);
   presenterWatchTimer = null;
   presenterModeControl = false;
+  presenterAlvo = null;
   render();
 }
 // Chamada uma única vez, quando esta ABA nasceu como projetor (?modoaula=projetor
@@ -9414,29 +9471,12 @@ async function entrarComoTelaProjetada(){
       render();
       window.scrollTo(0,0);
       presClearCanvas(); // o rabisco pertence à aula em que foi feito
-    } else if(d.type==='scroll'){
-      // Primeiro tenta a âncora: procura a MESMA seção que está no topo da
-      // janela do professor. É o que mantém as telas juntas mesmo quando o
-      // notebook está no modo de edição (que tem mais conteúdo).
-      let alinhou = false;
-      if(d.ancora && d.ancora.secId){
-        let alvo = null;
-        try{ alvo = document.querySelector(`#content .section[data-section-id="${CSS.escape(d.ancora.secId)}"]`); }catch(err){ alvo = null; }
-        if(alvo){
-          const r = alvo.getBoundingClientRect();
-          const topoAtual = window.scrollY || document.documentElement.scrollTop || 0;
-          const destino = topoAtual + r.top + (r.height * (d.ancora.dentro || 0));
-          window.scrollTo({top: Math.max(0, destino), behavior:'smooth'});
-          alinhou = true;
-        }
-      }
-      // Rede de segurança: seção que não existe aqui (ex.: anotação do
-      // professor) cai na porcentagem, o comportamento anterior.
-      if(!alinhou){
-        const alt = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
-        const max = Math.max(1, alt - window.innerHeight);
-        window.scrollTo({top: (d.progresso || 0) * max, behavior:'smooth'});
-      }
+    } else if(d.type==='rolar'){
+      // ALTERADO (v4.10.6) — o notebook não manda mais "vá para tal posição"
+      // (sincronia), e sim "role um passo". Esta janela rola sozinha, com o
+      // próprio tamanho de tela. É o que torna as duas telas independentes:
+      // o professor pode ler adiante no notebook sem mexer na projeção.
+      presRolarLocal(d.delta, d.fracao);
     } else if(d.type==='bye'){
       try{ presenterChannel.close(); }catch(e){}
       document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:22px;color:#555;background:#fff;">Apresentação encerrada pelo professor — pode fechar esta janela.</div>';
@@ -9472,90 +9512,95 @@ async function entrarComoTelaProjetada(){
     }
   };
 }
+// ALTERADO (v4.10.6) — os botões ←/→ da barra trocam a aula DA PROJEÇÃO.
+// Em 2 telas, o notebook não se mexe: ele continua exatamente onde estava,
+// na aula que você estiver lendo. Com uma tela só (o Modo Aula comum), esta
+// janela É a projeção, então ela troca de aula normalmente.
 function presGoAula(delta){
   const flat = [];
-  COURSE.forEach(bb=>{ if(isAdmin || !bb.hidden) bb.aulas.forEach(aa=>{ if(isAdmin || !aa.hidden) flat.push({block: bb.num, aula: aa.num}); }); });
-  const i = flat.findIndex(x=>x.block===state.block && x.aula===state.aula);
-  const alvo = flat[i + delta];
+  COURSE.forEach(bb=>{ bb.aulas.forEach(aa=>{ flat.push({block: bb.num, aula: aa.num, oculta: !!(bb.hidden || aa.hidden)}); }); });
+  const visiveis = flat.filter(x=>!x.oculta);
+  if(presenterModeControl){
+    const base = presenterAlvo || {bloco: state.block, aula: state.aula};
+    const i = visiveis.findIndex(x=>x.block===base.bloco && x.aula===base.aula);
+    const alvo = visiveis[i + delta];
+    if(!alvo) return;
+    presenterAlvo = {bloco: alvo.block, aula: alvo.aula};
+    if(presenterChannel){
+      try{ presenterChannel.postMessage({type:'nav', bloco: alvo.block, aula: alvo.aula}); }catch(e){}
+    }
+    presClearCanvas(); // rabisco pertence à aula em que foi feito
+    const lbl = document.getElementById('presenter-control-label');
+    if(lbl){
+      const bp = COURSE.find(x=>x.num===alvo.block);
+      const ap = bp && bp.aulas.find(x=>x.num===alvo.aula);
+      if(ap) lbl.textContent = `Projetando: ${rotuloAula(ap)} — ${ap.title}`;
+    }
+    return;
+  }
+  const lista = isAdmin ? flat : visiveis;
+  const i = lista.findIndex(x=>x.block===state.block && x.aula===state.aula);
+  const alvo = lista[i + delta];
   if(!alvo) return;
   state.block = alvo.block;
   state.aula = alvo.aula;
   editState = null;
   render();
   window.scrollTo(0, 0);
-  presClearCanvas(); // rabisco pertence à aula em que foi feito
+  presClearCanvas();
 }
-// Teclado/passador de slides do Modo Aula (setas, PageUp/PageDown, clicker)
-// — SÓ rola a tela. Chegou na borda (fim ou início do conteúdo) e continuou
-// clicando? Não acontece nada — de propósito: o passador NUNCA troca de
-// aula sozinho (pedido explícito, pra ninguém "vazar" pra próxima aula sem
-// querer no meio de uma leitura). Pra trocar de aula de verdade, é só o
-// botão ←/→ da barra mesmo (presGoAula direto, sem passar por aqui).
-// Manda a FRAÇÃO (não um valor de pixels já pronto) pra janela projetora —
-// cada janela calcula a própria distância com o próprio innerHeight, senão
-// a proporção do scroll muda quando as duas janelas têm resoluções
-// diferentes (é exatamente o que causava "rolava mais no projetor").
+// ===== PASSADOR DE SLIDES (reescrito na v4.10.6) =====
+// Regra nova, e ela é simples: o passador mexe SEMPRE e SÓ na tela que está
+// sendo projetada. Nunca na do notebook — mesmo que o foco do teclado esteja
+// no notebook, que é o caso normal, já que é ali que o professor clica.
+//
+// Antes existia uma sincronia entre as duas telas: o notebook rolava e
+// mandava o projetor rolar "a mesma proporção". Como as duas janelas têm
+// conteúdos e alturas diferentes (ainda mais com o notebook em modo de
+// edição), as telas iam se desencontrando e o professor não conseguia mais
+// ler um trecho adiante sem mexer no que o aluno estava vendo. A sincronia
+// foi removida por inteiro: as duas telas são independentes.
+//
+// Chegou na borda (fim ou início do conteúdo) e continuou clicando? Não
+// acontece nada — de propósito: o passador NUNCA troca de aula sozinho. Para
+// trocar de aula, os botões ←/→ da barra.
 function presProgressoScroll(){
   // Onde estamos, de 0 (topo) a 1 (fim), dentro do conteúdo rolável desta
-  // janela. Base para sincronizar as duas telas "pela mesma proporção".
+  // janela. Sobrou como utilidade de leitura; não sincroniza mais nada.
   const alt = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
   const max = Math.max(1, alt - window.innerHeight);
   const topo = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
   return Math.min(1, Math.max(0, topo / max));
 }
-// NOVO (v4.10.5) — com o notebook no modo de edição e o projetor na visão do
-// aluno, as duas telas passam a ter ALTURAS DE CONTEÚDO diferentes: a de
-// edição tem as barras de edição, as anotações do professor e os roteiros
-// ocultos. Sincronizar só pela porcentagem faria as telas irem se afastando
-// aos poucos. A âncora resolve: em vez de "40% do conteúdo", mandamos "estou
-// na seção X, a tantos por cento dentro dela" — e o projetor procura ESSA
-// seção. Como cada seção carrega o mesmo id nas duas janelas, o alinhamento
-// é exato nos pontos que importam.
-function presAncoraScroll(){
-  const secs = [...document.querySelectorAll('#content .section[data-section-id]')];
-  if(!secs.length) return null;
-  let alvo = null;
-  for(const s of secs){
-    const r = s.getBoundingClientRect();
-    if(r.bottom > 4){ alvo = {el:s, r}; break; }   // primeira que ainda aparece
-  }
-  if(!alvo){ const u = secs[secs.length-1]; alvo = {el:u, r:u.getBoundingClientRect()}; }
-  const id = alvo.el.getAttribute('data-section-id');
-  if(!id) return null;
-  const dentro = alvo.r.height ? Math.min(1, Math.max(0, -alvo.r.top / alvo.r.height)) : 0;
-  return {secId: id, dentro};
-}
-function presAvancar(delta){
+// Rola ESTA janela. Usada pela tela projetada — seja ela o projetor (por
+// ordem que chegou do notebook) ou a própria janela no Modo Aula de 1 tela.
+function presRolarLocal(delta, fracao){
   const folga = 4; // tolerância de arredondamento de scroll
-  // Salto instantâneo (sem "behavior:smooth"): clique rápido no clicker
-  // ALTERADO (v4.9.8) — rolagem suave (behavior:'smooth') de volta,
-  // acompanhando visualmente como o scroll do mouse — o corte anterior pra
-  // "instantâneo" era pra evitar clique rápido cancelando a animação, mas
-  // isso já foi resolvido nos bugs de fundo do Modo Aula.
+  const passo = (typeof fracao === 'number' && fracao > 0) ? fracao : presScrollFracao();
   const scrollTopAtual = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
   const scrollHeightAtual = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
   const noFim = (scrollTopAtual + window.innerHeight) >= (scrollHeightAtual - folga);
   const noInicio = scrollTopAtual <= folga;
   if(delta > 0 && !noFim){
-    window.scrollBy({top: window.innerHeight * presScrollFracao(), behavior:'smooth'});
+    window.scrollBy({top: window.innerHeight * passo, behavior:'smooth'});
   } else if(delta < 0 && !noInicio){
-    window.scrollBy({top: -(window.innerHeight * presScrollFracao()), behavior:'smooth'});
-  } else {
-    return; // na borda — o passador NUNCA troca de aula sozinho
+    window.scrollBy({top: -(window.innerHeight * passo), behavior:'smooth'});
   }
-  // Vai a âncora (seção + posição dentro dela) e, junto, a porcentagem como
-  // rede de segurança — a seção pode não existir do outro lado, caso das
-  // anotações do professor, que só moram nesta janela. Só a janela de
-  // controle envia.
-  if(presenterModeControl && presenterChannel){
-    try{
-      presenterChannel.postMessage({
-        type:'scroll',
-        progresso: presProgressoScroll(),
-        ancora: presAncoraScroll(),
-      });
-    }catch(e){}
+}
+// Ponto de entrada do passador, chamado pelo teclado nas duas janelas.
+function presAvancar(delta){
+  if(presenterModeControl){
+    // Esta é a janela de CONTROLE: ela não rola. Só manda o projetor rolar.
+    // A fração vai junto para a sensibilidade configurada aqui valer lá,
+    // sem depender de a preferência já ter carregado na outra janela.
+    if(presenterChannel){
+      try{ presenterChannel.postMessage({type:'rolar', delta, fracao: presScrollFracao()}); }catch(e){}
+    }
+    return;
   }
+  // Aqui esta janela É a tela projetada (projetor em 2 telas, ou Modo Aula
+  // comum em 1 tela só).
+  presRolarLocal(delta);
 }
 // Um ouvinte só para a barra toda — delegação, com stopPropagation para
 // nenhum outro ouvinte da página interferir nos cliques da barra.
@@ -9693,9 +9738,12 @@ document.addEventListener('keydown', (e)=>{
     if(presenterModeControl) encerrarSessao2Telas(); else exitPresentationMode();
     return;
   }
-  // Rolagem pelo clicker/teclado: vale nas DUAS janelas (o foco do teclado
-  // pode estar em qualquer uma). O projetor rola a si mesmo; a janela de
-  // controle rola e ainda avisa o projetor (dentro de presAvancar).
+  // Rolagem pelo clicker/teclado: o ouvinte vale nas DUAS janelas porque o
+  // foco do teclado pode estar em qualquer uma — na prática está quase sempre
+  // no notebook, que é onde o professor clicou por último. Quem decide o que
+  // fazer é o presAvancar: na janela de controle ele NÃO rola nada aqui,
+  // apenas manda o projetor rolar. Assim o passador só mexe na tela que o
+  // aluno vê, independentemente de onde o foco esteja.
   if(e.key==='ArrowRight' || e.key==='PageDown'){ e.preventDefault(); presAvancar(1); return; }
   if(e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); presAvancar(-1); return; }
   // Daqui pra baixo (fonte, laser, rabisco) é exclusivo da janela do
