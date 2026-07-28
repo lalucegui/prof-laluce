@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.1                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.4                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2222,6 +2222,7 @@
   body.presentation-mode .aula-editbar,
   body.presentation-mode .add-section-row,
   body.presentation-mode .student-notes,
+  body.presentation-mode .nota-professor,
   body.presentation-mode .roteiro-professor,
   body.presentation-mode .tela-topo,
   body.presentation-mode .gestao-grupos,
@@ -2366,6 +2367,39 @@
     margin-top:14px;background:#FFF9E6;border:1px dashed #D9B44A;border-radius:10px;
     padding:0;
   }
+  /* NOVO (v4.10.4) — anotação do professor no meio da aula. Herda a cara do
+     roteiro do topo (amarelo tracejado = "bastidor"), para o professor
+     reconhecer na hora que aquilo não vai para o aluno. */
+  .nota-professor{
+    background:#FFF9E6;border:1px dashed #D9B44A;border-radius:10px;
+    padding:12px 14px;
+  }
+  .nota-professor-head{
+    font-size:10.5px;font-weight:800;letter-spacing:0.7px;color:#8A6D1D;
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+  .nota-professor-head span{
+    font-weight:600;letter-spacing:0.3px;font-size:10px;color:#A88B3A;
+    background:#F5E7BD;border-radius:20px;padding:2px 8px;text-transform:none;
+  }
+  .nota-professor-titulo{
+    font-size:14.5px;font-weight:800;color:#6B5416;margin:8px 0 2px 0;
+  }
+  .nota-professor-body{
+    font-size:13.5px;line-height:1.6;color:#5C4A14;margin-top:6px;
+  }
+  .nota-professor-body p{margin:0 0 8px 0;}
+  .nota-professor-body p:last-child{margin-bottom:0;}
+  .nota-editor-aviso{
+    background:#FFF9E6;border:1px dashed #D9B44A;border-radius:8px;
+    padding:9px 12px;color:#6B5416;
+  }
+  html[data-palette="noite"] .nota-professor{
+    background:rgba(150,125,45,0.18) !important;border-color:rgba(217,180,74,0.5) !important;
+  }
+  html[data-palette="noite"] .nota-professor-titulo,
+  html[data-palette="noite"] .nota-professor-body,
+  html[data-palette="noite"] .nota-professor-body p{color:#F0E2B4 !important;}
   .roteiro-professor summary{
     cursor:pointer;padding:10px 14px;font-size:13px;font-weight:700;color:#8A6D1D;
     list-style:none;user-select:none;
@@ -2435,10 +2469,28 @@
   }
   .note-box .note-body.italic{font-style:italic;}
 
-  .grid-cards{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-    gap:16px;
+  /* ALTERADO (v4.10.3) — era um grid de colunas fixas. Numa última linha
+     incompleta (6 cards em 4 colunas) os que sobravam ficavam encostados à
+     esquerda, com um buraco à direita, sem jeito de mudar. Virou flex: no
+     modo padrão os cards CRESCEM e fecham a linha (que é o que a opção
+     "justificado" sempre prometeu), e nos outros três eles mantêm o tamanho
+     e se agrupam do lado escolhido. */
+  .grid-cards{display:flex;flex-wrap:wrap;gap:16px;}
+  .grid-cards > .card{flex:1 1 200px;}
+  .grid-cards.cards-align-left,
+  .grid-cards.cards-align-center,
+  .grid-cards.cards-align-right{display:flex;flex-wrap:wrap;}
+  .grid-cards.cards-align-left{justify-content:flex-start;}
+  .grid-cards.cards-align-center{justify-content:center;}
+  .grid-cards.cards-align-right{justify-content:flex-end;}
+  .grid-cards.cards-align-left > .card,
+  .grid-cards.cards-align-center > .card,
+  .grid-cards.cards-align-right > .card{flex:0 1 260px;}
+  @media(max-width:560px){
+    .grid-cards > .card,
+    .grid-cards.cards-align-left > .card,
+    .grid-cards.cards-align-center > .card,
+    .grid-cards.cards-align-right > .card{flex-basis:100%;}
   }
   .card{
     background:var(--surface-card);
@@ -2492,10 +2544,14 @@
   .tl-desc{font-size:11.5px;color:var(--charcoal);line-height:1.4;}
   .tl-caption{font-size:13px;color:var(--muted);font-style:italic;margin-top:14px;}
 
-  .axes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;}
-  /* Alinhamento dos cards de "eixos" quando a última linha fica incompleta.
-     Sem classe = comportamento antigo (grid esticando para preencher a linha),
-     para que nenhuma aula já criada mude de aparência. */
+  /* ALTERADO (v4.10.3) — mesmo conserto da grade de cards. O modo padrão
+     ("justificado") era um grid de colunas fixas, então a última linha
+     incompleta ficava encostada à esquerda em vez de esticar. Agora estica
+     de verdade. */
+  .axes-grid{display:flex;flex-wrap:wrap;gap:16px;}
+  .axes-grid > .axis-card{flex:1 1 180px;}
+  @media(max-width:560px){ .axes-grid > .axis-card{flex-basis:100%;} }
+  /* Alinhamento dos cards de "eixos" quando a última linha fica incompleta. */
   .axes-grid.axes-align-left,
   .axes-grid.axes-align-center,
   .axes-grid.axes-align-right{display:flex;flex-wrap:wrap;}
@@ -3042,7 +3098,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.1</div>
+<div class="version-tag hidden" id="version-tag">v4.10.4</div>
 
 
 <script>
@@ -3597,9 +3653,13 @@ function searchCourse(query){
     if(!isAdmin && b.hidden) continue;
     for(const a of b.aulas){
       if(!isAdmin && a.hidden) continue;
+      // A busca precisa respeitar o mesmo sigilo da tela: a "Anotação do
+      // professor" guarda texto livre e seria encontrada pela busca do aluno
+      // se entrasse no índice. Fica de fora para quem não é a equipe.
+      const secoesBuscaveis = a.sections.filter(s=> isAdmin || s.type!=='nota');
       const fields = [
         ['título', a.title], ['subtítulo', a.subtitle], ['introdução', a.intro],
-        ...a.sections.map(s=>['seção "'+(s.title||s.kicker||s.type)+'"', sectionSearchText(s)])
+        ...secoesBuscaveis.map(s=>['seção "'+(s.title||s.kicker||s.type)+'"', sectionSearchText(s)])
       ];
       for(const [onde, texto] of fields){
         const norm = normalizeForSearch(texto);
@@ -4004,6 +4064,11 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
   // durante a pré-visualização). Para o professor (isAdmin=true), continua
   // aparecendo normalmente, para ele poder editar.
   if(sec.type==='activity' && sec.visibleToStudent===false && !isAdminNaTela()) return '';
+  // NOVO (v4.10.4) — a "Anotação do professor" é privada por natureza: não
+  // existe versão dela para o aluno. Devolver string vazia (em vez de esconder
+  // por CSS) é o que faz a seção de cima encostar na de baixo como se a
+  // anotação nunca tivesse sido escrita — sem sobra de espaço, sem borda solta.
+  if(sec.type==='nota' && !isAdminNaTela()) return '';
   const kicker = sec.kicker ? `<div class="section-kicker">${esc(sec.kicker)}</div>` : '';
   const title = sec.title ? `<h3 class="section-title">${esc(sec.title)}</h3>` : '';
   const draggableAttr = (isAdmin && contentModel==='v2' && (sec.type==='figure' || sec.type==='video')) ? ` draggable="true" data-drag-figure-idx="${idx}"` : '';
@@ -4021,15 +4086,24 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
     case 'figure': {
       const customSize = (sec.width || sec.height);
       const sizeStyle = customSize ? `style="${sec.width?`width:${sec.width}px;`:''}${sec.height?`height:${sec.height}px;`:''}max-width:100%;margin:0 auto;"` : '';
+      // CORRIGIDO (v4.10.3) — os botões "Metade (50%)" e "Um terço (33%)"
+      // gravavam sec.widthPct, mas a montagem da figura só olhava largura em
+      // PIXELS. O valor era salvo e simplesmente ignorado na hora de exibir,
+      // por isso a imagem continuava ocupando a página toda. A porcentagem é
+      // aplicada na CAIXA (e não na imagem) de propósito: assim a legenda
+      // encolhe junto e o conjunto continua parecendo uma figura só.
+      const pctFig = parseInt(sec.widthPct, 10);
+      const boxStyle = (!customSize && pctFig > 0 && pctFig < 100)
+        ? ` style="width:${pctFig}%;max-width:100%;margin-left:auto;margin-right:auto;"` : '';
       const boxClass = customSize ? 'figure-box figure-box-custom' : 'figure-box';
       if(sec.storageKey){
         const domId = 'storimg-'+sec.storageKey+'-'+idx;
-        body = `<div class="${boxClass}">
+        body = `<div class="${boxClass}"${boxStyle}>
           <div class="figure-loading-wrap"><img id="${domId}" data-storage-key="${esc(sec.storageKey)}" class="figure-img-loading" alt="${esc(sec.alt||'')}" ${sizeStyle}><span class="figure-spinner">Carregando imagem…</span></div>
           <div class="figure-caption"><strong>${esc(sec.caption||'')}</strong>${sec.source?` — ${esc(sec.source)}`:''}</div>
         </div>`;
       } else if(sec.src){
-        body = `<div class="${boxClass}">
+        body = `<div class="${boxClass}"${boxStyle}>
           <img src="${sec.src}" alt="${esc(sec.alt||'')}" ${sizeStyle}>
           <div class="figure-caption"><strong>${esc(sec.caption||'')}</strong>${sec.source?` — ${esc(sec.source)}`:''}</div>
         </div>`;
@@ -4045,8 +4119,12 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       body = `<table class="data-table"><thead><tr>${(sec.headers||[]).map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
         <tbody>${(sec.rows||[]).map(r=>`<tr>${r.map((c,i)=>`<td${i===0?' class="row-label"':''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
       break;
-    case 'video':
-      body = `<a class="video-card" href="${sec.url}" target="_blank" rel="noopener noreferrer">
+    case 'video': {
+      // Mesmo conserto da figura: o cartão de vídeo também ignorava a % .
+      const pctVid = parseInt(sec.widthPct, 10);
+      const vidStyle = (pctVid > 0 && pctVid < 100)
+        ? ` style="width:${pctVid}%;max-width:100%;margin-left:auto;margin-right:auto;"` : '';
+      body = `<a class="video-card" href="${sec.url}" target="_blank" rel="noopener noreferrer"${vidStyle}>
         <span class="play-badge">▶</span>
         <span class="video-info">
           <span class="video-title">${esc(sec.videoTitle||'')}</span>
@@ -4054,6 +4132,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
         </span>
       </a>`;
       break;
+    }
     case 'activity': {
       const linhas = [
         sec.objective ? `<div class="act-row"><span class="act-tag">🎯 Objetivo</span><div>${esc(sec.objective)}</div></div>` : '',
@@ -4127,7 +4206,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       break;
     }
     case 'grid':
-      body = `<div class="grid-cards">${(sec.cards||[]).map(c=>`
+      body = `<div class="grid-cards${(sec.align && sec.align!=='justify')?` cards-align-${sec.align}`:''}">${(sec.cards||[]).map(c=>`
         <div class="card" style="background:${c.color||'var(--surface-card)'};"><h4>${esc(c.title)}</h4><ul>${(c.bullets||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>
       `).join('')}</div>`;
       break;
@@ -4177,6 +4256,16 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
           body = renderAtividadeStudentForm(sec, cache.response, cache.schedule);
         }
       }
+      break;
+    }
+    case 'nota': {
+      const paras = (sec.paragraphs && sec.paragraphs.length) ? sec.paragraphs : [];
+      const corpo = paras.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${richOut(p)}</p>`).join('');
+      body = `<div class="nota-professor">
+        <div class="nota-professor-head">📌 ANOTAÇÃO DO PROFESSOR <span>só você vê</span></div>
+        ${sec.title?`<div class="nota-professor-titulo">${esc(sec.title)}</div>`:''}
+        <div class="nota-professor-body rich-content">${corpo || '<p><em>(anotação vazia — clique no lápis para escrever)</em></p>'}</div>
+      </div>`;
       break;
     }
     case 'spacer': {
@@ -6441,10 +6530,11 @@ const TYPE_LABELS = {
   grid:'Grade de cards', compare:'Comparação (2 colunas)',
   timeline:'Linha do tempo', axes:'Eixos/cards', hierarchy:'Cadeia hierárquica', chips:'Lista de chips',
   spacer:'↕ Espaçamento (linha em branco)',
+  nota:'📌 Anotação do professor (só você vê, em qualquer ponto da aula)',
   activity:'🛠 Roteiro de Atividade (roteiro do professor para a aula presencial, sem resposta do aluno)',
   atividade:'📝 Atividade (respondível pelo aluno dentro do sistema, com nota)',
 };
-const FRIENDLY_TYPES = ['prose','table','figure','video','activity','atividade'];
+const FRIENDLY_TYPES = ['prose','table','figure','video','nota','activity','atividade'];
 const ADVANCED_TYPES = ['grid','compare','timeline','axes','hierarchy','chips','spacer'];
 const FUTURE_TYPES = [];
 // Tipos de questão suportados dentro de um bloco "Atividade" — cada questão da
@@ -6660,6 +6750,14 @@ function sectionEditorForm(sec, idx){
       ${richToolbarHtml('ef-paragraphs')}
       <div id="ef-paragraphs" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR" style="min-height:140px">${(sec.paragraphs&&sec.paragraphs.length?sec.paragraphs:['']).map(p=>/^<(ul|ol)[ >]/i.test(p.trim())?p:`<p>${p}</p>`).join('')}</div>
       <div class="hint">Selecione um texto e clique nos botões acima para formatar (negrito, itálico, cor, fonte, tamanho). Os botões de alinhar afetam a linha/parágrafo inteiro.</div>`;
+  } else if(type==='nota'){
+    fields = `
+      <div class="hint nota-editor-aviso">📌 Esta seção é <strong>só sua</strong>. Ela não aparece na aula do aluno, nem no "ver como aluno", nem na projeção, nem no PDF — e, quando some, a seção de cima encosta na de baixo como se ela não existisse.</div>
+      <label>Título da anotação (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
+      <label>Sua anotação</label>
+      ${richToolbarHtml('ef-nota-body')}
+      <div id="ef-nota-body" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR" style="min-height:130px">${(sec.paragraphs&&sec.paragraphs.length?sec.paragraphs:['']).map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${p}</p>`).join('')}</div>
+      <div class="hint">Ex.: como explicar a imagem acima, o exemplo que você quer dar em sala, a pergunta que costuma render discussão, o que deu errado da última vez.</div>`;
   } else if(type==='points'){
     fields = `
       <label>Etiqueta (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-kicker" value="${escAttr(sec.kicker||'')}">
@@ -6826,7 +6924,15 @@ function sectionEditorForm(sec, idx){
       <label>Título (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
       <label>Cards da grade</label>
       <div id="ef-grid-wrap">${gridCardsHtml((sec.cards&&sec.cards.length)?sec.cards:[{title:'',bullets:['']}])}</div>
-      <button type="button" class="btn-secondary" data-action="add-grid-card" style="margin-top:6px;">+ Adicionar card</button>`;
+      <button type="button" class="btn-secondary" data-action="add-grid-card" style="margin-top:6px;">+ Adicionar card</button>
+      <label style="margin-top:14px;">Alinhamento dos cards</label>
+      <select id="ef-grid-align">
+        <option value="justify" ${(!sec.align||sec.align==='justify')?'selected':''}>Justificado — os cards esticam e preenchem a linha (padrão)</option>
+        <option value="center" ${sec.align==='center'?'selected':''}>Centralizado</option>
+        <option value="left" ${sec.align==='left'?'selected':''}>Alinhado à esquerda</option>
+        <option value="right" ${sec.align==='right'?'selected':''}>Alinhado à direita</option>
+      </select>
+      <div class="hint">Isso resolve a última linha quando sobram cards (ex.: 5 cards numa grade de 3). No modo justificado eles esticam para fechar a linha; nos outros três mantêm o tamanho e se agrupam do lado escolhido.</div>`;
   } else if(type==='compare'){
     fields = `
       <label>Etiqueta (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-kicker" value="${escAttr(sec.kicker||'')}">
@@ -8026,6 +8132,7 @@ const TYPE_DESCRIPTIONS = {
   hierarchy: 'Uma cadeia de itens conectados em sequência hierárquica (do geral ao específico, ou de uma etapa para a próxima). Use para mostrar dependências ou fluxos.',
   chips: 'Uma lista de palavras ou termos curtos exibidos como "etiquetas" (chips) lado a lado. Use para listar palavras-chave, tags ou categorias soltas.',
   spacer: 'Um espaço em branco vertical entre duas seções — sem texto, sem card. Use só quando duas seções ficarem visualmente "coladas" e você quiser um respiro. Escolha o tamanho (pequeno a extra grande).',
+  nota: 'Um lembrete seu, no meio da aula, que o aluno NUNCA vê. Coloque logo abaixo de uma imagem para lembrar como explicá-la, ou depois de um texto para guardar o contexto que você quer dar em sala. Some por completo na aula do aluno, no "ver como aluno" e na projeção — e, quando some, as seções de cima e de baixo se encostam como se ela não existisse.',
   activity: 'Um roteiro de atividade prática para conduzir em sala (objetivo, método, materiais, resultados esperados). É só um roteiro do professor — o aluno não responde nada aqui.',
   atividade: 'Uma atividade que o aluno responde dentro do sistema (uma ou mais questões, de vários tipos), com nota e comentário do professor. Use ao final da aula para fixação/avaliação contínua.',
 };
@@ -8104,6 +8211,7 @@ function blankSection(type){
   const id = genSectionId();
   switch(type){
     case 'prose': return {type, id, paragraphs:['']};
+    case 'nota': return {type, id, title:'', paragraphs:['']};
     case 'activity': return {type, id, title:'', objective:'', method:'', timeMin:'', materials:'', results:'', obs:'', visibleToStudent:true};
     case 'points': return {type, id, bullets:['']};
     case 'table': return {type, id, headers:['Coluna 1','Coluna 2'], rows:[['','']]};
@@ -8770,6 +8878,7 @@ document.addEventListener('dragend', ()=>{ draggingFigureIdx = null; hideDockGri
 
 // ===================== ARRASTAR SEÇÃO INTEIRA PARA REORDENAR =====================
 let sectionPlacementLineEl = null;
+let posicaoDestinoSecao = null;   // vão escolhido no arraste atual (v4.10.2)
 function ensurePlacementLine(){
   if(sectionPlacementLineEl) return sectionPlacementLineEl;
   sectionPlacementLineEl = document.createElement('div');
@@ -8790,6 +8899,48 @@ function showPlacementLineAt(targetEl, before){
   line.classList.remove('hidden');
 }
 
+// ===== ARRASTAR SEÇÃO: UMA POSIÇÃO POR VÃO (v4.10.2) =====
+// Antes, cada seção era um alvo dividido em duas metades: metade de cima
+// significava "antes desta" e metade de baixo "depois desta". O efeito
+// colateral era que todo espaço entre duas seções tinha DOIS alvos que
+// levavam ao mesmo resultado — "depois da A" e "antes da B" — e cada um
+// desenhava a linha numa altura diferente, o que fazia parecer que havia
+// duas escolhas distintas. Agora existe um único ponto de inserção por vão.
+//
+// A conta é feita sobre a lista inteira, não sobre a seção sob o cursor:
+// o índice de inserção é quantas seções têm o seu MEIO acima do ponteiro.
+// Assim, arrastar para qualquer lugar do vão dá sempre o mesmo resultado.
+function calcularInsercaoSecao(clientY){
+  const secoes = [...document.querySelectorAll('#content .section[data-section-idx]')]
+    .sort((x,y)=> (+x.dataset.sectionIdx) - (+y.dataset.sectionIdx));
+  if(!secoes.length) return null;
+  let indice = secoes.length;
+  for(let i=0; i<secoes.length; i++){
+    const r = secoes[i].getBoundingClientRect();
+    if(clientY < r.top + r.height/2){ indice = i; break; }
+  }
+  return {indice, secoes};
+}
+// Desenha a linha no MEIO do vão correspondente ao índice — um lugar só,
+// nem colada embaixo de uma seção nem colada em cima da seguinte.
+function mostrarLinhaNoVao(indice, secoes){
+  const line = ensurePlacementLine();
+  const anterior = secoes[indice-1] || null;
+  const proxima  = secoes[indice] || null;
+  const rAnt = anterior ? anterior.getBoundingClientRect() : null;
+  const rPro = proxima ? proxima.getBoundingClientRect() : null;
+  let top;
+  if(rAnt && rPro)      top = (rAnt.bottom + rPro.top) / 2;
+  else if(rPro)         top = rPro.top - 6;
+  else if(rAnt)         top = rAnt.bottom + 6;
+  else                  return;
+  const ref = rPro || rAnt;
+  line.style.top = (top + window.scrollY) + 'px';
+  line.style.left = (ref.left + window.scrollX) + 'px';
+  line.style.width = ref.width + 'px';
+  line.classList.remove('hidden');
+}
+
 document.getElementById('content').addEventListener('dragstart', (e)=>{
   if(!isAdmin || !sectionGridMode) return;
   const handle = e.target.closest('[data-drag-section-idx]');
@@ -8800,37 +8951,39 @@ document.getElementById('content').addEventListener('dragstart', (e)=>{
 });
 document.getElementById('content').addEventListener('dragover', (e)=>{
   if(draggingSectionIdx===null) return;
-  const target = e.target.closest('.section[data-section-idx]');
-  if(!target) return;
+  if(!e.target.closest('#content')) return;
   e.preventDefault();
-  const rect = target.getBoundingClientRect();
-  const before = (e.clientY - rect.top) < rect.height/2;
-  target.dataset.pendingBefore = before ? '1' : '0';
-  showPlacementLineAt(target, before);
+  const calc = calcularInsercaoSecao(e.clientY);
+  if(!calc) return;
+  posicaoDestinoSecao = calc.indice;      // guardado para o drop
+  mostrarLinhaNoVao(calc.indice, calc.secoes);
 });
 document.getElementById('content').addEventListener('drop', async (e)=>{
-  const target = e.target.closest('.section[data-section-idx]');
   hidePlacementLine();
   if(draggingSectionIdx===null) return;
   e.preventDefault();
-  if(target){
+  const destino = posicaoDestinoSecao;
+  if(destino !== null){
     const b = COURSE.find(x=>x.num===state.block);
-    const a = b.aulas.find(x=>x.num===state.aula);
+    const a = b && b.aulas.find(x=>x.num===state.aula);
     const fromIdx = draggingSectionIdx;
-    let toIdx = +target.dataset.sectionIdx;
-    const before = target.dataset.pendingBefore === '1';
-    if(fromIdx !== toIdx){
+    // O índice de destino é contado ANTES de tirar a seção da lista. Se ela
+    // saiu de uma posição acima do destino, a lista encolheu no caminho e o
+    // alvo desce uma casa. Soltar no vão logo acima ou logo abaixo de onde a
+    // seção já está simplesmente não muda nada — e é isso que se espera.
+    let insertAt = destino;
+    if(fromIdx < destino) insertAt--;
+    if(a && a.sections && insertAt !== fromIdx && insertAt >= 0 && insertAt <= a.sections.length){
       const [moved] = a.sections.splice(fromIdx, 1);
-      if(fromIdx < toIdx) toIdx--; // o array encolheu antes do destino
-      const insertAt = before ? toIdx : toIdx+1;
       a.sections.splice(insertAt, 0, moved);
       await saveCourseToStorage();
       render();
     }
   }
   draggingSectionIdx = null;
+  posicaoDestinoSecao = null;
 });
-document.addEventListener('dragend', ()=>{ draggingSectionIdx = null; hidePlacementLine(); });
+document.addEventListener('dragend', ()=>{ draggingSectionIdx = null; posicaoDestinoSecao = null; hidePlacementLine(); });
 
 document.getElementById('grid-mode-toggle-btn').addEventListener('click', ()=>{
   if(!isAdmin) return;
@@ -11314,6 +11467,10 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         newSec = { type, kicker: document.getElementById('ef-kicker').value.trim()||undefined,
           title: document.getElementById('ef-title').value.trim()||undefined,
           paragraphs: richFieldToArray(document.getElementById('ef-paragraphs')) };
+      } else if(type==='nota'){
+        newSec = { type,
+          title: document.getElementById('ef-title').value.trim()||undefined,
+          paragraphs: richFieldToArray(document.getElementById('ef-nota-body')) };
       } else if(type==='points'){
         const noteHeading = document.getElementById('ef-note-heading').value.trim();
         const noteBodyArr = richFieldToArray(document.getElementById('ef-note-body'));
@@ -11420,6 +11577,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         newSec = { type,
           kicker: document.getElementById('ef-kicker').value.trim()||undefined,
           title: document.getElementById('ef-title').value.trim()||undefined,
+          align: (document.getElementById('ef-grid-align')||{}).value || undefined,
           cards: collectGridCardsFromDom().filter(c=>c.title || c.bullets.length) };
       } else if(type==='compare'){
         const leftItems = document.querySelector('.cmp-items[data-side="left"]').value.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -12269,7 +12427,12 @@ function sectionToPrintHtml(sec){
       if(sec.storageKey && IMAGE_CACHE[sec.storageKey]) src = IMAGE_CACHE[sec.storageKey];
       else if(sec.src) src = sec.src;
       if(src){
-        body = `<div class="pdf-figure"><img src="${src}" style="max-width:100%;border-radius:6px;"><div class="pdf-figure-caption"><strong>${esc(sec.caption||'')}</strong>${sec.source?` — ${esc(sec.source)}`:''}</div></div>`;
+        // O PDF segue a mesma largura escolhida na tela — antes ele
+        // imprimia sempre em página cheia, mesmo com 50% ou 33% marcado.
+        const pctPdf = parseInt(sec.widthPct, 10);
+        const estiloPdf = (pctPdf > 0 && pctPdf < 100)
+          ? ` style="width:${pctPdf}%;margin-left:auto;margin-right:auto;"` : '';
+        body = `<div class="pdf-figure"${estiloPdf}><img src="${src}" style="max-width:100%;border-radius:6px;"><div class="pdf-figure-caption"><strong>${esc(sec.caption||'')}</strong>${sec.source?` — ${esc(sec.source)}`:''}</div></div>`;
       }
       break;
     }
@@ -12280,7 +12443,7 @@ function sectionToPrintHtml(sec){
       </a>`;
       break;
     case 'grid':
-      body = `<div class="pdf-grid">${(sec.cards||[]).map(c=>`<div class="pdf-grid-card" style="background:${c.color||'#F7F7F9'};"><h4>${esc(c.title)}</h4><ul>${(c.bullets||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>`).join('')}</div>`;
+      body = `<div class="pdf-grid${(sec.align && sec.align!=='justify')?` pdf-align-${sec.align}`:''}">${(sec.cards||[]).map(c=>`<div class="pdf-grid-card" style="background:${c.color||'#F7F7F9'};"><h4>${esc(c.title)}</h4><ul>${(c.bullets||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>`).join('')}</div>`;
       break;
     case 'compare':
       body = `<table class="pdf-table"><tr><th style="background:${sec.leftColor||'#3D3E77'};">${esc(sec.leftTitle||'')}</th><th style="background:${sec.rightColor||'#3D3E77'};">${esc(sec.rightTitle||'')}</th></tr>
@@ -12334,7 +12497,7 @@ function buildAulaPrintHtml(b, a){
   const pageUrl = window.location.href.split('#')[0] + '#bloco-' + b.num + '-aula-' + a.num;
   const now = new Date();
   const nowStr = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-  const sectionsHtml = (a.sections||[]).filter(s=>s.type!=='atividade' && !(s.type==='activity' && s.visibleToStudent===false)).map(sectionToPrintHtml).join('');
+  const sectionsHtml = (a.sections||[]).filter(s=>s.type!=='atividade' && s.type!=='nota' && !(s.type==='activity' && s.visibleToStudent===false)).map(sectionToPrintHtml).join('');
   const docTitle = blocoEhAbertura(b) ? `${b.title||'Abertura'} - ${a.title}` : `Bloco ${toRoman(b.num)} - Aula ${a.num} - ${a.title}`;
 
   return `<!DOCTYPE html>
