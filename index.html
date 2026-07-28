@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.9                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.10                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -3135,7 +3135,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.9</div>
+<div class="version-tag hidden" id="version-tag">v4.10.10</div>
 
 
 <script>
@@ -6346,6 +6346,95 @@ document.addEventListener('input', (e)=>{
   }
 });
 
+// ===== RECUO DENTRO DE LISTAS (v4.10.10) =====
+// Antes, o recuo achava o filho DIRETO do campo de edição e mexia na margem
+// dele. Dentro de uma lista, esse filho direto é a <ul> INTEIRA — então
+// aumentar o nível de um item empurrava a lista toda, e todos os níveis
+// pareciam virar a mesma coisa. Era esse o defeito.
+//
+// Agora, quando o cursor está numa lista, o recuo faz o que se espera de uma
+// lista: aninha AQUELE item (ou os itens selecionados) dentro do item de
+// cima, criando um subnível de verdade. Fora de lista, continua valendo o
+// recuo por margem de sempre, que é o certo para parágrafos soltos.
+
+// Itens de lista tocados pela seleção. Só os mais internos: se a seleção pega
+// um item que contém outros, o de fora é descartado — senão o subnível
+// inteiro subiria junto, que é justamente o que não se quer.
+function itensDeListaNaSelecao(field){
+  const sel = window.getSelection();
+  if(!sel || sel.rangeCount===0) return [];
+  const todos = [...field.querySelectorAll('li')];
+  let tocados = todos.filter(li=>{ try{ return sel.containsNode(li, true); }catch(e){ return false; } });
+  if(!tocados.length){
+    let node = sel.getRangeAt(0).startContainer;
+    if(node.nodeType===3) node = node.parentElement;
+    const li = node && node.closest ? node.closest('li') : null;
+    if(li && field.contains(li)) tocados = [li];
+  }
+  return tocados.filter(li=> !tocados.some(outro=> outro!==li && li.contains(outro)));
+}
+// Desce um item para dentro do item anterior. O primeiro item de uma lista
+// não tem para onde descer — não existe "pai" acima dele.
+function aumentarNivelDoItem(li){
+  const anterior = li.previousElementSibling;
+  if(!anterior || anterior.tagName !== 'LI') return false;
+  const listaAtual = li.parentElement;
+  let sub = [...anterior.children].find(x=>x.tagName==='UL' || x.tagName==='OL');
+  if(!sub){
+    sub = document.createElement(listaAtual.tagName);
+    // O subnível nasce com o marcador do nível de cima; trocar depois é só
+    // usar o menu de marcador com o cursor dentro dele.
+    const marcador = listaAtual.style.listStyleType;
+    if(marcador) sub.style.listStyleType = marcador;
+    anterior.appendChild(sub);
+  }
+  sub.appendChild(li);
+  return true;
+}
+// Sobe um item um nível. Os itens que vinham DEPOIS dele passam a ser filhos
+// dele — é o comportamento padrão de editor de texto e evita que a lista
+// perca a hierarquia embaixo do item que subiu.
+function diminuirNivelDoItem(li){
+  const listaAtual = li.parentElement;
+  const itemPai = listaAtual && listaAtual.parentElement;
+  if(!itemPai || itemPai.tagName !== 'LI') return false;   // já está no primeiro nível
+  const listaAvo = itemPai.parentElement;
+  const posteriores = [];
+  let n = li.nextElementSibling;
+  while(n){ posteriores.push(n); n = n.nextElementSibling; }
+  listaAvo.insertBefore(li, itemPai.nextSibling);
+  if(posteriores.length){
+    const nova = document.createElement(listaAtual.tagName);
+    if(listaAtual.style.listStyleType) nova.style.listStyleType = listaAtual.style.listStyleType;
+    posteriores.forEach(p=>nova.appendChild(p));
+    li.appendChild(nova);
+  }
+  if(!listaAtual.children.length) listaAtual.remove();
+  return true;
+}
+// Devolve true quando o recuo foi tratado como lista (então o caminho antigo,
+// de margem, não deve rodar).
+function aplicarRecuoEmLista(field, aumentar){
+  const itens = itensDeListaNaSelecao(field);
+  if(!itens.length) return false;
+  // Ao aumentar, de cima para baixo; ao diminuir, de baixo para cima —
+  // senão um item já movido atrapalha a conta do seguinte.
+  const ordem = aumentar ? itens : itens.slice().reverse();
+  let mexeu = false;
+  ordem.forEach(li=>{ if(aumentar ? aumentarNivelDoItem(li) : diminuirNivelDoItem(li)) mexeu = true; });
+  if(mexeu){
+    const sel = window.getSelection();
+    const alvo = itens[0];
+    if(sel && alvo){
+      const r = document.createRange();
+      r.selectNodeContents(alvo);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+  }
+  return true;   // estava em lista: tratado aqui, com ou sem movimento
+}
+
 // Acha o nó que é filho DIRETO do campo de edição (o "parágrafo" da vez), a
 // partir de onde o cursor está. É nele que o recuo (indent/outdent) é aplicado.
 function findTopLevelBlock(field){
@@ -6395,10 +6484,12 @@ document.addEventListener('click', (e)=>{
   else if(cmd==='alignright') document.execCommand('justifyRight');
   else if(cmd==='alignjustify') document.execCommand('justifyFull');
   else if(cmd==='indent' || cmd==='outdent'){
-    // Recuo só do texto — não cria lista nem marcador nenhum. Feito à mão
-    // (em vez do "indent" nativo do navegador, que ora embrulha o texto num
-    // <blockquote> e ora se comporta diferente em cada navegador) ajustando
-    // direto a margem esquerda do parágrafo, de um jeito previsível.
+    // Dentro de lista: vira subnível de verdade, só do item selecionado.
+    if(aplicarRecuoEmLista(field, cmd==='indent')) return;
+    // Fora de lista: recuo só do texto — não cria lista nem marcador nenhum.
+    // Feito à mão (em vez do "indent" nativo do navegador, que ora embrulha o
+    // texto num <blockquote> e ora se comporta diferente em cada navegador)
+    // ajustando direto a margem esquerda do parágrafo, de um jeito previsível.
     const blk = findTopLevelBlock(field);
     if(blk){
       const passo = 24, maxRecuo = 168;
@@ -6408,6 +6499,26 @@ document.addEventListener('click', (e)=>{
     }
   }
   else if(cmd==='paint') togglePaintMode(btn);
+});
+
+// Tab / Shift+Tab dentro de um campo de texto: mesmo efeito dos botões de
+// recuo. A dica dos botões já prometia isso, mas o atalho não existia — o Tab
+// simplesmente pulava para o próximo campo do formulário.
+document.addEventListener('keydown', (e)=>{
+  if(e.key !== 'Tab') return;
+  const alvo = e.target;
+  if(!alvo || !alvo.closest) return;
+  const campo = alvo.closest('.rich-text');
+  if(!campo) return;
+  e.preventDefault();
+  if(aplicarRecuoEmLista(campo, !e.shiftKey)) return;
+  const blk = findTopLevelBlock(campo);
+  if(blk){
+    const passo = 24, maxRecuo = 168;
+    const atual = parseInt(blk.style.marginLeft) || 0;
+    const novo = !e.shiftKey ? Math.min(atual + passo, maxRecuo) : Math.max(atual - passo, 0);
+    blk.style.marginLeft = novo ? novo + 'px' : '';
+  }
 });
 
 // ===== Menu unificado de marcador (aplica estilo, ou cria a lista se ainda não existir) =====
@@ -9488,6 +9599,13 @@ function presClearCanvas(){
 // "Interface de apresentação ativa" = tela cheia comum OU a janela do
 // professor controlando a 2ª tela. As duas contam para liberar laser/desenho.
 function presentationUiAtiva(){ return presentationMode || presenterModeControl; }
+// ALTERADO (v4.10.10) — quem pode receber rabisco é SÓ a tela que está sendo
+// projetada. No arranjo de 2 telas, o notebook é o painel de controle: ele
+// mostra outro conteúdo (o modo de edição, com as suas anotações), então
+// riscar ali não fazia sentido nenhum — a marca caía num texto que o aluno
+// nem está vendo. Para desenhar, leve o mouse até a janela do projetor, no
+// segundo monitor, e risque direto sobre o que a turma vê.
+function presPodeDesenharAqui(){ return presentationMode; }
 function presSetLaser(on, remoto){
   presLaserOn = on;
   if(on && presDrawOn) presSetDraw(false, remoto); // um de cada vez
@@ -9503,9 +9621,10 @@ function presSetDraw(on, remoto){
   if(on && presLaserOn) presSetLaser(false, remoto);
   const c = presCanvas();
   c.classList.toggle('hidden', !presentationUiAtiva());
-  c.style.pointerEvents = (on && presentationUiAtiva()) ? 'auto' : 'none'; // só desenha com o mouse na tela que TEM o mouse
+  // A camada só captura o mouse onde o desenho é permitido — na tela projetada.
+  c.style.pointerEvents = (on && presPodeDesenharAqui()) ? 'auto' : 'none';
   document.getElementById('pres-draw-btn').classList.toggle('pres-active', on);
-  document.body.classList.toggle('pres-draw-cursor', on && presentationUiAtiva());
+  document.body.classList.toggle('pres-draw-cursor', on && presPodeDesenharAqui());
   if(!remoto && presenterModeControl && presenterChannel){
     try{ presenterChannel.postMessage({type:'draw-on', on}); }catch(e){}
   }
@@ -9865,7 +9984,7 @@ function presIniciarRolagemContinua(delta, fracao){
   presPararRolagemContinua();
   const sentido = delta > 0 ? 1 : -1;
   const fr = (typeof fracao === 'number' && fracao > 0) ? fracao : presScrollFracao();
-  const estado = {ativo:true, raf:null};
+  const estado = {ativo:true, timer:null};
   let ultimo = null;
   const limite = Date.now() + 60000; // trava: nunca rola para sempre
   // CORRIGIDO (v4.10.9) — o loop mantém a PRÓPRIA posição-alvo e usa
@@ -9879,10 +9998,17 @@ function presIniciarRolagemContinua(delta, fracao){
   // absoluto, cada quadro define onde a página deve estar, o que cancela a
   // animação anterior e assume o comando.
   let alvo = presScrollTopAtual();
-  function passo(agora){
+  // ALTERADO (v4.10.10) — o laço roda por temporizador, e não por
+  // requestAnimationFrame. A janela do projetor fica visível mas SEM FOCO
+  // (o foco está no notebook, que é onde o clicker digita), e o navegador
+  // reduz o requestAnimationFrame de janelas sem foco. Com temporizador, e
+  // calculando a distância pelo tempo real decorrido, a velocidade continua
+  // certa mesmo que os disparos venham mais espaçados.
+  function passo(){
     if(!estado.ativo) return;
+    const agora = performance.now();
     if(ultimo === null){ ultimo = agora; alvo = presScrollTopAtual(); }
-    const dt = Math.min(0.05, (agora - ultimo) / 1000);
+    const dt = Math.min(0.2, (agora - ultimo) / 1000);
     ultimo = agora;
     const altura = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
     const maximo = Math.max(0, altura - window.innerHeight);
@@ -9893,21 +10019,77 @@ function presIniciarRolagemContinua(delta, fracao){
     if(alvo >= maximo && sentido > 0){ window.scrollTo(0, maximo); presPararRolagemContinua(); return; }
     window.scrollTo(0, alvo);
     if(Date.now() > limite){ presPararRolagemContinua(); return; }
-    estado.raf = requestAnimationFrame(passo);
   }
-  estado.raf = requestAnimationFrame(passo);
+  estado.timer = setInterval(passo, 16);
   presRolagemContinua = estado;
 }
 function presPararRolagemContinua(){
   if(presRolagemContinua){
     presRolagemContinua.ativo = false;
-    if(presRolagemContinua.raf) cancelAnimationFrame(presRolagemContinua.raf);
+    if(presRolagemContinua.timer) clearInterval(presRolagemContinua.timer);
   }
   presRolagemContinua = null;
 }
 // Liga/desliga o modo contínuo respeitando a mesma regra do passo único: a
 // janela de controle não rola, só manda a projeção rolar.
+// NOVO (v4.10.10) — TERCEIRO caminho para entrar em rolagem contínua.
+//
+// Há três tipos de passador por aí, e cada um se comporta de um jeito quando
+// o botão fica apertado:
+//   (a) manda a tecla e repete sozinho  -> reconhecido por e.repeat;
+//   (b) manda a tecla e fica quieto     -> reconhecido pelo cronômetro de 450ms;
+//   (c) manda toques SOLTOS, um atrás do outro, com "soltar" entre eles.
+// O caso (c) derrotava os dois primeiros: cada "soltar" cancelava o
+// cronômetro, e nunca havia repetição para detectar. Este bloco resolve (c)
+// contando toques seguidos na mesma direção.
+//
+// O limiar é conservador de propósito: três toques com menos de 320ms entre
+// eles. Cliques deliberados costumam ficar acima disso, então clicar duas ou
+// três vezes com calma continua dando passos avulsos, como sempre.
+let presToquesSeguidos = 0;
+let presUltimoToqueSentido = 0;
+let presUltimoToqueQuando = 0;
+let presTimerInatividade = null;
+let presContinuoPorRepeticao = false;
+let presContinuoLigado = false;   // este comando já foi enviado/ligado?
+
+function presRenovarInatividade(){
+  if(presTimerInatividade) clearTimeout(presTimerInatividade);
+  presTimerInatividade = setTimeout(()=>{
+    presTimerInatividade = null;
+    presContinuoPorRepeticao = false;
+    presAvancarContinuo(0, false);
+    presPararRolagemContinua();
+  }, 700);
+}
+// Devolve true quando o toque JÁ foi tratado como rolagem contínua — nesse
+// caso quem chamou não deve dar mais um passo avulso.
+function presRegistrarToque(sentido){
+  const agora = Date.now();
+  const seguido = (sentido === presUltimoToqueSentido) && (agora - presUltimoToqueQuando <= 320);
+  presToquesSeguidos = seguido ? presToquesSeguidos + 1 : 1;
+  presUltimoToqueSentido = sentido;
+  presUltimoToqueQuando = agora;
+  if(presContinuoPorRepeticao){ presRenovarInatividade(); return true; }
+  if(presToquesSeguidos >= 3){
+    presContinuoPorRepeticao = true;
+    presAvancarContinuo(sentido, true);
+    presRenovarInatividade();
+    return true;
+  }
+  return false;
+}
+// Para tudo, sem exceção — usado quando a janela perde o foco ou some.
+function presPararTudoDoPassador(){
+  if(presTimerSegurar){ clearTimeout(presTimerSegurar); presTimerSegurar = null; }
+  if(presTimerInatividade){ clearTimeout(presTimerInatividade); presTimerInatividade = null; }
+  presContinuoPorRepeticao = false;
+  presToquesSeguidos = 0;
+  presAvancarContinuo(0, false);
+  presPararRolagemContinua();
+}
 function presAvancarContinuo(delta, ligar){
+  presContinuoLigado = !!ligar;
   if(presenterModeControl){
     if(presenterChannel){
       try{ presenterChannel.postMessage({type:'rolar-continuo', delta, fracao: presScrollFracao(), ligar}); }catch(e){}
@@ -9922,6 +10104,11 @@ function presAvancarContinuo(delta, ligar){
 // chegasse deixaria a tela rolando sozinha).
 function presCancelarSegurar(){
   if(presTimerSegurar){ clearTimeout(presTimerSegurar); presTimerSegurar = null; }
+  // Quando o modo contínuo veio de toques repetidos (passador que solta a
+  // tecla entre um toque e outro), o "soltar" NÃO pode parar a rolagem —
+  // senão ela morreria no primeiro toque. Ali quem manda parar é o silêncio:
+  // 700ms sem novo toque.
+  if(presContinuoPorRepeticao) return;
   presAvancarContinuo(0, false);
   presPararRolagemContinua();
 }
@@ -10012,7 +10199,7 @@ document.addEventListener('mousemove', (e)=>{
 (function(){
   const c = document.getElementById('pres-draw-canvas');
   c.addEventListener('mousedown', (e)=>{
-    if(!presentationUiAtiva() || !presDrawOn) return;
+    if(!presPodeDesenharAqui() || !presDrawOn) return;
     presDrawing = true;
     // Marca-texto trabalha por SELEÇÃO: guarda onde o arrasto começou dentro
     // do texto e, a cada movimento, recalcula as linhas cobertas.
@@ -10103,8 +10290,8 @@ document.addEventListener('keyup', (e)=>{
 });
 // Rede de segurança: janela perdeu o foco, aba escondida ou ESC — em nenhum
 // desses casos o "soltar" é garantido, então paramos por conta.
-window.addEventListener('blur', ()=>{ presCancelarSegurar(); });
-document.addEventListener('visibilitychange', ()=>{ if(document.hidden) presCancelarSegurar(); });
+window.addEventListener('blur', ()=>{ presPararTudoDoPassador(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) presPararTudoDoPassador(); });
 document.addEventListener('keydown', (e)=>{
   const t = e.target;
   if(t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT' || t.isContentEditable)) return;
@@ -10126,17 +10313,19 @@ document.addEventListener('keydown', (e)=>{
   if(e.key==='ArrowRight' || e.key==='PageDown' || e.key==='ArrowLeft' || e.key==='PageUp'){
     e.preventDefault();
     const sentido = (e.key==='ArrowRight' || e.key==='PageDown') ? 1 : -1;
-    // Passador que REPETE a tecla sozinho enquanto o botão está apertado:
-    // a repetição é a prova de que está sendo segurado, então já entra em
-    // modo contínuo sem esperar o cronômetro. Passador que manda um toque só
-    // não gera repetição — para esse, quem resolve é o cronômetro abaixo.
+    // (a) Passador que REPETE a tecla sozinho: a repetição já é prova de que
+    // está sendo segurado, então entra em contínuo na hora.
     if(e.repeat){
-      if(!presRolagemContinua) presAvancarContinuo(sentido, true);
+      if(!presContinuoLigado) presAvancarContinuo(sentido, true);
       return;
     }
+    // (c) Passador que manda toques soltos em sequência — contados aqui.
+    // Se este toque já virou rolagem contínua, não damos passo avulso.
+    if(presRegistrarToque(sentido)) return;
     presAvancar(sentido);                       // o passo de sempre, na hora
+    // (b) Passador que segura a tecla sem repetir: o cronômetro resolve.
     if(presTimerSegurar) clearTimeout(presTimerSegurar);
-    presTimerSegurar = setTimeout(()=>{          // segurou? passa a descer sozinho
+    presTimerSegurar = setTimeout(()=>{
       presTimerSegurar = null;
       presAvancarContinuo(sentido, true);
     }, PRES_ESPERA_SEGURAR);
@@ -13915,6 +14104,20 @@ function lerUltimaAtividadeSalva(){
     return isNaN(v) ? null : v;
   }catch(e){ return null; }
 }
+// CORRIGIDO (v4.10.10) — foto do carimbo NO MOMENTO EM QUE A PÁGINA CARREGA,
+// antes de qualquer coisa poder sobrescrevê-lo.
+//
+// Era este o furo do logout automático: a checagem de "a sessão expirou
+// enquanto o navegador esteve fechado?" só acontece depois que o Firebase
+// restaura o login, o que leva alguns instantes. Nesse meio-tempo, qualquer
+// mexida de mouse, rolagem ou tecla já disparava o registro de atividade e
+// regravava o carimbo com a hora ATUAL. Quando a checagem finalmente rodava,
+// ela lia "última atividade: agora mesmo" e concluía que estava tudo em dia —
+// mesmo depois de o computador passar um dia inteiro desligado.
+//
+// A foto é tirada aqui, na execução do próprio script, antes de existir
+// qualquer ouvinte de mouse ou teclado. Nada consegue alterá-la.
+const ULTIMA_ATIVIDADE_AO_CARREGAR = lerUltimaAtividadeSalva();
 function limparUltimaAtividade(){
   try{ localStorage.removeItem(LAST_ACTIVITY_KEY); }catch(e){}
 }
@@ -13932,7 +14135,9 @@ function registerActivity(){
 // Verifica, no momento em que a sessão é restaurada, se ela já deveria ter
 // expirado enquanto o navegador esteve fechado. Devolve true se expirou.
 function sessaoExpirouEnquantoFechado(){
-  const ultima = lerUltimaAtividadeSalva();
+  // Usa a FOTO tirada no carregamento, nunca o valor atual do armazenamento —
+  // esse já pode ter sido regravado pelo primeiro movimento do mouse.
+  const ultima = ULTIMA_ATIVIDADE_AO_CARREGAR;
   if(!ultima) return false;
   return (Date.now() - ultima) > (inactivityMinutes * 60 * 1000);
 }
