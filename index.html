@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.6                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.7                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1708,6 +1708,39 @@
   .activity-done-row{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px dashed #7FA882;cursor:pointer;font-size:13.5px;font-weight:700;color:#2F5D33;}
   .activity-done-row input{width:17px;height:17px;accent-color:#2F5D33;cursor:pointer;}
   /* ===== Bloco "Atividade" (respondivel, com nota) - v3, aulas novas ===== */
+  /* NOVO (v4.10.7) — a atividade virou recolhível. Fechada mostra só a faixa
+     do cabeçalho com título e situação; fechar não entrega nem apaga nada. */
+  .atividade-details{
+    background:#FBF3E7;border:1.5px solid #D8A857;border-radius:12px;overflow:hidden;
+  }
+  .atividade-summary{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:12px 16px;cursor:pointer;user-select:none;list-style:none;
+  }
+  .atividade-summary::-webkit-details-marker{display:none;}
+  .atividade-summary::before{
+    content:'▸';font-size:13px;color:#8A5A0F;transition:transform .15s ease;display:inline-block;
+  }
+  .atividade-details[open] > .atividade-summary::before{transform:rotate(90deg);}
+  .atividade-summary:hover{background:rgba(216,168,87,0.12);}
+  .atividade-summary-titulo{font-size:15px;font-weight:800;color:#5C3D0A;}
+  .atividade-summary-status{
+    margin-left:auto;font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:normal;
+    background:#F2DFB8;color:#8A5A0F;
+  }
+  .atv-sit-ok{background:#CDEBD3;color:#1B5E20;}
+  .atv-sit-andamento{background:#F2DFB8;color:#8A5A0F;}
+  .atv-sit-atraso{background:#FBE0C7;color:#8A3B12;}
+  .atv-sit-fechado{background:#E8E4EC;color:#5A4B7A;}
+  .atv-sit-pendente{background:#EDEDF2;color:var(--muted);}
+  .atividade-details-corpo{padding:0 16px 16px 16px;}
+  .atividade-details-corpo .atividade-card{
+    background:transparent;border:none;border-radius:0;padding:0;
+  }
+  html[data-palette="noite"] .atividade-details{
+    background:rgba(150,110,45,0.16) !important;border-color:rgba(216,168,87,0.45) !important;
+  }
+  html[data-palette="noite"] .atividade-summary-titulo{color:#F0D9A8 !important;}
   .atividade-card{background:#FBF3E7;border:1.5px solid #D8A857;border-radius:12px;padding:16px 18px;}
   .atividade-badge{font-size:11px;font-weight:800;letter-spacing:0.8px;color:#8A5A0F;background:#F2DFB8;padding:4px 10px;border-radius:20px;}
   .atividade-optional-tag{font-size:11px;font-weight:700;color:var(--muted);margin-left:8px;}
@@ -3102,7 +3135,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.6</div>
+<div class="version-tag hidden" id="version-tag">v4.10.7</div>
 
 
 <script>
@@ -4247,14 +4280,18 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       `).join('')}</div>${sec.footerNote?`<div class="footer-note">${esc(sec.footerNote)}</div>`:''}`;
       break;
     case 'atividade': {
+      // ALTERADO (v4.10.7) — a atividade passou a ser recolhível, para o
+      // professor e para o aluno. Fechada mostra só o cabeçalho com o
+      // título e a situação; fechar NÃO entrega nem apaga nada — o que já
+      // foi digitado segue salvo como rascunho, porque os campos continuam
+      // no HTML (só escondidos) e o salvamento automático os enxerga igual.
       if(isAdminNaTela()){
-        body = `<div class="atividade-card atividade-preview">
-          <div class="atividade-head"><span class="atividade-badge">📝 ATIVIDADE</span>${sec.required===false?'<span class="atividade-optional-tag">opcional</span>':''}</div>
-          ${sec.title?`<div class="atividade-title">${esc(sec.title)}</div>`:''}
+        const resumoProf = `<span class="atividade-summary-status">${(sec.items||[]).length} questão(ões)</span>`;
+        body = atividadeRecolhivelHtml(sec, resumoProf, `<div class="atividade-card atividade-preview">
           ${sec.statement?`<div class="atividade-statement">${esc(sec.statement)}</div>`:''}
           <div class="atividade-meta">${(sec.items||[]).length} questão(ões) — não entra no PDF da aula.</div>
           <button type="button" class="btn-secondary" data-action="open-atividade-manage" data-secid="${esc(sec.id)}" data-aula="${state.aula}">📋 Gerenciar respostas e prazos</button>
-        </div>`;
+        </div>`);
       } else if(!currentUser){
         body = `<div class="atividade-card"><div class="atividade-head"><span class="atividade-badge">📝 ATIVIDADE</span></div><p>Entre com sua conta para responder.</p></div>`;
       } else {
@@ -4262,7 +4299,8 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
         if(!cache || !cache.loaded){
           body = `<div class="atividade-card" data-atv-load-id="${esc(sec.id)}" data-atv-aula="${state.aula}"><div class="atividade-head"><span class="atividade-badge">📝 ATIVIDADE</span></div><p>Carregando…</p></div>`;
         } else {
-          body = renderAtividadeStudentForm(sec, cache.response, cache.schedule);
+          body = atividadeRecolhivelHtml(sec, atvResumoSituacaoHtml(sec, cache.response, cache.schedule),
+                                         renderAtividadeStudentForm(sec, cache.response, cache.schedule));
         }
       }
       break;
@@ -4299,6 +4337,26 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
 // quando a aula é exibida (padrão igual ao loadStorageImages: mostra um placeholder
 // e, quando os dados chegam, chama render() de novo).
 let ACTIVITY_DATA_CACHE = {};
+// NOVO (v4.10.7) — quais atividades estão abertas nesta sessão. Fica fora do
+// HTML de propósito: a aula é redesenhada por vários motivos (salvar resposta,
+// trocar de aba, prazo vencer) e, sem esta memória, a atividade fechava
+// sozinha no meio da digitação. Some ao recarregar a página, que é o
+// comportamento esperado — abrir a aula devolve tudo recolhido.
+let ATV_ABERTA = {};
+// Envelope recolhível comum ao professor e ao aluno.
+function atividadeRecolhivelHtml(sec, resumoDireita, conteudo){
+  const aberta = !!ATV_ABERTA[sec.id];
+  const titulo = sec.title ? esc(sec.title) : 'Atividade de fixação';
+  return `<details class="atividade-details" data-atv-details="${esc(sec.id)}"${aberta?' open':''}>
+    <summary class="atividade-summary">
+      <span class="atividade-badge">📝 ATIVIDADE</span>
+      <span class="atividade-summary-titulo">${titulo}</span>
+      ${sec.required===false?'<span class="atividade-optional-tag">opcional</span>':''}
+      ${resumoDireita || ''}
+    </summary>
+    <div class="atividade-details-corpo">${conteudo}</div>
+  </details>`;
+}
 // Cache da tela "Gerenciar atividade" (professor): respostas da turma e prazos.
 let ATV_MANAGE_RESPONSES = null; // array de respostas da seção sendo gerenciada
 let ATV_MANAGE_SCHEDULES = {};   // turmaId -> {opensAt, closesAt}
@@ -4570,6 +4628,28 @@ async function loadAllActivityData(){
   render(); // agora com os dados prontos, desenha o formulário de verdade
 }
 
+// NOVO (v4.10.7) — o que aparece à direita do título quando a atividade está
+// FECHADA. Sem isso o aluno teria que abrir cada uma só para descobrir se já
+// entregou.
+function atvResumoSituacaoHtml(sec, response, schedule){
+  const publicada = !!(response && response.grading && response.grading.published);
+  if(publicada){
+    const g = response.grading || {};
+    const nota = (g.score!=null) ? ` — ${esc(String(g.score))}${g.maxScore!=null?`/${esc(String(g.maxScore))}`:''}` : '';
+    return `<span class="atividade-summary-status atv-sit-ok">✅ Corrigida${nota}</span>`;
+  }
+  if(response && response.submittedAt){
+    return '<span class="atividade-summary-status atv-sit-ok">📨 Entregue</span>';
+  }
+  const janela = atvJanelaPrazo(schedule);
+  if(janela === 'antes') return '<span class="atividade-summary-status atv-sit-fechado">🔒 Ainda não abriu</span>';
+  if(janela === 'depois') return '<span class="atividade-summary-status atv-sit-fechado">🔒 Fora do prazo</span>';
+  if(janela === 'atrasada') return '<span class="atividade-summary-status atv-sit-atraso">⏰ Prazo encerrado</span>';
+  const temResposta = response && response.answers && Object.keys(response.answers).length;
+  if(temResposta) return '<span class="atividade-summary-status atv-sit-andamento">✏️ Rascunho salvo — falta entregar</span>';
+  return '<span class="atividade-summary-status atv-sit-pendente">Não iniciada</span>';
+}
+
 function renderAtividadeStudentForm(sec, response, schedule){
   const status = computeActivityStatus(response, schedule);
   const answers = (response && response.answers) || {};
@@ -4622,8 +4702,7 @@ function renderAtividadeStudentForm(sec, response, schedule){
     </div>`;
   }
   return `<div class="atividade-card">
-    <div class="atividade-head"><span class="atividade-badge">📝 ATIVIDADE</span><span class="atividade-status atividade-status-${status}">${statusLabel}</span></div>
-    ${sec.title?`<div class="atividade-title">${esc(sec.title)}</div>`:''}
+    <div class="atividade-head"><span class="atividade-status atividade-status-${status}">${statusLabel}</span></div>
     ${sec.statement?`<div class="atividade-statement">${esc(sec.statement)}</div>`:''}
     ${prazoInfo}
     <div class="atividade-items">${itemsHtml}</div>
@@ -4636,6 +4715,14 @@ function renderAtividadeStudentForm(sec, response, schedule){
     ${(status==='entregue' && !publicada)?`<div class="atividade-entregue-nota">📨 Entregue${response&&response.submittedAt?` em ${new Date(response.submittedAt).toLocaleString('pt-BR')}`:''}. Aguarde a correção do professor.</div>`:''}
     ${gradingHtml}
   </div>`;
+}
+
+// Guarda o aberto/fechado de cada atividade. O evento 'toggle' não sobe na
+// árvore, então precisa ser ligado elemento por elemento a cada desenho.
+function wireAtividadeDetails(){
+  document.querySelectorAll('details[data-atv-details]').forEach(d=>{
+    d.addEventListener('toggle', ()=>{ ATV_ABERTA[d.dataset.atvDetails] = d.open; });
+  });
 }
 
 function atvTableHtml(sectionId, item, rows, locked){
@@ -6550,7 +6637,18 @@ function sanitizeRichHtml(html){
   const tpl = document.createElement('template');
   tpl.innerHTML = html;
   const allowed = {B:1,I:1,U:1,SPAN:1,DIV:1,BR:1,STRONG:1,EM:1,P:1,FONT:1,UL:1,OL:1,LI:1};
-  const allowedStyle = ['color','font-family','font-size','text-align','font-weight','font-style','text-decoration','display','background-color'];
+  // CORRIGIDO (v4.10.7) — 'list-style-type' e 'list-style-position' faltavam
+  // nesta lista. O marcador escolhido no menu (quadrado, seta, número...) é
+  // gravado como estilo na própria <ul>/<ol>; como o saneador jogava esse
+  // estilo fora, o CSS geral assumia (.rich-content ul{list-style:disc}) e a
+  // lista voltava sempre para bolinha. Era esse o "marcador que muda sozinho
+  // ao salvar".
+  const allowedStyle = ['color','font-family','font-size','text-align','font-weight','font-style','text-decoration','display','background-color','list-style-type','list-style-position'];
+  // A numeração hierárquica (1 / 1.1 / 1.1.1) não é um estilo: é a classe
+  // num-hier, que liga os contadores encadeados do CSS. Como o saneador
+  // remove todo atributo que não seja style, ela também se perdia. Só esta
+  // classe sobrevive — qualquer outra continua sendo descartada.
+  const classesPermitidas = ['num-hier'];
   (function clean(node){
     [...node.childNodes].forEach(child=>{
       if(child.nodeType===1){
@@ -6561,7 +6659,9 @@ function sanitizeRichHtml(html){
         if(child.tagName==='FONT' && child.hasAttribute('color') && !child.style.color){
           child.style.setProperty('color', child.getAttribute('color'));
         }
+        const classeMantida = (child.getAttribute('class')||'').split(/\s+/).filter(x=>classesPermitidas.includes(x));
         [...child.attributes].forEach(attr=>{ if(attr.name!=='style') child.removeAttribute(attr.name); });
+        if(classeMantida.length) child.setAttribute('class', classeMantida.join(' '));
         if(child.hasAttribute('style')){
           const kept = {};
           allowedStyle.forEach(p=>{ const v = child.style.getPropertyValue(p); if(v) kept[p]=v; });
@@ -8845,6 +8945,7 @@ function render(){
   }
 
   content.innerHTML = inner;
+  wireAtividadeDetails();
   loadStorageImages();
   loadAllActivityData();
   updateNavFabs();
@@ -9341,6 +9442,7 @@ function esconderAvisoTelaCheia(){
   if(aviso) aviso.classList.add('hidden');
 }
 function exitPresentationMode(){
+  presCancelarSegurar();
   esconderAvisoTelaCheia();
   // À prova de falhas: primeiro restaura a interface, SEMPRE; a tela cheia
   // é desligada por último e qualquer erro dela não trava a saída.
@@ -9426,6 +9528,7 @@ async function iniciarSessao2Telas(){
   setTimeout(()=>{ try{ window.focus(); }catch(e){} }, 500);
 }
 function encerrarSessao2Telas(){
+  presCancelarSegurar();
   presSetLaser(false, true);
   presSetDraw(false, true);
   document.getElementById('pres-toolbar').classList.add('hidden');
@@ -9471,6 +9574,11 @@ async function entrarComoTelaProjetada(){
       render();
       window.scrollTo(0,0);
       presClearCanvas(); // o rabisco pertence à aula em que foi feito
+    } else if(d.type==='rolar-continuo'){
+      // Segurar o botão no notebook: a projeção rola sozinha até chegar o
+      // aviso de que soltou.
+      if(d.ligar) presIniciarRolagemContinua(d.delta, d.fracao);
+      else presPararRolagemContinua();
     } else if(d.type==='rolar'){
       // ALTERADO (v4.10.6) — o notebook não manda mais "vá para tal posição"
       // (sincronia), e sim "role um passo". Esta janela rola sozinha, com o
@@ -9586,6 +9694,71 @@ function presRolarLocal(delta, fracao){
   } else if(delta < 0 && !noInicio){
     window.scrollBy({top: -(window.innerHeight * passo), behavior:'smooth'});
   }
+}
+// ===== SEGURAR O BOTÃO PARA ROLAR SEM PARAR (v4.10.7) =====
+// Um clique dá um passo (comportamento de sempre, com a sensibilidade que
+// você configurou). Segurar o botão faz a tela descer/subir continuamente até
+// soltar — para percorrer um trecho longo sem ficar clicando.
+//
+// A entrada em modo contínuo NÃO depende do teclado repetir a tecla sozinho:
+// alguns passadores repetem, outros mandam um toque só. Por isso o gatilho é
+// um cronômetro armado no primeiro toque e cancelado quando o botão é solto.
+// Assim funciona igual nos dois tipos de aparelho.
+let presRolagemContinua = null;   // loop de animação em andamento
+let presTimerSegurar = null;      // espera do "está segurando mesmo?"
+const PRES_ESPERA_SEGURAR = 450;  // ms até entender que é um "segurar"
+
+function presIniciarRolagemContinua(delta, fracao){
+  presPararRolagemContinua();
+  const sentido = delta > 0 ? 1 : -1;
+  const fr = (typeof fracao === 'number' && fracao > 0) ? fracao : presScrollFracao();
+  const estado = {ativo:true, raf:null};
+  let ultimo = null;
+  let paradas = 0;                 // quadros seguidos sem sair do lugar
+  const limite = Date.now() + 60000; // trava: nunca rola para sempre
+  function passo(agora){
+    if(!estado.ativo) return;
+    if(ultimo === null) ultimo = agora;
+    const dt = Math.min(0.05, (agora - ultimo) / 1000);
+    ultimo = agora;
+    // Velocidade proporcional à mesma sensibilidade do clique: quem gosta de
+    // passo curto também prefere rolagem contínua mais devagar.
+    const antes = window.scrollY || document.documentElement.scrollTop || 0;
+    window.scrollBy(0, window.innerHeight * fr * 1.2 * dt * sentido);
+    const depois = window.scrollY || document.documentElement.scrollTop || 0;
+    if(Math.abs(depois - antes) < 0.4){ paradas++; } else { paradas = 0; }
+    if(paradas > 3 || Date.now() > limite){ presPararRolagemContinua(); return; }
+    estado.raf = requestAnimationFrame(passo);
+  }
+  estado.raf = requestAnimationFrame(passo);
+  presRolagemContinua = estado;
+}
+function presPararRolagemContinua(){
+  if(presRolagemContinua){
+    presRolagemContinua.ativo = false;
+    if(presRolagemContinua.raf) cancelAnimationFrame(presRolagemContinua.raf);
+  }
+  presRolagemContinua = null;
+}
+// Liga/desliga o modo contínuo respeitando a mesma regra do passo único: a
+// janela de controle não rola, só manda a projeção rolar.
+function presAvancarContinuo(delta, ligar){
+  if(presenterModeControl){
+    if(presenterChannel){
+      try{ presenterChannel.postMessage({type:'rolar-continuo', delta, fracao: presScrollFracao(), ligar}); }catch(e){}
+    }
+    return;
+  }
+  if(ligar) presIniciarRolagemContinua(delta);
+  else presPararRolagemContinua();
+}
+// Cancela tudo que estiver em curso — usado ao soltar o botão, ao sair do
+// Modo Aula e quando a janela perde o foco (sem isso, um "soltar" que não
+// chegasse deixaria a tela rolando sozinha).
+function presCancelarSegurar(){
+  if(presTimerSegurar){ clearTimeout(presTimerSegurar); presTimerSegurar = null; }
+  presAvancarContinuo(0, false);
+  presPararRolagemContinua();
 }
 // Ponto de entrada do passador, chamado pelo teclado nas duas janelas.
 function presAvancar(delta){
@@ -9726,6 +9899,18 @@ document.addEventListener('mousemove', (e)=>{
     presDrawing = false;
   }));
 })();
+// Soltou o botão do passador: cancela a espera e para a rolagem contínua.
+// Fica fora do bloqueio de campos de texto de propósito — se o foco mudar no
+// meio do caminho, o "soltar" precisa chegar de qualquer jeito.
+document.addEventListener('keyup', (e)=>{
+  if(e.key==='ArrowRight' || e.key==='PageDown' || e.key==='ArrowLeft' || e.key==='PageUp'){
+    presCancelarSegurar();
+  }
+});
+// Rede de segurança: janela perdeu o foco, aba escondida ou ESC — em nenhum
+// desses casos o "soltar" é garantido, então paramos por conta.
+window.addEventListener('blur', ()=>{ presCancelarSegurar(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) presCancelarSegurar(); });
 document.addEventListener('keydown', (e)=>{
   const t = e.target;
   if(t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT' || t.isContentEditable)) return;
@@ -9744,8 +9929,21 @@ document.addEventListener('keydown', (e)=>{
   // fazer é o presAvancar: na janela de controle ele NÃO rola nada aqui,
   // apenas manda o projetor rolar. Assim o passador só mexe na tela que o
   // aluno vê, independentemente de onde o foco esteja.
-  if(e.key==='ArrowRight' || e.key==='PageDown'){ e.preventDefault(); presAvancar(1); return; }
-  if(e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); presAvancar(-1); return; }
+  if(e.key==='ArrowRight' || e.key==='PageDown' || e.key==='ArrowLeft' || e.key==='PageUp'){
+    e.preventDefault();
+    const sentido = (e.key==='ArrowRight' || e.key==='PageDown') ? 1 : -1;
+    // Repetição automática do teclado é ignorada: quem comanda o modo
+    // contínuo é o cronômetro abaixo, para funcionar igual em passador que
+    // repete e em passador que manda um toque só.
+    if(e.repeat) return;
+    presAvancar(sentido);                       // o passo de sempre, na hora
+    if(presTimerSegurar) clearTimeout(presTimerSegurar);
+    presTimerSegurar = setTimeout(()=>{          // segurou? passa a descer sozinho
+      presTimerSegurar = null;
+      presAvancarContinuo(sentido, true);
+    }, PRES_ESPERA_SEGURAR);
+    return;
+  }
   // Daqui pra baixo (fonte, laser, rabisco) é exclusivo da janela do
   // professor — o projetor não mexe nisso sozinho.
   if(presenterModeDisplay) return;
