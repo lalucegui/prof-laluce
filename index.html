@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.12                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.13                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1199,15 +1199,20 @@
   .organize-sidebar-btn:hover{opacity:0.9;}
   body.admin-mode .organize-sidebar-btn{display:block !important;}
   .side-nav.collapsed .organize-sidebar-btn{display:none !important;}
+  /* ALTERADO (v4.10.13) — o botão saiu de dentro de cada bloco e virou um só,
+     no fim do menu. As medidas passaram a acompanhar os vizinhos de lá
+     ("Adicionar bloco" e "Organizar curso"), senão ele ficaria estreito e
+     desalinhado no novo lugar. */
   .add-aula-btn{
     display:none !important;
-    width:calc(100% - 4px);
-    margin-top:4px;
+    width:calc(100% - 16px);
+    margin:10px 8px 0 8px;
     background:none;
     border:1px dashed var(--line);
     border-radius:8px;
-    padding:7px 8px;
-    font-size:12px;
+    padding:9px 8px;
+    font-size:12.5px;
+    font-weight:600;
     color:var(--muted);
     cursor:pointer;
   }
@@ -3140,7 +3145,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.12</div>
+<div class="version-tag hidden" id="version-tag">v4.10.13</div>
 
 
 <script>
@@ -3852,10 +3857,9 @@ function renderSideNav(){
             </button>
             <button class="edit-chip nav-aula-edit-btn" data-edit-block="${b.num}" data-edit-aula="${a.num}" title="Editar informações da aula">✎</button>
           </div>`).join('')}
-        <button class="add-aula-btn" data-add-aula-block="${b.num}">+ Adicionar aula</button>
       </div>
     </div>`;
-  }).join('') + `<button class="add-block-btn" id="add-block-btn">+ Adicionar bloco</button><button class="organize-sidebar-btn" id="organize-btn">🗂 Organizar curso</button>`;
+  }).join('') + `${isAdmin && COURSE.length ? '<button class="add-aula-btn" id="add-aula-btn">+ Adicionar aula</button>' : ''}<button class="add-block-btn" id="add-block-btn">+ Adicionar bloco</button><button class="organize-sidebar-btn" id="organize-btn">🗂 Organizar curso</button>`;
 
   el.querySelectorAll('.nav-block-header').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -3923,17 +3927,25 @@ function renderSideNav(){
       focarConteudo();
     });
   });
-  el.querySelectorAll('.add-aula-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      if(!isAdmin) return;
-      const bn = parseInt(btn.dataset.addAulaBlock,10);
+  // ALTERADO (v4.10.13) — antes havia um "+ Adicionar aula" DENTRO de cada
+  // bloco, repetido bloco a bloco. Agora é um só, no fim do menu: a aula nova
+  // nasce no último bloco (que é onde o curso está crescendo) e, se o lugar
+  // não for esse, o próprio formulário tem o seletor de Bloco — ou basta
+  // arrastar a aula depois, que ela renumera sozinha.
+  const btnAddAula = el.querySelector('#add-aula-btn');
+  if(btnAddAula){
+    btnAddAula.addEventListener('click', ()=>{
+      if(!isAdmin || !COURSE.length) return;
+      // Último bloco que NÃO é a abertura — a abertura tem uma aula só.
+      const candidatos = COURSE.filter(bb=>!blocoEhAbertura(bb));
+      const alvo = candidatos.length ? candidatos[candidatos.length-1] : COURSE[COURSE.length-1];
       const maxNum = Math.max(0, ...COURSE.flatMap(bb=>bb.aulas.map(aa=>aa.num)));
-      editState = {kind:'newAula', blockNum: bn, suggestedNum: maxNum+1};
-      state.block = bn;
+      editState = {kind:'newAula', blockNum: alvo.num, suggestedNum: maxNum+1};
+      state.block = alvo.num;
       render();
       focarConteudo();
     });
-  });
+  }
   el.querySelectorAll('.nav-standalone-empty').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       if(!isAdmin) return;
@@ -8408,7 +8420,7 @@ function newBlockForm(suggestedNum){
   return `<div class="editor-form" data-kind="newBlock">
     <label>Número do bloco (algarismo romano)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-b-num" value="${toRoman(suggestedNum)}" placeholder="Ex.: IV">
     <label>Título do bloco</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-b-title" placeholder="Título do novo bloco" value="">
-    <div class="hint">O bloco é criado sem nenhuma aula — use "+ Adicionar aula" dentro dele depois.</div>
+    <div class="hint">O bloco é criado sem nenhuma aula. Use o "+ Adicionar aula" no fim do menu lateral e escolha este bloco no campo "Bloco" do formulário.</div>
     <div class="editor-actions">
       <button class="btn-primary" data-action="confirm-new-block">Criar bloco</button>
       <button class="btn-secondary" data-action="cancel-edit">Cancelar</button>
@@ -13247,56 +13259,50 @@ function sectionToPrintHtml(sec){
   return `<div class="pdf-section">${kicker}${title}${body}</div>`;
 }
 
+// Escape para texto que vai DENTRO de um SVG — o nome do aluno pode ter
+// & ou aspas, e isso quebraria a imagem inteira da marca d'água.
+function xmlEsc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
 function buildAulaPrintHtml(b, a){
   // Marca d'água pessoal para ALUNOS: nome + RA + data em cada página do PDF.
   // O material continua acessível para estudo offline, mas qualquer cópia que
   // circular fica "assinada" por quem a baixou. Professor baixa sem marca.
-  let wmBanner = '', wmDiagonal = '';
+  let wmBanner = '', wmEstiloFundo = '';
   if(!realIsAdmin && currentUserDoc){
     const nome = (currentUserDoc.profile && currentUserDoc.profile.fullName) || currentUserDoc.name || currentUserDoc.email || 'aluno';
     const ra = (currentUserDoc.profile && currentUserDoc.profile.ra) ? ' · RA ' + currentUserDoc.profile.ra : '';
     const quando = new Date().toLocaleDateString('pt-BR');
-    const wmTexto = `Material de uso pessoal de ${nome}${ra} · baixado em ${quando} · proibida a reprodução`;
-    wmBanner = `<div class="pdf-wm-banner">${esc(wmTexto)}</div>`;
-    // Três faixas diagonais fixas (25% / 50% / 75% da altura), repetidas em TODAS
-    // as páginas impressas, atravessando o texto — recortar borda não as remove.
-    // ALTERADO (v4.10.12) — a marca d'água virou uma MALHA de marcas curtas,
-    // espalhadas pela folha inteira, em vez de poucas faixas largas.
+    // ===== MARCA D'ÁGUA (refeita na v4.10.13) =====
+    // As versões anteriores desenhavam a marca como ELEMENTOS de posição fixa.
+    // Isso falha na impressão de duas maneiras, e as duas apareceram: em
+    // algumas páginas os elementos perdem o posicionamento fixo, caem no
+    // fluxo normal e se empilham — vinte cópias de 6% de opacidade somadas
+    // viram um texto escuro e chapado; em outras páginas eles simplesmente
+    // não se repetem, e a folha sai quase limpa.
     //
-    // Dois problemas foram corrigidos de uma vez:
-    //  (1) as faixas eram posicionadas em PORCENTAGEM da altura. Numa página
-    //      impressa, essa porcentagem é calculada sobre uma altura que não é a
-    //      da folha, então a maioria caía fora do papel e só uma sobrava.
-    //      Agora as posições são em centímetros, medidos na própria folha A4.
-    //  (2) o texto era longo e ia de ponta a ponta; girado, as pontas saíam da
-    //      área imprimível e apareciam cortadas. Agora cada marca é curta e
-    //      centrada no próprio ponto, então cabe inteira.
-    //
-    // A malha é em tijolo (linhas alternadas deslocadas): cobre a folha sem
-    // formar corredores retos, que é o que permitiria recortar uma faixa
-    // limpa do material. A opacidade continua a mesma, bem discreta.
-    // Nome comprido faria as colunas se encostarem. Acima de 26 caracteres,
-    // a marca usa a forma reduzida (primeiro e último nome) — continua
-    // identificando quem baixou, que é o objetivo.
-    const nomeCurto = (()=>{
-      const limpo = String(nome).trim().replace(/\s+/g,' ');
-      if(limpo.length <= 26) return limpo;
-      const partes = limpo.split(' ').filter(Boolean);
-      return partes.length > 1 ? (partes[0] + ' ' + partes[partes.length-1]) : limpo.slice(0,26);
-    })();
-    const marcaCentral = esc(nomeCurto);
-    const linhasCm = [1.6, 4.9, 8.2, 11.5, 14.8, 18.1, 21.4, 24.7];
-    const colunasPct = [18, 50, 82];
-    const marcas = [];
-    linhasCm.forEach((topo, i)=>{
-      const desloca = (i % 2) ? 16 : 0;   // tijolo: linhas ímpares deslocadas
-      colunasPct.forEach(col=>{
-        const x = col + desloca;
-        if(x < 6 || x > 94) return;       // não encosta na borda: nada cortado
-        marcas.push(`<div class="pdf-wm-diag" style="top:${topo}cm;left:${x}%;">${marcaCentral}</div>`);
-      });
-    });
-    wmDiagonal = marcas.join('');
+    // Agora a marca é uma TEXTURA: um desenho pequeno, com o nome e o RA na
+    // diagonal, repetido como papel de parede da folha. O navegador repete
+    // textura de fundo em TODAS as páginas por conta própria, sem depender de
+    // posicionamento — e, como cada repetição é desenhada uma única vez, a
+    // opacidade nunca se acumula. É o mesmo visual discreto de antes, agora
+    // em todas as páginas e sem risco de borrão.
+    const marcaTexto = (nome + ra).replace(/\s+/g, ' ').trim();
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="330" height="190">' +
+      '<text x="165" y="95" text-anchor="middle" ' +
+      'font-family="Helvetica,Arial,sans-serif" font-size="12" letter-spacing="1.2" ' +
+      'fill="#3D3E77" fill-opacity="0.07" ' +
+      'transform="rotate(-24 165 95)">' + xmlEsc(marcaTexto) + '</text></svg>';
+    wmEstiloFundo = 'html{background-image:url("data:image/svg+xml;charset=utf-8,' +
+      encodeURIComponent(svg) + '");background-repeat:repeat;background-position:0 0;}';
+    // A faixa do rodapé continua sendo TEXTO de verdade: ela sobrevive mesmo
+    // se o aluno imprimir com as imagens de fundo desligadas.
+    wmBanner = `<div class="pdf-wm-banner">
+      <strong>Cópia pessoal e identificada de ${esc(nome)}${esc(ra)}</strong> · gerada em ${esc(quando)}<br>
+      Material autoral de uso restrito desta disciplina. Copiar, compartilhar ou publicar — no todo ou em parte, por qualquer meio — não é permitido. Esta cópia identifica quem a baixou, e a responsabilidade por qualquer divulgação é de quem a divulgar.
+    </div>`;
   }
   const facLogoSrc = document.querySelector('.combined-footer .logo-badge img').src;
   const authorIconLinks = [...document.querySelectorAll('.footer-icons a')].map(el=>{
@@ -13344,8 +13350,9 @@ function buildAulaPrintHtml(b, a){
   .pdf-table td { padding:7px 10px; border-bottom:1px solid #e0e0e0; vertical-align:top; }
   .pdf-bullets { font-size:13px; line-height:1.7; padding-left:22px; list-style-position:inside; }
   .pdf-bullets ul, .pdf-bullets ol { margin:4px 0 0 0; padding-left:20px; list-style-position:inside; }
-  .pdf-wm-banner{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:8.5px;color:#8a8fb0;padding:2px 0;border-top:0.5px solid #d5d8ea;background:#fff;}
-  .pdf-wm-diag{position:fixed;font-size:8.5px;font-weight:700;color:rgba(61,62,119,0.06);transform:translate(-50%,-50%) rotate(-24deg);transform-origin:center;pointer-events:none;z-index:0;white-space:nowrap;letter-spacing:1px;text-transform:uppercase;}
+  .pdf-wm-banner{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:7.5px;line-height:1.35;color:#8a8fb0;padding:3px 8px;border-top:0.5px solid #d5d8ea;background:#fff;}
+  .pdf-wm-banner strong{color:#6a6f95;}
+  ${wmEstiloFundo}
   .pdf-page-content, .pdf-section, .pdf-header{position:relative;z-index:1;}
   .pdf-activity{background:#F0F7F0 !important;border:1.5px solid #7FA882;border-radius:10px;padding:12px 14px;margin:10px 0;}
   .num-hier, .num-hier ul, .num-hier ol{list-style-type:none !important;counter-reset:nivel;}
@@ -13397,7 +13404,7 @@ function buildAulaPrintHtml(b, a){
   .gen-info a { color:#3D3E77; }
 </style></head>
 <body>
-${wmDiagonal}${wmBanner}
+${wmBanner}
   <div class="header-bar">
     <div class="logo-row">
       <div class="logo-badge"><img src="${facLogoSrc}"></div>
