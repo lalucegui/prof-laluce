@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.13                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.14                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -239,6 +239,19 @@
      Uso: <span class="tip" data-tip="texto">?</span>
      ou qualquer elemento com class="has-tip" data-tip="texto".
   ================================================================= */
+  /* CORRIGIDO (v4.10.14) — na paleta Noite o texto do conteúdo é forçado
+     para um tom claro. Quando um trecho está GRIFADO, o fundo do grifo é
+     claro por definição — e claro sobre claro some. Onde existe grifo, o
+     texto volta a ser escuro, que é o que dá contraste contra o marca-texto.
+     Vale para o conteúdo, para os campos de edição e para o caderno. */
+  html[data-palette="noite"] .rich-content span[style*="background-color"],
+  html[data-palette="noite"] .rich-text span[style*="background-color"],
+  html[data-palette="noite"] .prose span[style*="background-color"],
+  html[data-palette="noite"] .bullets span[style*="background-color"],
+  html[data-palette="noite"] .my-note-text span[style*="background-color"],
+  html[data-palette="noite"] span[style*="background-color"] *{
+    color:#1B1C22 !important;
+  }
   html[data-palette="noite"] .activity-card{
     background:rgba(60,120,70,0.16) !important;
     border-color:rgba(127,168,130,0.45) !important;
@@ -2164,6 +2177,27 @@
   .rich-content ul{list-style:disc;}
   .rich-content ol{list-style:decimal;}
   .rich-content ul li, .rich-content ol li{margin-bottom:4px;line-height:1.6;}
+  /* ===== NOTAS DE RODAPÉ (v4.10.14) ===== */
+  .nota-rodape{
+    display:inline-block;vertical-align:super;font-size:0.7em;line-height:1;
+    font-weight:800;color:var(--terracotta);margin-left:1px;cursor:help;
+    user-select:none;
+  }
+  .notas-rodape{
+    margin-top:14px;padding-top:10px;border-top:1px solid var(--hairline);
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .nota-rodape-item{display:flex;gap:8px;align-items:flex-start;}
+  .nota-rodape-num{
+    flex:0 0 auto;font-size:10.5px;font-weight:800;color:var(--terracotta);
+    line-height:1.5;min-width:12px;
+  }
+  .nota-rodape-texto{font-size:12px;line-height:1.5;color:var(--muted);}
+  /* No editor a marca aparece como asterisco; o número só existe na exibição,
+     porque é lá que a ordem de leitura está fechada. */
+  .rich-text .nota-rodape{
+    background:var(--terracotta-tint);border-radius:4px;padding:0 3px;
+  }
   .highlight-menu-wrap{position:relative;}
   .highlight-menu-btn{
     background:var(--ice-tint);border:1px solid transparent;border-radius:5px;
@@ -3145,7 +3179,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.13</div>
+<div class="version-tag hidden" id="version-tag">v4.10.14</div>
 
 
 <script>
@@ -4247,7 +4281,11 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       } else {
         mid = paraArr.join('') + bottomHtml;
       }
-      body = `<div class="prose rich-content${dockedItems&&dockedItems.length?' has-docked-figure':''}">${topHtml}${mid}<div style="clear:both;"></div></div>`;
+      // As notas são numeradas sobre o texto INTEIRO da seção (não parágrafo a
+      // parágrafo), então a contagem segue a ordem de leitura mesmo com figura
+      // encaixada no meio. A lista de explicações fica no pé da seção.
+      const comNotas = extrairNotasDeRodape(`${topHtml}${mid}`);
+      body = `<div class="prose rich-content${dockedItems&&dockedItems.length?' has-docked-figure':''}">${comNotas.html}<div style="clear:both;"></div></div>${notasDeRodapeHtml(comNotas.notas)}`;
       break;
     }
     case 'points': {
@@ -6158,6 +6196,7 @@ ${includeAlign ? `
     <button type="button" class="align-btn" data-rt="alignjustify" title="Justificar"><img src="data:image/png;base64,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" alt="Justificar"></button>
     <div class="sep"></div>
 ` : ''}
+        <button type="button" data-rt="nota-rodape" title="Nota de rodapé — selecione o trecho e clique aqui">*</button>
         <div class="marker-menu-wrap">
           <button type="button" class="marker-menu-btn" data-rt="marker-menu-toggle" title="Inserir/mudar marcador da lista">•</button>
           <div class="marker-menu-panel hidden" data-marker-panel>
@@ -6516,6 +6555,33 @@ document.addEventListener('click', (e)=>{
       blk.style.marginLeft = novo ? novo + 'px' : '';
     }
   }
+  else if(cmd==='nota-rodape'){
+    // A marca é inserida DEPOIS do trecho selecionado, como acontece num
+    // livro: o texto segue inteiro e o número aparece ao final dele.
+    restoreRichSelection();
+    const sel = window.getSelection();
+    if(!sel || sel.rangeCount===0 || sel.isCollapsed){
+      alert('Selecione primeiro o trecho que a nota vai explicar, depois clique em "*".');
+      return;
+    }
+    const trecho = sel.toString().trim();
+    const texto = prompt('Nota de rodapé para: "' + (trecho.length>60 ? trecho.slice(0,60)+'…' : trecho) + '"\n\nEscreva a explicação que vai aparecer no pé da seção:', '');
+    if(texto === null) return;
+    if(!texto.trim()){ alert('A nota ficou vazia — nada foi inserido.'); return; }
+    const marca = document.createElement('span');
+    marca.className = 'nota-rodape';
+    marca.setAttribute('data-nota', texto.trim());
+    marca.textContent = '*';
+    const r = sel.getRangeAt(0).cloneRange();
+    r.collapse(false);            // ponto logo após o fim da seleção
+    r.insertNode(marca);
+    // Cursor depois da marca, para continuar escrevendo sem esbarrar nela.
+    const depois = document.createRange();
+    depois.setStartAfter(marca);
+    depois.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(depois);
+  }
   else if(cmd==='paint') togglePaintMode(btn);
 });
 
@@ -6777,7 +6843,14 @@ function sanitizeRichHtml(html){
   // num-hier, que liga os contadores encadeados do CSS. Como o saneador
   // remove todo atributo que não seja style, ela também se perdia. Só esta
   // classe sobrevive — qualquer outra continua sendo descartada.
-  const classesPermitidas = ['num-hier'];
+  // ALTERADO (v4.10.14) — 'nota-rodape' entra na lista. A marca da nota de
+  // rodapé é um <span> com essa classe e o texto da nota guardado no próprio
+  // atributo. Guardar a nota JUNTO da marca (em vez de numa lista separada na
+  // seção) é o que evita o problema clássico desse recurso: apagar a frase e
+  // deixar a nota órfã lá embaixo, ou renumerar tudo errado. Aqui, some a
+  // frase, some a nota — sempre em sincronia, sem manutenção.
+  const classesPermitidas = ['num-hier','nota-rodape'];
+  const atributosPermitidos = ['data-nota'];
   (function clean(node){
     [...node.childNodes].forEach(child=>{
       if(child.nodeType===1){
@@ -6789,8 +6862,11 @@ function sanitizeRichHtml(html){
           child.style.setProperty('color', child.getAttribute('color'));
         }
         const classeMantida = (child.getAttribute('class')||'').split(/\s+/).filter(x=>classesPermitidas.includes(x));
+        const attrsMantidos = {};
+        atributosPermitidos.forEach(a=>{ const v = child.getAttribute(a); if(v!=null) attrsMantidos[a] = v; });
         [...child.attributes].forEach(attr=>{ if(attr.name!=='style') child.removeAttribute(attr.name); });
         if(classeMantida.length) child.setAttribute('class', classeMantida.join(' '));
+        Object.entries(attrsMantidos).forEach(([k,v])=>child.setAttribute(k, v));
         if(child.hasAttribute('style')){
           const kept = {};
           allowedStyle.forEach(p=>{ const v = child.style.getPropertyValue(p); if(v) kept[p]=v; });
@@ -6811,6 +6887,43 @@ function sanitizeRichHtml(html){
   return tpl.innerHTML;
 }
 function richOut(html){ return html ? sanitizeRichHtml(html) : ''; }
+
+// ===== NOTAS DE RODAPÉ (v4.10.14) =====
+// A nota vive DENTRO do texto, como uma marca: um <span class="nota-rodape"
+// data-nota="a explicação">*</span> logo depois do trecho comentado. Só na
+// hora de exibir a marca vira um número e a explicação desce para o pé da
+// seção. Duas consequências práticas dessa escolha:
+//   • a numeração é sempre a ordem real de leitura, recalculada a cada
+//     exibição — mover um parágrafo renumera tudo sozinho;
+//   • apagar a frase apaga a nota junto, sem sobrar explicação órfã.
+//
+// Recebe o HTML já pronto de uma seção e devolve o mesmo HTML com as marcas
+// numeradas, mais a lista de explicações na ordem em que aparecem.
+function extrairNotasDeRodape(html){
+  if(!html || html.indexOf('nota-rodape') === -1) return {html, notas: []};
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const notas = [];
+  [...tpl.content.querySelectorAll('span.nota-rodape')].forEach(marca=>{
+    const texto = (marca.getAttribute('data-nota') || '').trim();
+    if(!texto){ marca.remove(); return; }     // marca sem explicação não vira nada
+    notas.push(texto);
+    marca.textContent = String(notas.length);
+  });
+  return {html: tpl.innerHTML, notas};
+}
+// O rodapé da seção, com as explicações numeradas.
+function notasDeRodapeHtml(notas){
+  if(!notas || !notas.length) return '';
+  return `<div class="notas-rodape">${notas.map((t,i)=>
+    `<div class="nota-rodape-item"><span class="nota-rodape-num">${i+1}</span><span class="nota-rodape-texto">${esc(t)}</span></div>`
+  ).join('')}</div>`;
+}
+// Atalho para quem monta seção: aplica os dois passos de uma vez.
+function comNotasDeRodape(html){
+  const r = extrairNotasDeRodape(html);
+  return r.html + notasDeRodapeHtml(r.notas);
+}
 
 // ===== CADERNO DO ALUNO (v4.9.10) =====
 // A anotacao passou a ser texto FORMATADO (negrito, cores, listas, grifo — a
@@ -7056,7 +7169,8 @@ function sectionEditorForm(sec, idx){
       <label>Parágrafos (um por linha)</label>
       ${richToolbarHtml('ef-paragraphs')}
       <div id="ef-paragraphs" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR" style="min-height:140px">${(sec.paragraphs&&sec.paragraphs.length?sec.paragraphs:['']).map(p=>/^<(ul|ol)[ >]/i.test(p.trim())?p:`<p>${p}</p>`).join('')}</div>
-      <div class="hint">Selecione um texto e clique nos botões acima para formatar (negrito, itálico, cor, fonte, tamanho). Os botões de alinhar afetam a linha/parágrafo inteiro.</div>`;
+      <div class="hint">Selecione um texto e clique nos botões acima para formatar (negrito, itálico, cor, fonte, tamanho). Os botões de alinhar afetam a linha/parágrafo inteiro.</div>
+      <div class="hint">Para uma <strong>nota de rodapé</strong>: selecione o trecho, clique em <strong>*</strong> e escreva a explicação. No editor ela aparece como um asterisco; na aula vira um número, e a explicação vai para o pé da seção. Apagar o trecho apaga a nota junto.</div>`;
   } else if(type==='nota'){
     fields = `
       <div class="hint nota-editor-aviso">📌 Esta seção é <strong>só sua</strong>. Ela não aparece na aula do aluno, nem no "ver como aluno", nem na projeção, nem no PDF — e, quando some, a seção de cima encosta na de baixo como se ela não existisse.</div>
@@ -7804,13 +7918,16 @@ const ABA_EQUIVALENTE = {
 // sendo tela propria, mas passam a exibir a faixa de grupos/abas do grupo a
 // que pertencem — a aba do grupo fica marcada, e clicar nela e o caminho de
 // volta para a lista de onde a tela foi aberta.
+// ALTERADO (v4.10.14) — criar aula, criar bloco e editar o código da aula
+// SAÍRAM daqui. São telas de conteúdo: quem está ali está escrevendo a aula,
+// não navegando pela Gestão, e a faixa de grupos só tirava espaço e atenção
+// do que importa. As que sobraram são telas de gestão de verdade (a ficha de
+// um aluno, o diário de uma aula, a correção de uma atividade), onde a faixa
+// é o caminho de volta.
 const TELA_GRUPO_PAI = {
   userDetail:      ['alunos','ativos'],
   diarioAula:      ['alunos','frequencia'],
   atividadeManage: ['materias','atividades'],
-  aulaCode:        ['materias','organizar'],
-  newAula:         ['materias','organizar'],
-  newBlock:        ['materias','organizar'],
 };
 
 function gestaoAbaPadrao(grupo){
@@ -8567,7 +8684,11 @@ function blankSection(type){
   switch(type){
     case 'prose': return {type, id, paragraphs:['']};
     case 'nota': return {type, id, title:'', paragraphs:['']};
-    case 'activity': return {type, id, title:'', objective:'', method:'', timeMin:'', materials:'', results:'', obs:'', visibleToStudent:true};
+    // ALTERADO (v4.10.14) — nasce OCULTO ao aluno. O roteiro é, por natureza,
+    // material de condução do professor; deixá-lo visível por padrão obrigava
+    // a lembrar de esconder toda vez. Agora o caminho seguro é o automático:
+    // se você quiser mostrar, marca "Visível para o aluno" na edição.
+    case 'activity': return {type, id, title:'', objective:'', method:'', timeMin:'', materials:'', results:'', obs:'', visibleToStudent:false};
     case 'points': return {type, id, bullets:['']};
     case 'table': return {type, id, headers:['Coluna 1','Coluna 2'], rows:[['','']]};
     case 'figure': return {type, id, src:'', caption:'', source:''};
@@ -13183,10 +13304,11 @@ function sectionToPrintHtml(sec){
       break;
     }
     case 'prose':
-      body = (sec.paragraphs||[]).map(p=>{
+      // O PDF leva as notas de rodapé com a mesma numeração da tela.
+      body = comNotasDeRodape((sec.paragraphs||[]).map(p=>{
         const isList = /^<(ul|ol)[ >]/i.test(p.trim());
         return isList ? richOut(p) : `<p>${richOut(p)}</p>`;
-      }).join('');
+      }).join(''));
       break;
     case 'points': {
       const rawBullets = sec.bullets||[];
@@ -13349,6 +13471,11 @@ function buildAulaPrintHtml(b, a){
   .pdf-table th { background:#3D3E77 !important; color:#fff !important; padding:8px 10px; text-align:left; font-family:'Helvetica',sans-serif; font-size:11px; }
   .pdf-table td { padding:7px 10px; border-bottom:1px solid #e0e0e0; vertical-align:top; }
   .pdf-bullets { font-size:13px; line-height:1.7; padding-left:22px; list-style-position:inside; }
+  .nota-rodape{display:inline-block;vertical-align:super;font-size:0.7em;line-height:1;font-weight:bold;color:#B4593F;margin-left:1px;}
+  .notas-rodape{margin-top:12px;padding-top:8px;border-top:1px solid #e0e0e0;}
+  .nota-rodape-item{display:flex;gap:7px;align-items:flex-start;margin-bottom:4px;}
+  .nota-rodape-num{flex:0 0 auto;font-size:9.5px;font-weight:bold;color:#B4593F;line-height:1.5;min-width:11px;font-family:'Helvetica',sans-serif;}
+  .nota-rodape-texto{font-size:10.5px;line-height:1.5;color:#666;font-family:'Helvetica',sans-serif;}
   .pdf-bullets ul, .pdf-bullets ol { margin:4px 0 0 0; padding-left:20px; list-style-position:inside; }
   .pdf-wm-banner{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:7.5px;line-height:1.35;color:#8a8fb0;padding:3px 8px;border-top:0.5px solid #d5d8ea;background:#fff;}
   .pdf-wm-banner strong{color:#6a6f95;}
