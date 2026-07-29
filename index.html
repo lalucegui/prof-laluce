@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.10                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.12                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1579,6 +1579,11 @@
     letter-spacing:0.5px;
     text-transform:uppercase;
   }
+  /* CORRIGIDO (v4.10.11) — o marcador de prévia é desenhado 16px à ESQUERDA
+     do parágrafo. Com o recuo padrão do campo (10px), ele caía em -6px, ou
+     seja, em cima da borda. Um recuo maior no campo dá o espaço que ele
+     precisa e a bolinha volta para dentro. */
+  .bullets-preview{padding-left:30px !important;}
   .bullets-preview p{position:relative;}
   .bullets-preview p::before{
     /* Antes dependia de um atributo (data-marker-char) que nunca era escrito em
@@ -3135,7 +3140,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.10</div>
+<div class="version-tag hidden" id="version-tag">v4.10.12</div>
 
 
 <script>
@@ -3232,6 +3237,7 @@ async function loadCourseFromStorage(){
     if(res && res.value){
       COURSE = JSON.parse(res.value);
       garantirIdsDeAula();
+      migrarListasParaTexto();
       COURSE_LOADED_AT = res.updatedAt || 0;
       LAST_LOAD_ERROR = null;
       return true;
@@ -8483,6 +8489,52 @@ function genAulaId(){
 // gravado antes desta versão. Decisão explícita: preferir simplicidade e uma
 // única regra sólida a manter compatibilidade com dado antigo pontual — o
 // curso ainda está sendo preparado, não há nada de valor real para proteger.
+// ===== APOSENTADORIA DO TIPO "LISTA COM MARCADORES" (v4.10.11) =====
+// Desde que o menu de marcador passou a funcionar em qualquer campo de texto,
+// a "Lista com marcadores" virou um tipo redundante: dava para fazer a mesma
+// lista, com os mesmos marcadores e subníveis, dentro de uma seção de Texto.
+// A única coisa que ela tinha de exclusivo era a "Caixa de destaque".
+//
+// O tipo já não é oferecido ao adicionar seção. Esta função converte as que
+// ainda existem, na memória, toda vez que a matéria é carregada — a gravação
+// acontece naturalmente quando o professor salva qualquer coisa do curso.
+// Convertido, o conteúdo ganha o que só o Texto tinha: aceitar imagem
+// encaixada, com o texto contornando a figura.
+//
+// Regra de segurança: seção que TEM caixa de destaque preenchida NÃO é
+// convertida — continua funcionando como antes, porque o Texto não tem onde
+// guardar essa caixa. Melhor um tipo antigo sobrevivendo do que conteúdo
+// desaparecendo sem aviso.
+function migrarListasParaTexto(){
+  (COURSE||[]).forEach(b=>{
+    (b.aulas||[]).forEach(a=>{
+      (a.sections||[]).forEach(sec=>{
+        if(!sec || sec.type !== 'points') return;
+        const nota = sec.note || {};
+        const corpoNota = Array.isArray(nota.body) ? nota.body.join('') : (nota.body || '');
+        if((nota.heading || '').trim() || String(corpoNota).trim()) return;   // tem caixa: fica como está
+        const itens = sec.bullets || [];
+        const jaEhListaHtml = itens.some(x=>/^<(ul|ol)[ >]/i.test(String(x).trim()));
+        if(jaEhListaHtml){
+          // Formato novo: cada entrada já é um parágrafo ou uma lista pronta —
+          // é exatamente o formato do Texto. Passa igual, sem tocar em nada.
+          sec.paragraphs = itens.slice();
+        } else {
+          // Formato antigo: linhas soltas que o desenho antigo transformava
+          // numa lista. Guardamos essa lista pronta, com o mesmo marcador de
+          // sempre, para a aparência não mudar.
+          const marcadores = sec.markerTypes || [sec.markerType || 'square'];
+          sec.paragraphs = itens.length ? [buildNestedListHtml(itens, marcadores, x=>x)] : [''];
+        }
+        sec.type = 'prose';
+        delete sec.bullets;
+        delete sec.markerTypes;
+        delete sec.markerType;
+        delete sec.note;
+      });
+    });
+  });
+}
 function garantirIdsDeAula(){
   (COURSE||[]).forEach(b=>{
     (b.aulas||[]).forEach(a=>{
@@ -8701,6 +8753,10 @@ function render(){
             }
             COURSE = parsed;
             garantirIdsDeAula();
+            // Backup antigo pode trazer de volta o tipo aposentado — converte
+            // aqui também, senão restaurar um arquivo ressuscitaria a "Lista
+            // com marcadores" e ainda gravaria isso no banco.
+            migrarListasParaTexto();
             const ok = await saveCourseToStorage();
             if(ok) alert('Backup restaurado e salvo com sucesso.');
             render();
@@ -11789,6 +11845,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       a.intro = (dados.intro||'').trim();
       a.roteiro = (dados.roteiro||'').trim();
       a.sections = dados.sections.map(s=> s.id ? s : {...s, id: genSectionId()});
+      migrarListasParaTexto();   // JSON importado pode trazer o tipo aposentado
       a.updatedAt = Date.now();
       editState = null;
       IA_ESTADO = {intencao:'melhorar', resposta:'', dados:null, erro:null, verCodigo:false};
@@ -11942,6 +11999,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       a.intro = (dados.intro||'').trim();
       a.roteiro = (dados.roteiro||'').trim();
       a.sections = dados.sections.map(s=>({ ...s, id: s.id || genSectionId() }));
+      migrarListasParaTexto();   // código colado pode trazer o tipo aposentado
       a.updatedAt = Date.now();
       if(!a.contentModel) a.contentModel = 'v2';
     }catch(err){
@@ -13202,8 +13260,43 @@ function buildAulaPrintHtml(b, a){
     wmBanner = `<div class="pdf-wm-banner">${esc(wmTexto)}</div>`;
     // Três faixas diagonais fixas (25% / 50% / 75% da altura), repetidas em TODAS
     // as páginas impressas, atravessando o texto — recortar borda não as remove.
-    const marcaCentral = esc(nome + ra + ' · ' + quando);
-    wmDiagonal = [12,27,42,57,72,87].map(p=>`<div class="pdf-wm-diag" style="top:${p}%;">${marcaCentral}</div>`).join('');
+    // ALTERADO (v4.10.12) — a marca d'água virou uma MALHA de marcas curtas,
+    // espalhadas pela folha inteira, em vez de poucas faixas largas.
+    //
+    // Dois problemas foram corrigidos de uma vez:
+    //  (1) as faixas eram posicionadas em PORCENTAGEM da altura. Numa página
+    //      impressa, essa porcentagem é calculada sobre uma altura que não é a
+    //      da folha, então a maioria caía fora do papel e só uma sobrava.
+    //      Agora as posições são em centímetros, medidos na própria folha A4.
+    //  (2) o texto era longo e ia de ponta a ponta; girado, as pontas saíam da
+    //      área imprimível e apareciam cortadas. Agora cada marca é curta e
+    //      centrada no próprio ponto, então cabe inteira.
+    //
+    // A malha é em tijolo (linhas alternadas deslocadas): cobre a folha sem
+    // formar corredores retos, que é o que permitiria recortar uma faixa
+    // limpa do material. A opacidade continua a mesma, bem discreta.
+    // Nome comprido faria as colunas se encostarem. Acima de 26 caracteres,
+    // a marca usa a forma reduzida (primeiro e último nome) — continua
+    // identificando quem baixou, que é o objetivo.
+    const nomeCurto = (()=>{
+      const limpo = String(nome).trim().replace(/\s+/g,' ');
+      if(limpo.length <= 26) return limpo;
+      const partes = limpo.split(' ').filter(Boolean);
+      return partes.length > 1 ? (partes[0] + ' ' + partes[partes.length-1]) : limpo.slice(0,26);
+    })();
+    const marcaCentral = esc(nomeCurto);
+    const linhasCm = [1.6, 4.9, 8.2, 11.5, 14.8, 18.1, 21.4, 24.7];
+    const colunasPct = [18, 50, 82];
+    const marcas = [];
+    linhasCm.forEach((topo, i)=>{
+      const desloca = (i % 2) ? 16 : 0;   // tijolo: linhas ímpares deslocadas
+      colunasPct.forEach(col=>{
+        const x = col + desloca;
+        if(x < 6 || x > 94) return;       // não encosta na borda: nada cortado
+        marcas.push(`<div class="pdf-wm-diag" style="top:${topo}cm;left:${x}%;">${marcaCentral}</div>`);
+      });
+    });
+    wmDiagonal = marcas.join('');
   }
   const facLogoSrc = document.querySelector('.combined-footer .logo-badge img').src;
   const authorIconLinks = [...document.querySelectorAll('.footer-icons a')].map(el=>{
@@ -13252,7 +13345,7 @@ function buildAulaPrintHtml(b, a){
   .pdf-bullets { font-size:13px; line-height:1.7; padding-left:22px; list-style-position:inside; }
   .pdf-bullets ul, .pdf-bullets ol { margin:4px 0 0 0; padding-left:20px; list-style-position:inside; }
   .pdf-wm-banner{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:8.5px;color:#8a8fb0;padding:2px 0;border-top:0.5px solid #d5d8ea;background:#fff;}
-  .pdf-wm-diag{position:fixed;left:-10%;right:-10%;text-align:center;font-size:15px;font-weight:700;color:rgba(61,62,119,0.06);transform:rotate(-22deg);pointer-events:none;z-index:0;white-space:nowrap;letter-spacing:3px;}
+  .pdf-wm-diag{position:fixed;font-size:8.5px;font-weight:700;color:rgba(61,62,119,0.06);transform:translate(-50%,-50%) rotate(-24deg);transform-origin:center;pointer-events:none;z-index:0;white-space:nowrap;letter-spacing:1px;text-transform:uppercase;}
   .pdf-page-content, .pdf-section, .pdf-header{position:relative;z-index:1;}
   .pdf-activity{background:#F0F7F0 !important;border:1.5px solid #7FA882;border-radius:10px;padding:12px 14px;margin:10px 0;}
   .num-hier, .num-hier ul, .num-hier ol{list-style-type:none !important;counter-reset:nivel;}
@@ -13410,6 +13503,7 @@ document.getElementById('auth-login-btn').addEventListener('click', async ()=>{
   document.getElementById('auth-forgot-ok').classList.add('hidden');
   if(!email || !password){ errEl.textContent='Preencha e-mail e senha.'; errEl.classList.remove('hidden'); return; }
   try{
+    marcarLoginFeitoAgora();
     await auth.signInWithEmailAndPassword(email, password);
   }catch(e){
     errEl.textContent = friendlyAuthError(e.code);
@@ -13459,6 +13553,7 @@ document.getElementById('auth-register-btn').addEventListener('click', async ()=
   if(!name || !email || !ra || !password){ errEl.textContent='Preencha nome, e-mail, R.A. e senha (os demais campos são opcionais).'; errEl.classList.remove('hidden'); return; }
   if(password.length < 6){ errEl.textContent='A senha precisa ter pelo menos 6 caracteres.'; errEl.classList.remove('hidden'); return; }
   try{
+    marcarLoginFeitoAgora();
     const cred = await auth.createUserWithEmailAndPassword(email, password);
     // Se o e-mail foi convidado como professor (Configurações > Professores),
     // a conta já nasce como professor aprovado — sem passar pela etapa de aluno.
@@ -13730,8 +13825,11 @@ document.getElementById('create-subject-btn').addEventListener('click', async ()
   renderSubjectPicker();
   await openSubject(newId);
 });
-document.getElementById('subject-picker-logout-btn').addEventListener('click', async ()=>{ await logSessionEnd(); auth.signOut(); });
-document.getElementById('subject-pending-logout-btn').addEventListener('click', async ()=>{ await logSessionEnd(); auth.signOut(); });
+// Estes dois botões de "Sair" não limpavam o carimbo de última atividade —
+// os outros dois limpavam. Padronizado (v4.10.12): sair é sair, por qualquer
+// porta, e o relógio de inatividade zera junto.
+document.getElementById('subject-picker-logout-btn').addEventListener('click', async ()=>{ limparUltimaAtividade(); await logSessionEnd(); auth.signOut(); });
+document.getElementById('subject-pending-logout-btn').addEventListener('click', async ()=>{ limparUltimaAtividade(); await logSessionEnd(); auth.signOut(); });
 document.getElementById('user-badge-logout-btn').addEventListener('click', async ()=>{
   limparUltimaAtividade();
   await logSessionEnd();
@@ -14117,7 +14215,19 @@ function lerUltimaAtividadeSalva(){
 //
 // A foto é tirada aqui, na execução do próprio script, antes de existir
 // qualquer ouvinte de mouse ou teclado. Nada consegue alterá-la.
-const ULTIMA_ATIVIDADE_AO_CARREGAR = lerUltimaAtividadeSalva();
+let ULTIMA_ATIVIDADE_AO_CARREGAR = lerUltimaAtividadeSalva();
+// CORRIGIDO (v4.10.12) — a foto acima só vale para sessão RESTAURADA pelo
+// navegador. Quando a pessoa acabou de digitar e-mail e senha, ela não pode
+// ser barrada por uma inatividade antiga: o login é, por definição, atividade
+// agora. Sem esta distinção, entrar depois de um tempo fora resultava em
+// "sua sessão expirou" na cara de quem tinha acabado de entrar — e só
+// recarregar a página resolvia, porque aí a foto nascia limpa.
+let loginFeitoAgora = false;
+function marcarLoginFeitoAgora(){
+  loginFeitoAgora = true;
+  ULTIMA_ATIVIDADE_AO_CARREGAR = null;   // a foto antiga perdeu a validade
+  persistLastActivity(Date.now());
+}
 function limparUltimaAtividade(){
   try{ localStorage.removeItem(LAST_ACTIVITY_KEY); }catch(e){}
 }
@@ -14135,6 +14245,7 @@ function registerActivity(){
 // Verifica, no momento em que a sessão é restaurada, se ela já deveria ter
 // expirado enquanto o navegador esteve fechado. Devolve true se expirou.
 function sessaoExpirouEnquantoFechado(){
+  if(loginFeitoAgora) return false;   // acabou de entrar: nada a expirar
   // Usa a FOTO tirada no carregamento, nunca o valor atual do armazenamento —
   // esse já pode ter sido regravado pelo primeiro movimento do mouse.
   const ultima = ULTIMA_ATIVIDADE_AO_CARREGAR;
