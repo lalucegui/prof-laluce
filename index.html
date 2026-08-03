@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.16                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.17                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -3198,7 +3198,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.16</div>
+<div class="version-tag hidden" id="version-tag">v4.10.17</div>
 
 
 <script>
@@ -4189,6 +4189,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
   const editbar = `<div class="section-editbar">
     <button class="edit-chip section-drag-handle" draggable="true" data-drag-section-idx="${idx}" title="Arrastar para reordenar" style="cursor:grab;">⣿</button>
     <button class="edit-chip" data-action="edit-section" data-idx="${idx}" title="Editar">✎</button>
+    <button class="edit-chip" data-action="edit-section-code" data-idx="${idx}" title="Editar o código (JSON) só desta seção">&lt;/&gt;</button>
     <button class="edit-chip" data-action="duplicate-section" data-idx="${idx}" title="Duplicar (a cópia aparece logo abaixo)">⧉</button>
     <button class="edit-chip" data-action="move-up" data-idx="${idx}" title="Mover para cima">↑</button>
     <button class="edit-chip" data-action="move-down" data-idx="${idx}" title="Mover para baixo">↓</button>
@@ -9257,6 +9258,31 @@ function render(){
     </div>`);
     return;
   }
+  if(editState && editState.kind==='sectionCode'){
+    if(!a){ editState = null; render(); return; }
+    const secAlvo = (a.sections||[])[editState.idx];
+    if(!secAlvo){ editState = null; render(); return; }
+    // O código mostrado é o da seção, tal como está gravada. O campo "id" vai
+    // junto para leitura, mas é ignorado ao aplicar — ver apply-section-code.
+    const codigoSec = JSON.stringify(secAlvo, null, 2);
+    const rotuloTipo = TYPE_LABELS[secAlvo.type] || secAlvo.type;
+    content.innerHTML = comCabecalho('sectionCode', `<div class="editor-form">
+      <div class="tela-contexto">${rotuloAula(a)} — ${esc(a.title)} · seção ${editState.idx+1} de ${(a.sections||[]).length}</div>
+      <div class="hint">Código (JSON) <strong>apenas desta seção</strong>: ${esc(rotuloTipo)}. Serve para ajustes finos que a tela de edição não alcança, ou para colar uma versão reescrita por uma IA. Para mexer na aula inteira de uma vez, use "Código da aula".</div>
+      <div class="hint"><strong>O campo <code>id</code> é preservado automaticamente</strong>, mesmo que você o altere ou apague aqui. É ele que mantém no lugar as imagens encaixadas e — no caso de uma Atividade — as respostas que os alunos já enviaram. Trocá-lo desligaria esse vínculo em silêncio.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn-secondary" data-action="copy-ai-prompt">📋 Copiar prompt de formatação</button>
+        <button class="btn-secondary" data-action="copy-section-code">📄 Copiar este código</button>
+      </div>
+      <label style="margin-top:12px;">Código desta seção</label>
+      <textarea id="ef-section-code" style="min-height:320px;font-family:monospace;font-size:11.5px;white-space:pre;">${esc(codigoSec)}</textarea>
+      <div class="editor-actions">
+        <button class="btn-primary" data-action="apply-section-code">💾 Aplicar só a esta seção</button>
+        <button class="btn-secondary" data-action="cancel-edit">👁 Visual (voltar sem aplicar)</button>
+      </div>
+    </div>`);
+    return;
+  }
   if(editState && editState.kind==='myNotes'){
     const notas = (currentUserDoc && currentUserDoc.aulaNotes && currentUserDoc.aulaNotes[activeSubjectId]) || {};
     const aulasComNota = [];
@@ -12276,6 +12302,12 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
   if(action==='edit-aula-header'){ editState={kind:'aulaHeader'}; render(); return; }
+  if(action==='edit-section-code'){
+    editState = {kind:'sectionCode', idx: +btn.dataset.idx};
+    render();
+    focarConteudo();
+    return;
+  }
   if(action==='open-aula-code'){ editState={kind:'aulaCode'}; render(); focarConteudo(); return; }
   if(action==='copy-aula-code'){
     const ta = document.getElementById('ef-aula-code');
@@ -12283,6 +12315,56 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       btn.textContent = '✓ Código copiado!';
       setTimeout(()=>{ btn.textContent = '📄 Copiar este código'; }, 2500);
     }).catch(()=>{ ta.select(); alert('Não consegui copiar sozinho — o código está selecionado, use Ctrl+C.'); });
+    return;
+  }
+  if(action==='copy-section-code'){
+    const ta = document.getElementById('ef-section-code');
+    navigator.clipboard.writeText(ta.value).then(()=>{
+      btn.textContent = '✓ Código copiado!';
+      setTimeout(()=>{ btn.textContent = '📄 Copiar este código'; }, 2500);
+    }).catch(()=>{ ta.select(); alert('Não consegui copiar sozinho — o código está selecionado, use Ctrl+C.'); });
+    return;
+  }
+  if(action==='apply-section-code'){
+    if(!a || !editState || editState.kind!=='sectionCode') return;
+    const idxSec = editState.idx;
+    const atual = (a.sections||[])[idxSec];
+    if(!atual){ alert('Esta seção não existe mais.'); editState = null; render(); return; }
+    let nova;
+    try{
+      nova = JSON.parse(document.getElementById('ef-section-code').value);
+    }catch(err){
+      alert('O código não é um JSON válido.\n\nDetalhe: ' + (err && err.message ? err.message : String(err)));
+      return;
+    }
+    if(Array.isArray(nova) || !nova || typeof nova !== 'object'){
+      alert('O código precisa ser UMA seção — um objeto entre { e }.\n\nSe você colou várias seções de uma vez, use "Código da aula" em vez desta tela.');
+      return;
+    }
+    if(!nova.type || !TYPE_LABELS[nova.type]){
+      alert('A seção precisa de um campo "type" válido.\n\nRecebi: ' + (nova.type ? '"'+nova.type+'"' : '(nenhum)') + '.\nTipos aceitos: ' + Object.keys(TYPE_LABELS).join(', ') + '.');
+      return;
+    }
+    if(nova.type !== atual.type &&
+       !confirm(`Você está trocando o TIPO desta seção:\n\nde "${TYPE_LABELS[atual.type]||atual.type}"\npara "${TYPE_LABELS[nova.type]}"\n\nOs campos que não pertencem ao novo tipo deixam de ser exibidos. Confirma?`)) return;
+    try{
+      // O id NUNCA vem do código colado. É ele que amarra as imagens
+      // encaixadas nesta seção e, numa Atividade, todas as respostas já
+      // enviadas pelos alunos (elas são gravadas com o id da seção no nome).
+      // Deixar o id ser trocado por descuido desligaria esses vínculos sem
+      // nenhum aviso — por isso ele é reposto aqui, sempre.
+      a.sections[idxSec] = { ...nova, id: atual.id };
+      migrarListasParaTexto();   // código colado pode trazer o tipo aposentado
+      a.updatedAt = Date.now();
+    }catch(err){
+      alert('Não consegui aplicar este código: ' + (err && err.message ? err.message : String(err)));
+      return;
+    }
+    const ok = await saveCourseToStorage();
+    if(!ok){ alert('A seção foi alterada na tela, mas NÃO consegui salvar. Verifique a conexão e salve de novo.'); }
+    editState = null;
+    render();
+    focarConteudo();
     return;
   }
   if(action==='apply-aula-code'){
@@ -13190,6 +13272,7 @@ const TELAS = {
   diarioAula:        {rotulo:'Diário de classe',    icone:'menu_book',            nivel:'aula',    relacionadas:['diarioFrequencia']},
   atividadeManage:   {rotulo:'Gerenciar atividade', icone:'assignment_turned_in', nivel:'aula',    relacionadas:['atividadesCentral','atividadesBoletim']},
   aulaCode:          {rotulo:'Código da aula',      icone:'code',                 nivel:'aula',    relacionadas:[]},
+  sectionCode:       {rotulo:'Código da seção',      icone:'code',                 nivel:'secao',   relacionadas:['aulaCode']},
 
   configScreen:      {rotulo:'Configurações',       icone:'settings',             nivel:'conta',   relacionadas:['usersScreen','turmasScreen']},
   iaScreen:          {rotulo:'Criar com IA',        icone:'auto_awesome',         nivel:'materia', relacionadas:['orgScreen','aulaCode']},
@@ -14273,7 +14356,7 @@ function saveLocalDraft(){
   // um rascunho "preso" que reaparecia (com a mensagem falando em "aula X") toda
   // vez que a matéria era reaberta, mesmo já tudo salvo. Agora só protege mesmo
   // a edição de conteúdo de aula, que é o que a mensagem de recuperação promete.
-  const kindsDeConteudoDaAula = ['section','newSection','aulaCode','newAula','newBlock'];
+  const kindsDeConteudoDaAula = ['section','newSection','aulaCode','sectionCode','newAula','newBlock'];
   if(!kindsDeConteudoDaAula.includes(editState.kind)) return;
   const form = document.querySelector('#content .editor-form');
   if(!form) return;
