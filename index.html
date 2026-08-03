@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.14                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.15                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2177,6 +2177,12 @@
   .rich-content ul{list-style:disc;}
   .rich-content ol{list-style:decimal;}
   .rich-content ul li, .rich-content ol li{margin-bottom:4px;line-height:1.6;}
+  /* ===== LINKS NO TEXTO (v4.10.15) ===== */
+  .rich-content a{color:var(--navy);text-decoration:underline;text-underline-offset:2px;}
+  .rich-content a:hover{color:var(--terracotta);}
+  /* No editor o link ganha um fundo leve para o professor enxergar onde ele
+     começa e termina — na aula publicada isso não aparece. */
+  .rich-text a{background:var(--tint-soft);border-radius:3px;padding:0 2px;}
   /* ===== NOTAS DE RODAPÉ (v4.10.14) ===== */
   .nota-rodape{
     display:inline-block;vertical-align:super;font-size:0.7em;line-height:1;
@@ -2821,7 +2827,16 @@
     vertical-align:top;
   }
   .data-table tr:nth-child(even) td{background:var(--ice-tint);}
-  .data-table .row-label{font-weight:600;color:var(--navy);white-space:nowrap;}
+  /* CORRIGIDO (v4.10.15) — a primeira coluna tinha "white-space:nowrap".
+     A regra nasceu pensando em rótulos curtos ("Objetivo", "Prazo"), onde
+     evitar quebra deixa a tabela mais limpa. Só que, quando a primeira coluna
+     traz FRASES INTEIRAS — como na tabela de critérios da aula 24 — a proibição
+     de quebrar faz a coluna esticar até o limite e espremer todas as outras,
+     que passam a quebrar palavra por palavra. Sem a regra, o navegador
+     distribui as larguras sozinho: rótulo curto continua numa linha só, frase
+     longa quebra normalmente. */
+  .data-table .row-label{font-weight:600;color:var(--navy);}
+  .data-table td, .data-table th{vertical-align:top;}
 
   /* Video link card */
   .video-card{
@@ -3179,7 +3194,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.14</div>
+<div class="version-tag hidden" id="version-tag">v4.10.15</div>
 
 
 <script>
@@ -6196,6 +6211,7 @@ ${includeAlign ? `
     <button type="button" class="align-btn" data-rt="alignjustify" title="Justificar"><img src="data:image/png;base64,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" alt="Justificar"></button>
     <div class="sep"></div>
 ` : ''}
+        <button type="button" data-rt="link" title="Link — selecione o texto e clique aqui (clique de novo para remover)">🔗</button>
         <button type="button" data-rt="nota-rodape" title="Nota de rodapé — selecione o trecho e clique aqui">*</button>
         <div class="marker-menu-wrap">
           <button type="button" class="marker-menu-btn" data-rt="marker-menu-toggle" title="Inserir/mudar marcador da lista">•</button>
@@ -6555,6 +6571,52 @@ document.addEventListener('click', (e)=>{
       blk.style.marginLeft = novo ? novo + 'px' : '';
     }
   }
+  else if(cmd==='link'){
+    restoreRichSelection();
+    const sel = window.getSelection();
+    if(!sel || sel.rangeCount===0){ alert('Selecione o texto que vai virar link.'); return; }
+    // Já existe um link no ponto do cursor? Então o botão vira "remover link" —
+    // é o comportamento que se espera de um botão que alterna.
+    let no = sel.getRangeAt(0).startContainer;
+    if(no.nodeType===3) no = no.parentElement;
+    const linkExistente = no && no.closest ? no.closest('.rich-text a') : null;
+    if(linkExistente){
+      const trocar = confirm('Este trecho já é um link para:\n' + linkExistente.getAttribute('href') + '\n\nOK para trocar o endereço, Cancelar para remover o link.');
+      if(trocar){
+        const novo = prompt('Novo endereço do link:', linkExistente.getAttribute('href') || '');
+        if(novo && novo.trim()) linkExistente.setAttribute('href', novo.trim());
+      } else {
+        const pai = linkExistente.parentNode;
+        while(linkExistente.firstChild) pai.insertBefore(linkExistente.firstChild, linkExistente);
+        pai.removeChild(linkExistente);
+      }
+      return;
+    }
+    if(sel.isCollapsed){ alert('Selecione primeiro o texto que vai virar link.'); return; }
+    const trechoLink = sel.toString().trim();
+    const endereco = prompt('Endereço do link para: "' + (trechoLink.length>60 ? trechoLink.slice(0,60)+'…' : trechoLink) + '"\n\nCole o endereço (ex.: www.gov.br/... ). Pode colar sem o "https://".', '');
+    if(endereco === null) return;
+    if(!endereco.trim()){ alert('Endereço vazio — nada foi criado.'); return; }
+    let destino = endereco.trim();
+    if(!/^(https?:|mailto:|tel:|\/|#)/i.test(destino)) destino = 'https://' + destino;
+    const a = document.createElement('a');
+    a.setAttribute('href', destino);
+    a.setAttribute('target', '_blank');
+    a.setAttribute('rel', 'noopener noreferrer');
+    try{
+      sel.getRangeAt(0).surroundContents(a);
+    }catch(err){
+      // Seleção atravessando parágrafos: extrai e embrulha.
+      const r2 = sel.getRangeAt(0);
+      a.appendChild(r2.extractContents());
+      r2.insertNode(a);
+    }
+    sel.removeAllRanges();
+    const dep = document.createRange();
+    dep.setStartAfter(a);
+    dep.collapse(true);
+    sel.addRange(dep);
+  }
   else if(cmd==='nota-rodape'){
     // A marca é inserida DEPOIS do trecho selecionado, como acontece num
     // livro: o texto segue inteiro e o número aparece ao final dele.
@@ -6831,7 +6893,8 @@ function richFieldToText(el){
 function sanitizeRichHtml(html){
   const tpl = document.createElement('template');
   tpl.innerHTML = html;
-  const allowed = {B:1,I:1,U:1,SPAN:1,DIV:1,BR:1,STRONG:1,EM:1,P:1,FONT:1,UL:1,OL:1,LI:1};
+  // ALTERADO (v4.10.15) — a tag A entrou na lista, para o texto aceitar link.
+  const allowed = {B:1,I:1,U:1,SPAN:1,DIV:1,BR:1,STRONG:1,EM:1,P:1,FONT:1,UL:1,OL:1,LI:1,A:1};
   // CORRIGIDO (v4.10.7) — 'list-style-type' e 'list-style-position' faltavam
   // nesta lista. O marcador escolhido no menu (quadrado, seta, número...) é
   // gravado como estilo na própria <ul>/<ol>; como o saneador jogava esse
@@ -6851,6 +6914,17 @@ function sanitizeRichHtml(html){
   // frase, some a nota — sempre em sincronia, sem manutenção.
   const classesPermitidas = ['num-hier','nota-rodape'];
   const atributosPermitidos = ['data-nota'];
+  // O endereço do link é o único ponto por onde alguém poderia injetar código
+  // colando HTML de fora (o clássico "javascript:..."). Por isso ele não é
+  // apenas mantido: é CONFERIDO, e só passa se for um endereço de verdade.
+  function enderecoSeguro(href){
+    const v = String(href||'').trim();
+    if(!v) return null;
+    if(/^(https?:|mailto:|tel:)/i.test(v)) return v;
+    if(/^(\/|#)/.test(v)) return v;                 // caminho interno ou âncora
+    if(/^[a-z][a-z0-9+.-]*:/i.test(v)) return null;  // qualquer outro esquema: barrado
+    return 'https://' + v;                           // digitou sem o "https://"
+  }
   (function clean(node){
     [...node.childNodes].forEach(child=>{
       if(child.nodeType===1){
@@ -6864,6 +6938,18 @@ function sanitizeRichHtml(html){
         const classeMantida = (child.getAttribute('class')||'').split(/\s+/).filter(x=>classesPermitidas.includes(x));
         const attrsMantidos = {};
         atributosPermitidos.forEach(a=>{ const v = child.getAttribute(a); if(v!=null) attrsMantidos[a] = v; });
+        if(child.tagName==='A'){
+          const destino = enderecoSeguro(child.getAttribute('href'));
+          if(!destino){
+            // Link sem endereço válido vira texto puro — o conteúdo fica,
+            // o link some. Nunca deixamos passar um endereço suspeito.
+            child.replaceWith(...child.childNodes);
+            return;
+          }
+          attrsMantidos['href'] = destino;
+          attrsMantidos['target'] = '_blank';
+          attrsMantidos['rel'] = 'noopener noreferrer';
+        }
         [...child.attributes].forEach(attr=>{ if(attr.name!=='style') child.removeAttribute(attr.name); });
         if(classeMantida.length) child.setAttribute('class', classeMantida.join(' '));
         Object.entries(attrsMantidos).forEach(([k,v])=>child.setAttribute(k, v));
@@ -7170,6 +7256,7 @@ function sectionEditorForm(sec, idx){
       ${richToolbarHtml('ef-paragraphs')}
       <div id="ef-paragraphs" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR" style="min-height:140px">${(sec.paragraphs&&sec.paragraphs.length?sec.paragraphs:['']).map(p=>/^<(ul|ol)[ >]/i.test(p.trim())?p:`<p>${p}</p>`).join('')}</div>
       <div class="hint">Selecione um texto e clique nos botões acima para formatar (negrito, itálico, cor, fonte, tamanho). Os botões de alinhar afetam a linha/parágrafo inteiro.</div>
+      <div class="hint">Para criar um <strong>link</strong>: selecione o texto e clique em 🔗. Pode colar o endereço sem o "https://". Clicando de novo com o cursor dentro de um link, você troca o endereço ou remove o link.</div>
       <div class="hint">Para uma <strong>nota de rodapé</strong>: selecione o trecho, clique em <strong>*</strong> e escreva a explicação. No editor ela aparece como um asterisco; na aula vira um número, e a explicação vai para o pé da seção. Apagar o trecho apaga a nota junto.</div>`;
   } else if(type==='nota'){
     fields = `
@@ -13471,6 +13558,7 @@ function buildAulaPrintHtml(b, a){
   .pdf-table th { background:#3D3E77 !important; color:#fff !important; padding:8px 10px; text-align:left; font-family:'Helvetica',sans-serif; font-size:11px; }
   .pdf-table td { padding:7px 10px; border-bottom:1px solid #e0e0e0; vertical-align:top; }
   .pdf-bullets { font-size:13px; line-height:1.7; padding-left:22px; list-style-position:inside; }
+  .pdf-section a{color:#3D3E77;text-decoration:underline;}
   .nota-rodape{display:inline-block;vertical-align:super;font-size:0.7em;line-height:1;font-weight:bold;color:#B4593F;margin-left:1px;}
   .notas-rodape{margin-top:12px;padding-top:8px;border-top:1px solid #e0e0e0;}
   .nota-rodape-item{display:flex;gap:7px;align-items:flex-start;margin-bottom:4px;}
