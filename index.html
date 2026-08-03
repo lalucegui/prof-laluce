@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.15                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.16                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2497,12 +2497,16 @@
     padding:0 14px 12px 14px;font-size:13.5px;line-height:1.6;color:#5C4A14;
     white-space:pre-wrap;
   }
+  /* ALTERADO (v4.10.16) — era um <p> só, o que impedia mais de um parágrafo
+     na introdução. Virou bloco, com os parágrafos por dentro. */
   .aula-intro{
     font-size:16px;
     line-height:1.65;
     color:var(--charcoal);
     margin:16px 0 0 0;
   }
+  .aula-intro p{margin:0 0 12px 0;}
+  .aula-intro p:last-child{margin-bottom:0;}
 
   .prose p{
     font-size:15px;
@@ -3194,7 +3198,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.15</div>
+<div class="version-tag hidden" id="version-tag">v4.10.16</div>
 
 
 <script>
@@ -5925,6 +5929,66 @@ async function fetchDiarioDaAula(aulaId){
 //      leituras por regra. Assim a conferencia sai de graca.
 //   2) o boletim consegue calcular tudo com o que ja carregou, sem cruzar
 //      cada linha com a configuracao atual.
+// ===== LEITURA DE ARQUIVO DE BACKUP (corrigido na v4.10.16) =====
+// O validador antigo era uma linha só: `bl.num && Array.isArray(bl.aulas)`.
+// Parece correto e não é — em JavaScript, o número ZERO é falso. O bloco de
+// ABERTURA da matéria tem num: 0, então ele reprovava nessa checagem e
+// derrubava o arquivo inteiro. O backup estava perfeito o tempo todo; quem
+// estava errado era a conferência.
+//
+// Esta versão devolve também o MOTIVO da recusa. Um "não parece válido" sem
+// explicação obriga a adivinhar — foi exatamente o que aconteceu aqui.
+function lerBackupDeCurso(texto){
+  let dados;
+  try{
+    dados = JSON.parse(texto);
+  }catch(e){
+    return {erro: 'O arquivo não é um JSON válido. Detalhe: ' + (e && e.message ? e.message : String(e))};
+  }
+  // Formato atual: lista de blocos. Aceita também um envelope, caso um dia o
+  // arquivo passe a carregar metadados — assim os backups de hoje continuam
+  // valendo amanhã.
+  let blocos = dados;
+  if(!Array.isArray(dados) && dados && typeof dados === 'object'){
+    blocos = dados.blocos || dados.curso || dados.course || dados.COURSE || null;
+  }
+  if(!Array.isArray(blocos)){
+    return {erro: 'O arquivo não contém uma lista de blocos. Um backup deste sistema começa com "[" e traz os blocos da matéria.'};
+  }
+  if(!blocos.length){
+    return {erro: 'O arquivo está vazio — não há nenhum bloco para restaurar.'};
+  }
+  for(let i=0; i<blocos.length; i++){
+    const bl = blocos[i];
+    if(!bl || typeof bl !== 'object'){
+      return {erro: `O bloco na posição ${i+1} não é um bloco válido.`};
+    }
+    // ZERO É VÁLIDO: é o número do bloco de abertura. Por isso a conferência
+    // é "é um número?", e não "tem valor?".
+    if(typeof bl.num !== 'number' || !isFinite(bl.num)){
+      return {erro: `O bloco na posição ${i+1} está sem número (campo "num").`};
+    }
+    if(!Array.isArray(bl.aulas)){
+      return {erro: `O bloco ${bl.num} está sem a lista de aulas (campo "aulas").`};
+    }
+    for(let j=0; j<bl.aulas.length; j++){
+      const au = bl.aulas[j];
+      if(!au || typeof au !== 'object'){
+        return {erro: `A aula na posição ${j+1} do bloco ${bl.num} não é uma aula válida.`};
+      }
+      if(typeof au.num !== 'number' || !isFinite(au.num)){
+        return {erro: `Uma aula do bloco ${bl.num} está sem número (campo "num").`};
+      }
+      if(au.sections != null && !Array.isArray(au.sections)){
+        return {erro: `A aula ${au.num} tem o campo "sections" num formato inesperado.`};
+      }
+    }
+  }
+  const totalAulas = blocos.reduce((s,bl)=>s+bl.aulas.length, 0);
+  const totalSecoes = blocos.reduce((s,bl)=>s+bl.aulas.reduce((t,au)=>t+((au.sections||[]).length),0), 0);
+  return {blocos, totalAulas, totalSecoes};
+}
+
 async function propagarConfigDaMateria({atraso, aulasEnc}){
   if(!activeSubjectId) return;
   const avisos = [];
@@ -6885,6 +6949,22 @@ function richFieldToArray(el){
   }
   return items;
 }
+// Lê o campo de introdução preservando os parágrafos. Listas passam
+// inteiras; o resto vira <p>. É o mesmo formato usado na seção de Texto,
+// então negrito, cor, link e nota de rodapé funcionam igual ali.
+function introParaGuardar(el){
+  return richFieldToArray(el)
+    .map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim()) ? p : `<p>${p}</p>`)
+    .join('');
+}
+// Introdução gravada ANTES desta versão é texto solto, sem <p>. Ao abrir o
+// editor ela precisa virar um parágrafo, senão o campo nasce sem bloco e o
+// primeiro Enter é engolido pelo navegador.
+function introParaEditor(txt){
+  const s = String(txt||'').trim();
+  if(!s) return '<p><br></p>';
+  return /^<(p|div|ul|ol)[ >]/i.test(s) ? s : `<p>${s}</p>`;
+}
 function richFieldToText(el){
   const arr = richFieldToArray(el);
   return arr.join('');
@@ -7504,7 +7584,8 @@ function aulaHeaderEditorForm(a){
     <label>Fontes</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-a-sources" value="${escAttr(a.sources||'')}">
     <label>Parágrafo de introdução (opcional)</label>
     ${richToolbarHtml('ef-a-intro')}
-    <div id="ef-a-intro" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR">${a.intro?`<p>${a.intro}</p>`:'<p></p>'}</div>
+    <div id="ef-a-intro" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR">${introParaEditor(a.intro)}</div>
+    <div class="hint">Aceita mais de um parágrafo, e a mesma formatação do texto da aula: negrito, cor, tamanho, link 🔗 e nota de rodapé *.</div>
     <label style="margin-top:14px;">Roteiro do professor <span style="text-transform:none;font-weight:400;color:var(--muted);">(SÓ VOCÊ vê — o aluno nunca, nem no PDF)</span></label>
     <textarea id="ef-a-roteiro" style="min-height:130px;" placeholder="Ex.:&#10;⏱ 0-10min — Abertura: retomar a aula anterior, pergunta para a turma: ...&#10;🖊 Lousa: desenhar o diagrama de ...&#10;⏱ 10-50min — Desenvolvimento: projetar seções 1 a 3 ...&#10;⏱ 50-90min — Atividade prática: ...&#10;➡ Fechamento: conectar com a próxima aula sobre ...">${esc(a.roteiro||'')}</textarea>
     <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
@@ -8960,18 +9041,17 @@ function render(){
           if(!file) return;
           try{
             const text = await file.text();
-            const parsed = JSON.parse(text);
-            if(!Array.isArray(parsed) || !parsed.every(bl=>bl.num && Array.isArray(bl.aulas))){
-              alert('Este arquivo não parece ser um backup válido deste curso (estrutura de blocos/aulas não reconhecida).');
+            const lido = lerBackupDeCurso(text);
+            if(lido.erro){
+              alert('Não consegui usar este arquivo como backup.\n\nMotivo: ' + lido.erro);
               e.target.value = '';
               return;
             }
-            const totalAulasNoArquivo = parsed.reduce((s,bl)=>s+bl.aulas.length,0);
-            if(!confirm(`Este backup tem ${parsed.length} blocos e ${totalAulasNoArquivo} aulas.\n\nRestaurar vai SUBSTITUIR todo o conteúdo atual desta matéria por essa versão. Essa ação não pode ser desfeita a não ser que você tenha outro backup.\n\nConfirma a restauração?`)){
+            if(!confirm(`Este backup tem ${lido.blocos.length} bloco(s), ${lido.totalAulas} aula(s) e ${lido.totalSecoes} seção(ões).\n\nRestaurar vai SUBSTITUIR todo o conteúdo atual desta matéria por essa versão. Essa ação não pode ser desfeita a não ser que você tenha outro backup.\n\nConfirma a restauração?`)){
               e.target.value = '';
               return;
             }
-            COURSE = parsed;
+            COURSE = lido.blocos;
             garantirIdsDeAula();
             // Backup antigo pode trazer de volta o tipo aposentado — converte
             // aqui também, senão restaurar um arquivo ressuscitaria a "Lista
@@ -9258,7 +9338,7 @@ function render(){
         <summary>🗒 Roteiro do professor <span>(só você vê)</span></summary>
         <div class="roteiro-professor-body">${esc(a.roteiro)}</div>
       </details>`:''}
-      ${a.intro?`<p class="aula-intro rich-content">${richOut(a.intro)}</p>`:''}
+      ${a.intro?`<div class="aula-intro rich-content">${comNotasDeRodape(richOut(introParaEditor(a.intro)))}</div>`:''}
     </div>`;
   }
 
@@ -12359,7 +12439,12 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     a.title = document.getElementById('ef-a-title').value.trim() || a.title;
     a.subtitle = document.getElementById('ef-a-subtitle').value.trim();
     a.sources = document.getElementById('ef-a-sources').value.trim();
-    a.intro = richFieldToText(document.getElementById('ef-a-intro'));
+    // CORRIGIDO (v4.10.16) — a introdução aceitava Enter no editor, mas o
+    // salvamento GRUDAVA tudo numa linha só. O motivo: os blocos eram lidos
+    // e concatenados sem nada entre eles, então "primeira linha" + "segunda
+    // linha" virava um texto contínuo, e a quebra sumia sem aviso.
+    // Agora cada bloco é guardado como parágrafo de verdade.
+    a.intro = introParaGuardar(document.getElementById('ef-a-intro'));
     a.roteiro = document.getElementById('ef-a-roteiro').value.trim();
     a.hidden = document.getElementById('ef-a-hidden').checked;
     a.num = newNum;
@@ -13550,6 +13635,8 @@ function buildAulaPrintHtml(b, a){
   .content { padding: 0; }
   .sources { font-size:11px; color:#777; font-style:italic; margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:14px; }
   .intro { font-size:14px; line-height:1.7; margin-bottom:24px; }
+  .intro p { margin:0 0 10px 0; }
+  .intro p:last-child { margin-bottom:0; }
   .pdf-section { margin-bottom:20px; }
   .pdf-kicker { font-size:10.5px; color:#F79C31; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; font-family:'Helvetica',sans-serif; margin-bottom:3px; }
   .pdf-sec-title { font-size:16px; color:#3D3E77; margin:0 0 8px 0; }
@@ -13631,7 +13718,7 @@ ${wmBanner}
   </div>
   <div class="content">
     ${a.sources?`<div class="sources">Fontes: ${esc(a.sources)}</div>`:''}
-    ${a.intro?`<div class="intro">${esc(a.intro)}</div>`:''}
+    ${a.intro?`<div class="intro">${comNotasDeRodape(richOut(introParaEditor(a.intro)))}</div>`:''}
     ${sectionsHtml}
   </div>
   <div class="author-footer">
