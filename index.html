@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.17                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.20                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2009,6 +2009,8 @@
   #student-note-status{font-size:12px;font-weight:700;}
   .ai-import-box{margin-top:18px;background:var(--ice-tint);border-radius:12px;padding:14px 16px;}
   .ai-import-title{font-size:13.5px;font-weight:800;color:var(--navy);}
+  .users-aviso-filtro{background:#FBF3E4;border:1px solid #E3C98D;border-left:3px solid #B5872B;border-radius:8px;padding:9px 12px;color:#7A5610;}
+  .users-aviso-pendente{background:#EAF2FB;border:1px solid #A9C6E8;border-left:3px solid #3D6FA8;border-radius:8px;padding:9px 12px;color:#274A72;}
   .turma-assign-select{font-size:11.5px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-raised);color:var(--charcoal);max-width:230px;margin-top:4px;}
   /* NOVO (v4.10.0) — campo obrigatorio ainda em branco. */
   .campo-faltando{border-color:var(--err) !important;box-shadow:0 0 0 2px rgba(178,59,59,.12);}
@@ -2102,7 +2104,8 @@
   .occurrence-date{font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;}
   .occurrence-text{font-size:13px;color:var(--charcoal);white-space:pre-wrap;line-height:1.5;}
   .occurrence-add-row textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;}
-  .session-visited-cell{font-size:11px;color:var(--muted);max-width:220px;word-break:break-word;}
+  .session-visited-cell{font-size:11px;color:var(--muted);max-width:260px;word-break:break-word;line-height:1.5;}
+  .log-materia{color:var(--navy);font-weight:700;}
   .session-log-table td{padding:7px 10px;border-bottom:1px solid var(--line);}
   @media(max-width:820px){
     .user-detail-grid{grid-template-columns:1fr;}
@@ -3198,7 +3201,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.17</div>
+<div class="version-tag hidden" id="version-tag">v4.10.20</div>
 
 
 <script>
@@ -3381,6 +3384,7 @@ let realIsMaster = false;
 function roleIsStaff(r){ return r==='admin' || r==='master' || r==='professor'; }
 function roleIsMaster(r){ return r==='admin' || r==='master'; }
 let activeSubjectId = null;
+let activeSubjectName = '';   // nome da matéria aberta (usado no log de navegação)
 let studentSubjectIds = []; // matérias atribuídas ao aluno logado (pode ser mais de uma)
 let allSubjects = null;
 
@@ -5339,7 +5343,7 @@ function relatorioFaltasHtml(){
     const totalAulas = registros.length;
     const alunos = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===t.id)
       .map(u=>{
-        const faltas = registros.filter(r=>(r.absences||[]).includes(u.id)).length;
+        const faltas = registros.filter(r=>alunoFaltouNaChamada(u, r)).length;
         const pct = totalAulas ? (faltas/totalAulas) : 0;
         return {nome: atvNomeAluno(u), faltas, pct};
       })
@@ -5396,7 +5400,7 @@ function riscoPorAlunoHtml(){
 
   const linhas = alunos.map(u=>{
     const recentes = (porTurma[u.turmaId]||[]).slice(0,4);
-    const faltas = recentes.filter(r=> (r.absences||[]).includes(u.id)).length;
+    const faltas = recentes.filter(r=> alunoFaltouNaChamada(u, r)).length;
     let perdidas = 0, cobradas = 0;
     atividades.forEach(at=>{
       const sc = (prazos[at.sectionId]||{})[u.turmaId];
@@ -5743,6 +5747,28 @@ function baixarCsv(linhas, nomeArquivo){
 // Quantas aulas um lançamento de chamada representa. O número fica gravado no
 // próprio registro — assim um semestre lançado com 2 aulas por encontro não
 // muda de significado se a configuração da matéria mudar depois.
+// ===== QUEM ESTEVE PRESENTE NUMA CHAMADA (v4.10.18) =====
+// O registro guardava só quem FALTOU. Consequência: quem não estava na lista
+// de faltas contava como presente — inclusive um aluno que sequer existia no
+// dia da aula. Foi o que aconteceu com quem se cadastrou em agosto e apareceu
+// presente numa chamada de dias antes.
+//
+// A partir desta versão a chamada grava também quem esteve PRESENTE, de forma
+// explícita. Para os registros antigos, que não têm essa lista, vale a data de
+// cadastro: quem entrou depois do dia da aula não podia estar lá.
+function alunoPresenteNaChamada(u, r){
+  if(!u || !r) return false;
+  if(Array.isArray(r.presentes)) return r.presentes.includes(u.id);
+  if((r.absences||[]).includes(u.id)) return false;
+  const criadoEm = u.createdAt || 0;
+  if(criadoEm && r.date){
+    const fimDoDia = new Date(String(r.date) + 'T23:59:59').getTime();
+    if(isFinite(fimDoDia) && criadoEm > fimDoDia) return false;   // ainda não era aluno
+  }
+  return true;
+}
+function alunoFaltouNaChamada(u, r){ return !alunoPresenteNaChamada(u, r); }
+
 function aulasDoRegistro(r){
   const v = r && r.aulasPorEncontro;
   return (v === 1 || v === 2) ? v : aulasPorEncontro();
@@ -5782,7 +5808,7 @@ function boletimDadosDaTurma(turmaId){
       atvSituacaoEntrega((entregaPorSecao[at.sectionId]||{})[u.id], prazoPorSecao[at.sectionId]));
     const noPrazo = situacoes.filter(s=>s==='ok').length;
     const atrasadas = situacoes.filter(s=>s==='atraso').length;
-    const presencas = chamadas.map(r=> (r.absences||[]).includes(u.id) ? 'F' : 'P');
+    const presencas = chamadas.map(r=> alunoFaltouNaChamada(u, r) ? 'F' : 'P');
     const aulasFalta = chamadas.reduce((s,r,i)=> s + (presencas[i]==='F' ? aulasDoRegistro(r) : 0), 0);
     const pctPresenca = aulasTotais ? Math.round(((aulasTotais-aulasFalta)/aulasTotais)*100) : null;
     // Só entrega NO PRAZO vale ponto. Atrasada aparece para o professor ver
@@ -6133,7 +6159,7 @@ function diarioFrequenciaForm(){
     .sort((x,y)=>String((x.profile&&x.profile.fullName)||x.name||'').localeCompare(String((y.profile&&y.profile.fullName)||y.name||'')));
   const totalAulas = registros.length;
   const linhas = alunos.map(u=>{
-    const faltas = registros.filter(r=>(r.absences||[]).includes(u.id)).length;
+    const faltas = registros.filter(r=>alunoFaltouNaChamada(u, r)).length;
     const presencas = totalAulas - faltas;
     const pct = totalAulas ? Math.round((presencas/totalAulas)*100) : null;
     const cls = pct==null ? '' : (pct>=75 ? 'atv-bol-ok' : (pct>=60 ? 'atv-bol-mid' : 'atv-bol-low'));
@@ -7851,9 +7877,15 @@ function classStatsHtml(){
 
   // ---- Acessos por aula (a partir do campo "visited" das sessões) ----
   const visitCount = {}; // "3" -> quantidade de visitas na aula 3
+  // CORRIGIDO (v4.10.20) — a contagem misturava matérias: "A-1" de uma
+  // contava junto com "A-1" de outra, porque o registro não dizia de qual
+  // matéria era a aula. Agora que diz, contamos só as visitas da matéria
+  // aberta. Registros antigos, sem o nome da matéria, continuam entrando —
+  // eles são de quando havia só esta.
   students.forEach(u=>(u.sessions||[]).forEach(s=>{
-    (s.visited||'').split('/').forEach(tag=>{
-      const m = /A-(\d+)/.exec(tag);
+    visitasDaSessao(s.visited).forEach(v=>{
+      if(v.materia && activeSubjectName && v.materia !== activeSubjectName) return;
+      const m = /A-(\d+)/.exec(v.aula);
       if(m) visitCount[m[1]] = (visitCount[m[1]]||0) + 1;
     });
   }));
@@ -7947,7 +7979,21 @@ function userDetailForm(u){
       <td>${fmtDateTime(s.loginAt)}</td>
       <td>${s.logoutAt ? fmtDateTime(s.logoutAt) : '<em>em andamento</em>'}</td>
       <td>${s.durationMin!=null ? s.durationMin+' min' : '—'}</td>
-      <td class="session-visited-cell">${esc(s.visited||'—')}</td>
+      <td class="session-visited-cell">${(()=>{
+        const v = visitasDaSessao(s.visited);
+        if(!v.length) return '—';
+        // Agrupa por matéria para a leitura ficar clara: o nome aparece uma
+        // vez, seguido das aulas percorridas dentro dela.
+        const grupos = [];
+        v.forEach(x=>{
+          const ult = grupos[grupos.length-1];
+          if(ult && ult.materia === x.materia) ult.aulas.push(x.aula);
+          else grupos.push({materia: x.materia, aulas: [x.aula]});
+        });
+        return grupos.map(g=>
+          `${g.materia ? `<strong class="log-materia">${esc(g.materia)}</strong> ` : ''}${esc(g.aulas.join(' · '))}`
+        ).join('<br>');
+      })()}</td>
     </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--muted);">Nenhum acesso registrado ainda</td></tr>';
 
   const assignedIds = u.subjectIds || (u.subjectId ? [u.subjectId] : []);
@@ -8270,6 +8316,12 @@ function usersScreenForm(){
     if(roleIsStaff(u.role)) return false;
     const modoOk = usersViewMode==='archived' ? !!u.archived : !u.archived;
     if(!modoOk) return false;
+    // CORRIGIDO (v4.10.18) — quem está AGUARDANDO APROVAÇÃO aparece sempre,
+    // qualquer que seja o filtro de turma. Aluno recém-cadastrado ainda não
+    // tem turma, então um filtro por turma o escondia justamente na hora em
+    // que ele mais precisava ser visto: a hora de aprovar. Sumir com um
+    // pedido de acesso é a pior falha possível desta tela.
+    if(!u.approved && usersViewMode==='active') return true;
     // Filtro por turma (só na visão de ativos)
     if(usersViewMode==='active' && usersTurmaFilter!=='all'){
       if(usersTurmaFilter==='none') return !u.turmaId;
@@ -8299,7 +8351,20 @@ function usersScreenForm(){
         </div>
       `) : '<span></span>'}
     </div>`).join('') || `<p style="color:var(--muted);font-size:13px;">Nenhum aluno ${usersViewMode==='archived'?'arquivado':'ativo'} no momento.</p>`;
+  // NOVO (v4.10.18) — a tela agora DIZ quando está escondendo gente. Um
+  // filtro de turma esquecido ligado fazia alunos sumirem sem nenhum sinal,
+  // e não havia como desconfiar disso olhando a tela.
+  const totalAtivos = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived).length;
+  const pendentes = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && !u.approved).length;
+  const escondidos = (usersViewMode==='active') ? Math.max(0, totalAtivos - visibleUsers.length) : 0;
+  const avisoFiltro = escondidos
+    ? `<div class="hint users-aviso-filtro">⚠ O filtro de turma está escondendo ${escondidos} aluno(s) desta lista. Escolha "Todas" para ver todo mundo.</div>`
+    : '';
+  const avisoPendentes = (usersViewMode==='active' && pendentes)
+    ? `<div class="hint users-aviso-pendente">🔔 ${pendentes} aluno(s) aguardando sua aprovação. Eles aparecem na lista mesmo com filtro de turma ligado.</div>`
+    : '';
   return `<div class="editor-form users-screen">
+    ${avisoPendentes}${avisoFiltro}
     ${usersViewMode==='active' ? `<div class="turma-filter-row">
       <label style="margin:0;font-size:11px;">Filtrar por turma:</label>
       <select id="users-turma-filter">
@@ -8310,6 +8375,7 @@ function usersScreenForm(){
     </div>` : ''}
     <div class="hint">${usersViewMode==='active' ? 'Aprovar dá acesso imediato ao conteúdo do curso. Revogar tira o acesso sem apagar a conta. Arquivar tira o aluno da lista ativa, mas guarda tudo (perfil, log, anotações) — pode restaurar quando quiser.' : 'Contas arquivadas ficam fora da lista principal, mas nada foi apagado ainda. Restaurar devolve para a lista de ativos. Excluir definitivamente apaga tudo — sem volta.'}</div>
     <div class="users-list">${rows}</div>
+    <div class="hint">A lista fica guardada na memória enquanto você usa o sistema. Se um aluno acabou de se cadastrar e ainda não apareceu, use <strong>Recarregar lista</strong>.</div>
     <div class="editor-actions">
       <button class="btn-secondary" data-action="reload-users-list">🔄 Recarregar lista</button>
       <button class="btn-secondary" data-action="cancel-edit">Fechar</button>
@@ -8406,7 +8472,7 @@ function turmasEstatisticasHtml(){
     if(totalAulas && alunos.length){
       let somaPresencas = 0;
       alunos.forEach(u=>{
-        const faltas = registros.filter(r=>(r.absences||[]).includes(u.id)).length;
+        const faltas = registros.filter(r=>alunoFaltouNaChamada(u, r)).length;
         somaPresencas += (totalAulas - faltas);
         if((faltas/totalAulas) > LIMITE_FALTA) emRisco++;
       });
@@ -10190,6 +10256,10 @@ async function entrarComoTelaProjetada(){
   presenterChannel = new BroadcastChannel('modoaula-2telas-' + PRESENTER_BOOT.materia);
   presenterChannel.onmessage = (ev)=>{
     if(!ev.data) return;
+    // Comando vindo do notebook é sinal de que o professor está ativo — a
+    // janela do projetor não recebe teclado nenhum, então é por aqui que ela
+    // sabe que a aula está acontecendo.
+    registerActivity();
     const d = ev.data;
     if(d.type==='nav'){
       state.block = d.bloco;
@@ -11306,7 +11376,11 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const aulaId = aulaIdDe(editState.blockNum, editState.aulaNum);
     const payload = {
       subjectId: activeSubjectId, aulaId, aulaNum: editState.aulaNum, turmaId, date,
-      absences, totalCount, presentCount: totalCount - absences.length,
+      absences,
+      // NOVO (v4.10.18) — a lista de PRESENTES, explícita. Sem ela, qualquer
+      // aluno cadastrado depois entrava como presente por omissão.
+      presentes: [...document.querySelectorAll('#diario-lista .diario-falta-cb')].filter(cb=>!cb.checked).map(cb=>cb.dataset.uid),
+      totalCount, presentCount: totalCount - absences.length,
       aulasPorEncontro: aulasPorEncontro(),   // quanto vale este lançamento (v4.10.0)
       conteudo: (document.getElementById('diario-conteudo').value||'').trim(),
       obs: (document.getElementById('diario-obs').value||'').trim(),
@@ -11342,7 +11416,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       .sort((x,y)=>String((x.profile&&x.profile.fullName)||x.name||'').localeCompare(String((y.profile&&y.profile.fullName)||y.name||'')));
     const linhas = [['Aluno', ...registros.map(r=>`${dataBR(r.date)} (A${r.aulaNum})`), 'Presencas', 'Faltas', 'Frequencia %']];
     alunos.forEach(u=>{
-      const marcas = registros.map(r=>(r.absences||[]).includes(u.id) ? 'F' : 'P');
+      const marcas = registros.map(r=>alunoFaltouNaChamada(u, r) ? 'F' : 'P');
       const faltas = marcas.filter(m=>m==='F').length;
       const pres = marcas.length - faltas;
       linhas.push([atvNomeAluno(u), ...marcas, String(pres), String(faltas), marcas.length?String(Math.round((pres/marcas.length)*100)):'']);
@@ -11357,7 +11431,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       const registros = (DIARIO_TODOS||[]).filter(r=>r.turmaId===t.id);
       const totalAulas = registros.length;
       (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===t.id).forEach(u=>{
-        const faltas = registros.filter(r=>(r.absences||[]).includes(u.id)).length;
+        const faltas = registros.filter(r=>alunoFaltouNaChamada(u, r)).length;
         const pct = totalAulas ? Math.round((faltas/totalAulas)*100) : '';
         linhas.push([t.name, atvNomeAluno(u), String(faltas), String(totalAulas), String(pct)]);
       });
@@ -11482,9 +11556,11 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const u = cachedUsersList.find(x=>x.id===uid);
     if(!u) return;
     const sessions = (u.sessions || []).slice().reverse();
-    let csv = 'Entrou em;Saiu em;Duração (min);Navegou por\n';
+    let csv = 'Entrou em;Saiu em;Duração (min);Matéria(s);Navegou por\n';
     sessions.forEach(s=>{
-      csv += `${fmtDateTime(s.loginAt)};${s.logoutAt?fmtDateTime(s.logoutAt):'em andamento'};${s.durationMin!=null?s.durationMin:''};${s.visited||''}\n`;
+      const vs = visitasDaSessao(s.visited);
+      const materias = [...new Set(vs.map(x=>x.materia).filter(Boolean))].join(' | ');
+      csv += `${fmtDateTime(s.loginAt)};${s.logoutAt?fmtDateTime(s.logoutAt):'em andamento'};${s.durationMin!=null?s.durationMin:''};${materias};${s.visited||''}\n`;
     });
     const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
@@ -13874,6 +13950,20 @@ document.querySelectorAll('[data-auth-tab]').forEach(tab=>{
   });
 });
 
+// ===== CORRIDA ENTRE O CADASTRO E O VIGIA DE SESSÃO (v4.10.19) =====
+// O cadastro faz duas coisas em sequência: cria a conta de acesso e, logo
+// depois, grava a ficha do aluno. Entre uma e outra, o vigia de sessão
+// (onAuthStateChanged) dispara sozinho, procura a ficha, não encontra — e
+// desconectava por segurança. O resultado: a gravação da ficha, que vinha
+// logo atrás, falhava por falta de permissão, e sobrava uma conta de acesso
+// SEM ficha nenhuma. Essa conta aparece no Firebase mas não na lista de
+// aprovação, porque a lista lê as fichas, não as contas de acesso.
+//
+// Era uma corrida — por isso pegou dois alunos e não todos: só quem teve a
+// gravação um pouco mais lenta que o vigia. Este sinalizador avisa o vigia
+// para ESPERAR a ficha chegar em vez de desconectar.
+let cadastroEmAndamento = false;
+
 function friendlyAuthError(code){
   const map = {
     'auth/invalid-email': 'E-mail inválido.',
@@ -13944,7 +14034,9 @@ document.getElementById('auth-register-btn').addEventListener('click', async ()=
   errEl.classList.add('hidden');
   if(!name || !email || !ra || !password){ errEl.textContent='Preencha nome, e-mail, R.A. e senha (os demais campos são opcionais).'; errEl.classList.remove('hidden'); return; }
   if(password.length < 6){ errEl.textContent='A senha precisa ter pelo menos 6 caracteres.'; errEl.classList.remove('hidden'); return; }
+  let fichaCriada = false;
   try{
+    cadastroEmAndamento = true;   // segura o vigia de sessão até a ficha existir
     marcarLoginFeitoAgora();
     const cred = await auth.createUserWithEmailAndPassword(email, password);
     // Se o e-mail foi convidado como professor (Configurações > Professores),
@@ -13969,11 +14061,28 @@ document.getElementById('auth-register-btn').addEventListener('click', async ()=
         profile:{ fullName:name, ra, phone, birthdate }, sessions:[]
       });
     }
+    fichaCriada = true;
     // onAuthStateChanged cuida de mostrar a tela certa a seguir (aprovação
     // pendente para aluno, ou direto para a área de professor quando convidado)
   }catch(e){
-    errEl.textContent = friendlyAuthError(e.code);
+    // Se a conta de acesso chegou a ser criada mas a ficha NÃO, apagamos a
+    // conta. Sem isso ela ficaria órfã: existiria no Firebase, não apareceria
+    // na sua lista de aprovação, e ainda impediria o aluno de se cadastrar de
+    // novo com o mesmo e-mail — que foi exatamente o que travou dois alunos.
+    if(!fichaCriada && auth.currentUser){
+      try{
+        await auth.currentUser.delete();
+      }catch(err2){
+        try{ await auth.signOut(); }catch(err3){}
+      }
+    }
+    errEl.textContent = friendlyAuthError(e.code) +
+      (!fichaCriada && e && e.code === 'permission-denied'
+        ? ' (o cadastro foi desfeito — pode tentar de novo com o mesmo e-mail)'
+        : '');
     errEl.classList.remove('hidden');
+  }finally{
+    cadastroEmAndamento = false;
   }
 });
 
@@ -14103,6 +14212,7 @@ function refreshAposSubjectOp(){
 async function openSubject(subjectId){
   activeSubjectId = subjectId;
   const s = allSubjects.find(x=>x.id===subjectId);
+  activeSubjectName = (s && s.name) || '';
   document.getElementById('site-title-text').textContent = s ? s.name : 'Matéria';
   document.getElementById('edit-status-bar').classList.toggle('hidden', !isAdmin);
   document.getElementById('download-pdf-btn').classList.toggle('hidden', !isAdmin);
@@ -14123,6 +14233,7 @@ async function openSubject(subjectId){
 async function openStudentSubject(subjectId){
   activeSubjectId = subjectId;
   let subjectName = 'Matéria';
+  activeSubjectName = '';
   let subjectDescription = '';
   try{
     const sDoc = await db.collection('subjects').doc(subjectId).get();
@@ -14131,6 +14242,7 @@ async function openStudentSubject(subjectId){
       subjectDescription = sDoc.data().description || '';
     }
   }catch(e){}
+  activeSubjectName = subjectName;
   document.getElementById('site-title-text').textContent = subjectName;
   showOnly(['site-header','app-body-wrap','aula-nav-footer-wrap','combined-footer','ai-credit','version-tag']);
   document.getElementById('download-pdf-btn').classList.remove('hidden'); // aluno também baixa PDF — sai com marca d'água pessoal
@@ -14289,9 +14401,16 @@ document.getElementById('profile-save-btn').addEventListener('click', async ()=>
 // ===================== LOG LEVE DE ACESSO (login/logout) =====================
 let currentSessionStart = null;
 let currentSessionVisited = []; // lista de aulas vistas nesta sessão (ex.: "B-I A-1"), sem repetir seguidas
+// NOVO (v4.10.20) — a MATÉRIA em que o aluno estava. Antes o log dizia
+// "B-I A-1" e pronto: com mais de uma matéria, não dava para saber a qual
+// aquela aula pertencia. O nome entra no registro só quando MUDA de matéria,
+// e não a cada aula — assim a informação aparece sem inchar o histórico, que
+// fica guardado na ficha do aluno e tem limite de tamanho.
+let currentSessionSubject = null;
 async function logSessionStart(){
   currentSessionStart = Date.now();
   currentSessionVisited = [];
+  currentSessionSubject = null;
   try{
     const snap = await db.collection('users').doc(currentUser.uid).get();
     const sessions = (snap.data().sessions || []).slice(-999); // mantém no máximo 1000 registros
@@ -14310,10 +14429,34 @@ async function logSessionStart(){
 }
 function trackVisitForSession(blockNum, aulaNum){
   if(realIsAdmin) return; // nunca rastreia o professor — nem editando, nem no modo "ver como aluno"
-  const tag = `B-${toRoman(blockNum)} A-${aulaNum}`;
+  const tagAula = `B-${toRoman(blockNum)} A-${aulaNum}`;
+  // O nome da matéria entra apenas quando ela MUDA. Numa sessão inteira dentro
+  // da mesma matéria, ele aparece uma vez só, no começo — e vale dali em
+  // diante, até surgir outro nome entre colchetes.
+  const materia = activeSubjectName || '';
+  const trocou = materia && materia !== currentSessionSubject;
+  if(trocou) currentSessionSubject = materia;
+  const tag = trocou ? `[${materia}] ${tagAula}` : tagAula;
   if(currentSessionVisited[currentSessionVisited.length-1] !== tag){
     currentSessionVisited.push(tag);
   }
+}
+// Lê um histórico gravado e devolve as visitas já com a matéria resolvida —
+// o nome vale da marca em que aparece até a próxima. Serve para exibir e para
+// contar, sem cada tela ter que reinterpretar o formato por conta própria.
+function visitasDaSessao(visited){
+  const fora = [];
+  String(visited||'').split('/').forEach(pedaco=>{
+    const t = pedaco.trim();
+    if(!t) return;
+    const m = /^\[([^\]]+)\]\s*(.*)$/.exec(t);
+    if(m){
+      fora.push({materia: m[1].trim(), aula: m[2].trim()});
+    } else {
+      fora.push({materia: (fora.length ? fora[fora.length-1].materia : ''), aula: t});
+    }
+  });
+  return fora;
 }
 async function logSessionEnd(){
   if(!currentUser || !currentSessionStart) return;
@@ -14650,6 +14793,23 @@ function startInactivityWatch(){
   persistLastActivity(lastActivityAt);
   lastActivityPersistAt = lastActivityAt;
   inactivityCheckHandle = setInterval(()=>{
+    // CORRIGIDO (v4.10.18) — o relógio de inatividade PARA durante o Modo Aula.
+    //
+    // Dando aula, o professor pode passar vinte minutos falando sem tocar em
+    // nada, e o clicker nem sempre gera evento na janela que está contando (em
+    // duas telas, quem recebe a tecla é o notebook, e o projetor ficava
+    // sozinho contando até derrubar a projeção no meio da aula).
+    //
+    // Estar apresentando É uso do sistema — o mais intenso que existe aqui.
+    // Enquanto durar, o cronômetro fica congelado e mostra isso na tela.
+    if(presentationMode || presenterModeControl || presenterModeDisplay){
+      lastActivityAt = Date.now();
+      persistLastActivity(lastActivityAt);
+      lastActivityPersistAt = lastActivityAt;
+      const elAula = document.getElementById('user-badge-timer');
+      if(elAula){ elAula.textContent = '⏳ pausado (Modo Aula)'; elAula.style.color = ''; }
+      return;
+    }
     const limitMs = inactivityMinutes * 60 * 1000;
     const remainingMs = Math.max(0, limitMs - (Date.now() - lastActivityAt));
     const timerEl = document.getElementById('user-badge-timer');
@@ -14699,11 +14859,18 @@ if(!firebaseReady || !auth){
     return;
   }
   let userDoc = null;
-  try{
-    const snap = await db.collection('users').doc(user.uid).get();
-    userDoc = snap.exists ? snap.data() : null;
-  }catch(e){
-    console.error('Não consegui ler o perfil do usuário:', e);
+  // Se um cadastro está acontecendo agora, a ficha está a caminho: espera por
+  // ela (até ~6s) em vez de desconectar. Fora do cadastro, a primeira tentativa
+  // já decide, e o comportamento é exatamente o de antes.
+  for(let tentativa = 0; tentativa < 15; tentativa++){
+    try{
+      const snap = await db.collection('users').doc(user.uid).get();
+      userDoc = snap.exists ? snap.data() : null;
+    }catch(e){
+      console.error('Não consegui ler o perfil do usuário:', e);
+    }
+    if(userDoc || !cadastroEmAndamento) break;
+    await new Promise(r=>setTimeout(r, 400));
   }
   if(!userDoc){
     // Conta autenticada mas sem ficha correspondente — situação inesperada, desconecta por segurança
