@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.20                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.10.21                  -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2721,6 +2721,13 @@
   .figure-img-loading:not([src]){display:none;}
 
   /* ===== Encaixe de imagem/vídeo no texto (modelo v2) ===== */
+  .dock-item{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;
+    background:var(--surface-raised);
+  }
+  .dock-item-nome{flex:1;min-width:140px;font-size:12.5px;font-weight:600;color:var(--charcoal);}
+  .dock-item select{font-size:11.5px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-raised);color:var(--charcoal);}
   [data-drag-figure-idx]{cursor:grab;}
   [data-drag-figure-idx]:active{cursor:grabbing;}
   [data-drop-target-id]{transition:background .12s ease;}
@@ -3201,7 +3208,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.20</div>
+<div class="version-tag hidden" id="version-tag">v4.10.21</div>
 
 
 <script>
@@ -4194,6 +4201,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
     <button class="edit-chip section-drag-handle" draggable="true" data-drag-section-idx="${idx}" title="Arrastar para reordenar" style="cursor:grab;">⣿</button>
     <button class="edit-chip" data-action="edit-section" data-idx="${idx}" title="Editar">✎</button>
     <button class="edit-chip" data-action="edit-section-code" data-idx="${idx}" title="Editar o código (JSON) só desta seção">&lt;/&gt;</button>
+    ${sec.type==='prose' ? `<button class="edit-chip" data-action="encaixar-imagem" data-idx="${idx}" title="Encaixar uma imagem neste texto, escolhendo o canto e o tamanho">🖼</button>` : ''}
     <button class="edit-chip" data-action="duplicate-section" data-idx="${idx}" title="Duplicar (a cópia aparece logo abaixo)">⧉</button>
     <button class="edit-chip" data-action="move-up" data-idx="${idx}" title="Mover para cima">↑</button>
     <button class="edit-chip" data-action="move-down" data-idx="${idx}" title="Mover para baixo">↓</button>
@@ -9324,6 +9332,68 @@ function render(){
     </div>`);
     return;
   }
+  if(editState && editState.kind==='dockImage'){
+    if(!a){ editState = null; render(); return; }
+    const hosp = (a.sections||[])[editState.idx];
+    if(!hosp || hosp.type!=='prose'){ editState = null; render(); return; }
+    // Imagens já encaixadas NESTE texto — para trocar canto/tamanho ou soltar.
+    const jaEncaixadas = (a.sections||[])
+      .map((s,i)=>({s,i}))
+      .filter(x=> (x.s.type==='figure' || x.s.type==='video') && x.s.dockedTo === hosp.id);
+    const cantos = [['top-left','Superior esquerdo'],['top-right','Superior direito'],
+                    ['bottom-left','Inferior esquerdo'],['bottom-right','Inferior direito']];
+    const tamanhos = [['25','Pequena (25%)'],['33','Média (33%)'],['50','Grande (50%)']];
+    const listaJa = jaEncaixadas.length ? `
+      <label style="margin-top:18px;">Imagens já encaixadas neste texto</label>
+      ${jaEncaixadas.map(x=>`
+        <div class="dock-item">
+          <span class="dock-item-nome">${esc(x.s.caption || (x.s.type==='video' ? 'Vídeo' : 'Imagem sem legenda'))}</span>
+          <select class="dock-item-canto" data-idx="${x.i}">
+            ${cantos.map(([v,l])=>`<option value="${v}" ${((x.s.dockPosition||'top-left')===v)?'selected':''}>${l}</option>`).join('')}
+          </select>
+          <select class="dock-item-tam" data-idx="${x.i}">
+            ${tamanhos.map(([v,l])=>`<option value="${v}" ${(String(x.s.widthPct||'33')===v)?'selected':''}>${l}</option>`).join('')}
+          </select>
+          <button type="button" class="btn-tiny" data-action="desencaixar-imagem" data-idx="${x.i}" title="Solta a imagem: ela volta a ser uma seção normal, fora do texto">Soltar</button>
+        </div>`).join('')}
+      <div class="hint">Mudanças de canto e de tamanho valem assim que você escolhe.</div>` : '';
+    content.innerHTML = comCabecalho('dockImage', `<div class="editor-form">
+      <div class="tela-contexto">${rotuloAula(a)} — ${esc(a.title)} · texto “${esc((hosp.title || (hosp.paragraphs&&hosp.paragraphs[0]) || 'sem título').toString().replace(/<[^>]*>/g,' ').slice(0,60))}”</div>
+      <div class="hint">A imagem fica <strong>dentro</strong> deste texto, num dos cantos, com o texto contornando ela. Dá no mesmo que arrastar a imagem para cima do texto — só que sem precisar acertar o alvo com o mouse.</div>
+      <label>Escolha a imagem</label>
+      <input type="file" id="dock-img-input" accept="image/*">
+      <img id="dock-img-preview" class="img-preview" style="display:none;max-width:260px;margin-top:10px;border-radius:8px;">
+      <label style="margin-top:14px;">Onde ela fica</label>
+      <select id="dock-img-canto" style="max-width:300px;">
+        ${cantos.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
+      </select>
+      <label style="margin-top:14px;">Tamanho</label>
+      <select id="dock-img-tam" style="max-width:300px;">
+        ${tamanhos.map(([v,l])=>`<option value="${v}" ${v==='33'?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <div class="hint">O tamanho é uma fração da largura do texto. Seja qual for a escolha, a imagem nunca passa de metade da largura — senão não sobraria texto para contornar.</div>
+      <label style="margin-top:14px;">Legenda (opcional)</label>
+      <input type="text" spellcheck="true" lang="pt-BR" id="dock-img-legenda" placeholder="Ex.: Figura 1 — Ciclo de vida do projeto">
+      <div class="editor-actions">
+        <button class="btn-primary" data-action="confirmar-encaixe">🖼 Encaixar no texto</button>
+        <button class="btn-secondary" data-action="cancel-edit">Cancelar</button>
+      </div>
+      ${listaJa}
+    </div>`);
+    const inp = document.getElementById('dock-img-input');
+    if(inp){
+      inp.addEventListener('change', async (ev)=>{
+        const file = ev.target.files[0];
+        if(!file) return;
+        const dataUrl = await resizeImageFile(file);
+        const prev = document.getElementById('dock-img-preview');
+        prev.src = dataUrl;
+        prev.style.display = 'block';
+        prev.dataset.novaImagem = dataUrl;
+      });
+    }
+    return;
+  }
   if(editState && editState.kind==='sectionCode'){
     if(!a){ editState = null; render(); return; }
     const secAlvo = (a.sections||[])[editState.idx];
@@ -9575,8 +9645,16 @@ function cornerFromEvent(e, targetEl){
 
 document.getElementById('content').addEventListener('dragstart', (e)=>{
   if(!isAdmin) return;
+  // CORRIGIDO (v4.10.21) — existem DOIS arrastes possíveis numa seção de
+  // imagem: encaixar a imagem no texto (arrastando a própria imagem) e
+  // reordenar a seção (arrastando a alça ⣿). Como a alça fica DENTRO da
+  // seção, o arraste de encaixe também era disparado por ela, e os dois
+  // rodavam ao mesmo tempo — um encaixava a imagem, o outro movia a seção.
+  // Agora eles são mutuamente exclusivos: quem começa pela alça é reordenação.
+  if(e.target.closest('[data-drag-section-idx]')) return;
   const dragEl = e.target.closest('[data-drag-figure-idx]');
   if(!dragEl) return;
+  draggingSectionIdx = null;
   draggingFigureIdx = +dragEl.dataset.dragFigureIdx;
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', String(draggingFigureIdx));
@@ -9690,12 +9768,13 @@ document.getElementById('content').addEventListener('dragstart', (e)=>{
   if(!isAdmin || !sectionGridMode) return;
   const handle = e.target.closest('[data-drag-section-idx]');
   if(!handle) return;
+  draggingFigureIdx = null;   // é reordenação, não encaixe de imagem
   draggingSectionIdx = +handle.dataset.dragSectionIdx;
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', 'section-'+draggingSectionIdx);
 });
 document.getElementById('content').addEventListener('dragover', (e)=>{
-  if(draggingSectionIdx===null) return;
+  if(draggingSectionIdx===null || draggingFigureIdx!==null) return;
   if(!e.target.closest('#content')) return;
   e.preventDefault();
   const calc = calcularInsercaoSecao(e.clientY);
@@ -9705,7 +9784,7 @@ document.getElementById('content').addEventListener('dragover', (e)=>{
 });
 document.getElementById('content').addEventListener('drop', async (e)=>{
   hidePlacementLine();
-  if(draggingSectionIdx===null) return;
+  if(draggingSectionIdx===null || draggingFigureIdx!==null) return;
   e.preventDefault();
   const destino = posicaoDestinoSecao;
   if(destino !== null){
@@ -12378,6 +12457,58 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
   if(action==='edit-aula-header'){ editState={kind:'aulaHeader'}; render(); return; }
+  if(action==='confirmar-encaixe'){
+    if(!a || !editState || editState.kind!=='dockImage') return;
+    const hosp = (a.sections||[])[editState.idx];
+    if(!hosp){ alert('O texto de destino não existe mais.'); editState=null; render(); return; }
+    const prev = document.getElementById('dock-img-preview');
+    const dataUrl = prev && prev.dataset.novaImagem;
+    if(!dataUrl){ alert('Escolha uma imagem primeiro.'); return; }
+    const canto = document.getElementById('dock-img-canto').value || 'top-left';
+    const tam = document.getElementById('dock-img-tam').value || '33';
+    const legenda = document.getElementById('dock-img-legenda').value.trim();
+    const chave = 'img-admin-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
+    btn.disabled = true; btn.textContent = 'Encaixando…';
+    try{
+      await withRetry(()=>subjectDbSet(chave, dataUrl));
+    }catch(err){
+      btn.disabled = false; btn.textContent = '🖼 Encaixar no texto';
+      alert('Não foi possível salvar a imagem. Detalhe: ' + (err && err.message ? err.message : String(err)));
+      return;
+    }
+    IMAGE_CACHE[chave] = dataUrl;
+    // A imagem encaixada É uma seção normal — só que amarrada a este texto
+    // pelos campos dockedTo/dockPosition. Entra logo depois dele, para a ordem
+    // do conteúdo continuar fazendo sentido se um dia ela for solta.
+    const nova = { type:'figure', id: genSectionId(), storageKey: chave,
+                   caption: legenda, source: '',
+                   dockedTo: hosp.id, dockPosition: canto, widthPct: tam };
+    a.sections.splice(editState.idx + 1, 0, nova);
+    a.updatedAt = Date.now();
+    const ok = await saveCourseToStorage();
+    if(!ok) alert('A imagem foi encaixada na tela, mas NÃO consegui salvar. Verifique a conexão e salve de novo.');
+    editState = null;
+    render();
+    focarConteudo();
+    return;
+  }
+  if(action==='desencaixar-imagem'){
+    if(!a) return;
+    const alvo = (a.sections||[])[+btn.dataset.idx];
+    if(!alvo) return;
+    delete alvo.dockedTo;
+    delete alvo.dockPosition;
+    a.updatedAt = Date.now();
+    await saveCourseToStorage();
+    render();
+    return;
+  }
+  if(action==='encaixar-imagem'){
+    editState = {kind:'dockImage', idx: +btn.dataset.idx};
+    render();
+    focarConteudo();
+    return;
+  }
   if(action==='edit-section-code'){
     editState = {kind:'sectionCode', idx: +btn.dataset.idx};
     render();
@@ -12853,6 +12984,20 @@ document.getElementById('content').addEventListener('click', async (e)=>{
 
 document.getElementById('content').addEventListener('change', async (e)=>{
   if(!isAdmin) return;
+  // Canto e tamanho de uma imagem já encaixada: valem no ato, sem botão —
+  // é ajuste visual, e obrigar a confirmar cada tentativa só atrapalharia.
+  if(e.target.classList && (e.target.classList.contains('dock-item-canto') || e.target.classList.contains('dock-item-tam'))){
+    const bAtual = COURSE.find(x=>x.num===state.block);
+    const aAtual = bAtual && bAtual.aulas.find(x=>x.num===state.aula);
+    const alvo = aAtual && (aAtual.sections||[])[+e.target.dataset.idx];
+    if(!alvo) return;
+    if(e.target.classList.contains('dock-item-canto')) alvo.dockPosition = e.target.value;
+    else alvo.widthPct = e.target.value;
+    aAtual.updatedAt = Date.now();
+    await saveCourseToStorage();
+    render();
+    return;
+  }
   if(e.target.classList && e.target.classList.contains('atv-item-type-select')){
     const row = e.target.closest('.atv-item-editor-row');
     const extra = row.querySelector('.atv-item-extra');
@@ -13349,6 +13494,7 @@ const TELAS = {
   atividadeManage:   {rotulo:'Gerenciar atividade', icone:'assignment_turned_in', nivel:'aula',    relacionadas:['atividadesCentral','atividadesBoletim']},
   aulaCode:          {rotulo:'Código da aula',      icone:'code',                 nivel:'aula',    relacionadas:[]},
   sectionCode:       {rotulo:'Código da seção',      icone:'code',                 nivel:'secao',   relacionadas:['aulaCode']},
+  dockImage:         {rotulo:'Imagem no texto',       icone:'image',                nivel:'secao',   relacionadas:[]},
 
   configScreen:      {rotulo:'Configurações',       icone:'settings',             nivel:'conta',   relacionadas:['usersScreen','turmasScreen']},
   iaScreen:          {rotulo:'Criar com IA',        icone:'auto_awesome',         nivel:'materia', relacionadas:['orgScreen','aulaCode']},
