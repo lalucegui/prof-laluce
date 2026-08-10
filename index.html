@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.11.0                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.1                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1756,6 +1756,85 @@
   .atv-sit-atraso{background:#FBE0C7;color:#8A3B12;}
   .atv-sit-fechado{background:#E8E4EC;color:#5A4B7A;}
   .atv-sit-pendente{background:#EDEDF2;color:var(--muted);}
+  .atv-fb-bank-rotulo{font-size:11.5px;font-weight:700;color:var(--muted);margin:8px 0 4px;}
+  /* ===== Aula ministrada (v4.12.1) ===== */
+  .ministrada-bar{
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    margin:14px 0 4px;padding:9px 14px;border:1px dashed var(--line);border-radius:10px;
+    background:var(--surface-raised);
+  }
+  .ministrada-rot{font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;color:var(--muted);}
+  .ministrada-chip{
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:20px;padding:5px 13px;font-size:12.5px;font-weight:700;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .ministrada-chip:hover{border-color:#2E7D32;color:#1B5E20;}
+  .ministrada-chip.on{background:#CDEBD3;border-color:#8FC79B;color:#1B5E20;}
+  .ministrada-data{font-weight:600;opacity:.75;font-size:11.5px;}
+  .ministrada-ajuda{
+    margin-left:auto;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;color:var(--muted);cursor:help;flex:0 0 auto;
+  }
+  .nav-aula-dada{color:#2E7D32;font-weight:800;}
+  /* ===== Aviso de resposta não salva (v4.12.1) ===== */
+  .atv-nao-salvo{
+    display:none;font-size:12.5px;font-weight:700;color:#8A3B12;
+    background:#FDEDE3;border:1px solid #E0A780;border-radius:8px;padding:5px 11px;
+  }
+  .atividade-card.tem-mudanca .atv-nao-salvo{display:inline-block;}
+  .atividade-card.tem-mudanca .atividade-save-row .btn-primary{
+    box-shadow:0 0 0 3px rgba(192,98,31,0.25);
+  }
+  /* ===== Central de Atividades por situacao (v4.12.0) ===== */
+  .atv-grupo-sit{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0;background:var(--surface-raised);}
+  .atv-grupo-sit[open]{background:var(--surface);}
+  .atv-grupo-sit-head{cursor:pointer;font-weight:800;font-size:14.5px;color:var(--ink);list-style:none;display:flex;align-items:center;gap:8px;}
+  .atv-grupo-sit-head::-webkit-details-marker{display:none;}
+  .atv-grupo-sit-n{background:var(--line);color:var(--ink);border-radius:20px;padding:1px 9px;font-size:11.5px;font-weight:700;}
+  .atv-central-row{align-items:center;}
+  .atv-sit-tag{font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:normal;display:inline-block;}
+  .atv-sit-corrigir{background:#FBE0C7;color:#8A3B12;}
+  .atv-sit-aberta{background:#CDEBD3;color:#1B5E20;}
+  .atv-sit-semprazo{background:#F7E3A1;color:#7A5A00;}
+  .atv-sit-programada{background:#E3E8F5;color:#33477A;}
+  .atv-sit-concluida{background:#EDEDF2;color:var(--muted);}
+  .atv-chamada-acao{border-left:4px solid #C0621F;padding-left:12px;font-size:14px;}
+  .atv-chamada-ok{border-left:4px solid #2E7D32;padding-left:12px;font-size:14px;}
+  /* ===== Tela unica de correcao (v4.12.0) ===== */
+  .corr-topo{
+    display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+    border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:14px;background:var(--surface-raised);
+  }
+  .corr-metricas{display:flex;flex-wrap:wrap;gap:18px;}
+  .corr-metrica{min-width:82px;}
+  .corr-metrica-num{font-size:22px;font-weight:800;line-height:1.1;color:var(--ink);}
+  .corr-metrica-num.alerta{color:#C0621F;}
+  .corr-metrica-rot{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;}
+  .corr-banner{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+    border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;
+  }
+  .corr-banner-rascunho{background:#FFF3D6;border:1px solid #D8A857;color:#5C3D0A;}
+  .corr-banner-limpo{background:#E7F3E9;border:1px solid #A5CDAE;color:#1B5E20;}
+  .corr-banner-aviso{background:#FDEDE3;border:1px solid #E0A780;color:#8A3B12;}
+  .corr-fila{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+    border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;
+  }
+  .corr-modo{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .corr-modo button{
+    border:1px solid var(--line);background:var(--surface-raised);color:var(--muted);
+    border-radius:20px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;
+  }
+  .corr-modo button.ativo{background:var(--accent, #5C3D0A);border-color:var(--accent, #5C3D0A);color:#fff;}
+  .corr-extra{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0;background:var(--surface-raised);}
+  .corr-extra > summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--ink);list-style:none;}
+  .corr-extra > summary::-webkit-details-marker{display:none;}
+  .corr-extra > summary::before{content:'▸ ';color:var(--muted);}
+  .corr-extra[open] > summary::before{content:'▾ ';}
+  .corr-extra-corpo{margin-top:12px;}
   .atividade-details-corpo{padding:0 16px 16px 16px;}
   .atividade-details-corpo .atividade-card{
     background:transparent;border:none;border-radius:0;padding:0;
@@ -2024,6 +2103,11 @@
   .rel-card-icone{font-size:18px;}
   .rel-card-texto{font-size:12.5px;line-height:1.55;color:var(--muted);margin:7px 0 11px 0;}
   .rel-card-acoes{display:flex;gap:8px;flex-wrap:wrap;}
+  .rel-aluno-row{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);padding:8px 2px;
+  }
+  .rel-aluno-nome{flex:1;min-width:180px;font-size:13px;font-weight:600;color:var(--charcoal);}
   .turma-filter-row{display:flex;align-items:center;gap:8px;margin-top:12px;}
   .turma-filter-row select{font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-raised);}
   .turmas-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
@@ -3210,7 +3294,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.11.0</div>
+<div class="version-tag hidden" id="version-tag">v4.12.1</div>
 
 
 <script>
@@ -3323,6 +3407,106 @@ async function loadCourseFromStorage(){
   }
   return false;
 }
+// ===== AULA MINISTRADA (v4.12.1) =====
+// Registro de que a aula foi efetivamente dada, por turma. Mora em course_kv
+// (um único documento) e não numa coleção nova, por dois motivos: é uma leitura
+// só — dá pra manter o ✓ no menu lateral sem custo por aula — e não exige
+// mexer nas regras do Firestore, que já autorizam course_kv para o dono da
+// matéria.
+//
+// Formato: { "<aulaId>": { "<turmaId>": {date:'YYYY-MM-DD', at: ts, by: uid} } }
+// A chave é o aulaId (fixo), nunca o número da aula — renumerar não perde nada.
+const KV_MINISTRADAS = 'aulas-ministradas-v1';
+let AULAS_MINISTRADAS = null;   // null = ainda não carregado
+let MINISTRADAS_CARREGANDO = false;
+async function carregarAulasMinistradas(){
+  if(AULAS_MINISTRADAS !== null || MINISTRADAS_CARREGANDO) return AULAS_MINISTRADAS;
+  MINISTRADAS_CARREGANDO = true;
+  try{
+    const res = await subjectDbGet(KV_MINISTRADAS);
+    AULAS_MINISTRADAS = (res && res.value) ? (JSON.parse(res.value) || {}) : {};
+  }catch(e){
+    console.error('Não consegui ler o registro de aulas ministradas:', e);
+    AULAS_MINISTRADAS = {};
+  }
+  MINISTRADAS_CARREGANDO = false;
+  return AULAS_MINISTRADAS;
+}
+function turmasQueTiveramAula(aulaId){
+  if(!aulaId || !AULAS_MINISTRADAS) return [];
+  return Object.keys(AULAS_MINISTRADAS[aulaId] || {});
+}
+function aulaJaMinistrada(aulaId){ return turmasQueTiveramAula(aulaId).length > 0; }
+function nomesTurmasDaAula(aulaId){
+  const ids = turmasQueTiveramAula(aulaId);
+  if(!ids.length || !allTurmas) return '';
+  return ids.map(id=>{ const t = allTurmas.find(x=>x.id===id); return t ? t.name : id; }).join(', ');
+}
+function registroMinistrada(aulaId, turmaId){
+  return (AULAS_MINISTRADAS && AULAS_MINISTRADAS[aulaId] && AULAS_MINISTRADAS[aulaId][turmaId]) || null;
+}
+// Grava o mapa inteiro. É um documento pequeno (uma linha por aula dada), e
+// gravar tudo de uma vez evita estado meio-salvo se a rede cair no meio.
+async function gravarAulasMinistradas(){
+  await subjectDbSet(KV_MINISTRADAS, JSON.stringify(AULAS_MINISTRADAS || {}));
+}
+// ligado=true marca, ligado=false desmarca. dataISO opcional (default: hoje).
+async function setAulaMinistrada(aulaId, turmaId, ligado, dataISO){
+  if(!aulaId || !turmaId) return false;
+  await carregarAulasMinistradas();
+  const antes = JSON.parse(JSON.stringify(AULAS_MINISTRADAS || {}));
+  AULAS_MINISTRADAS = AULAS_MINISTRADAS || {};
+  if(ligado){
+    AULAS_MINISTRADAS[aulaId] = AULAS_MINISTRADAS[aulaId] || {};
+    AULAS_MINISTRADAS[aulaId][turmaId] = {
+      date: dataISO || new Date().toISOString().slice(0,10),
+      at: Date.now(), by: (currentUser && currentUser.uid) || null,
+    };
+  } else {
+    if(AULAS_MINISTRADAS[aulaId]) delete AULAS_MINISTRADAS[aulaId][turmaId];
+    if(AULAS_MINISTRADAS[aulaId] && !Object.keys(AULAS_MINISTRADAS[aulaId]).length) delete AULAS_MINISTRADAS[aulaId];
+  }
+  try{
+    await gravarAulasMinistradas();
+    return true;
+  }catch(e){
+    AULAS_MINISTRADAS = antes;   // desfaz em memória se o banco recusou
+    alert('Não consegui registrar a aula como ministrada: ' + (e && e.message ? e.message : String(e)));
+    return false;
+  }
+}
+
+// Barra "aula ministrada" que aparece no topo da aula, só para a equipe.
+// Um chip por turma: clicou, marcou; clicou de novo, desmarcou. A data é a de
+// hoje — se a aula foi dada em outro dia, o caminho certo é o Diário (📒), que
+// tem campo de data e já marca a aula como ministrada ao salvar.
+function barraMinistradaHtml(a){
+  if(!a || !a.id) return '';
+  if(AULAS_MINISTRADAS === null){
+    return `<div class="ministrada-bar"><span class="ministrada-rot">Aula ministrada</span><span class="hint" style="margin:0;">carregando…</span></div>`;
+  }
+  if(allTurmas === null){
+    return `<div class="ministrada-bar"><span class="ministrada-rot">Aula ministrada</span><span class="hint" style="margin:0;">carregando turmas…</span></div>`;
+  }
+  if(!allTurmas.length){
+    return `<div class="ministrada-bar"><span class="ministrada-rot">Aula ministrada</span><span class="hint" style="margin:0;">cadastre uma turma em Gestão › Turmas para poder marcar.</span></div>`;
+  }
+  const chips = allTurmas.map(t=>{
+    const reg = registroMinistrada(a.id, t.id);
+    const quando = reg && reg.date ? reg.date.split('-').reverse().join('/') : '';
+    return `<button type="button" class="ministrada-chip ${reg?'on':''}"
+      data-action="toggle-aula-ministrada" data-aula-id="${escAttr(a.id)}" data-turma="${escAttr(t.id)}"
+      title="${reg?`Dada em ${quando}. Clique para desmarcar.`:'Clique para marcar como ministrada hoje.'}">
+      ${reg?'✓':'○'} ${esc(t.name)}${quando?` <span class="ministrada-data">${quando}</span>`:''}
+    </button>`;
+  }).join('');
+  return `<div class="ministrada-bar">
+    <span class="ministrada-rot">Aula ministrada</span>
+    ${chips}
+    <span class="ministrada-ajuda" title="Marcar aqui usa a data de hoje. Para outra data (ou para registrar a chamada junto), use o Diário de classe 📒 — ele marca a aula como ministrada automaticamente ao salvar.">?</span>
+  </div>`;
+}
+
 // Marca a aula ATUAL como atualizada agora — alimenta o carimbo
 // "Atualizado em ..." que o aluno vê na página da aula.
 function touchCurrentAula(){
@@ -3823,7 +4007,7 @@ function renderSearchResults(query){
 document.addEventListener('input', (e)=>{
   if(e.target && e.target.id === 'nav-search-input') renderSearchResults(e.target.value);
   if(e.target && e.target.classList && e.target.classList.contains('atv-ans-field')){
-    saveAtividadeAnswerDebounced(e.target.dataset.secid, aulaIdDe(state.block, state.aula), state.aula);
+    marcarAtividadeAlterada(e.target);
   }
 });
 // Atribuição de turma (select na linha do aluno e na ficha) + filtro por turma
@@ -3869,7 +4053,7 @@ document.addEventListener('change', async (e)=>{
     return;
   }
   if(e.target && e.target.classList && e.target.classList.contains('atv-ans-field')){
-    saveAtividadeAnswerDebounced(e.target.dataset.secid, aulaIdDe(state.block, state.aula), state.aula);
+    marcarAtividadeAlterada(e.target);
     return;
   }
 });
@@ -3920,7 +4104,7 @@ function renderSideNav(){
             <button class="edit-chip nav-aula-drag-handle" draggable="true" data-drag-nav-aula-num="${a.num}" title="Arrastar para reordenar (renumera automaticamente)" style="cursor:grab;">⣿</button>
             <input type="checkbox" class="nav-aula-visible-cb" data-vis-block="${b.num}" data-vis-aula="${a.num}" ${a.hidden?'':'checked'} title="Visível para os alunos">
             <button class="nav-aula" data-block="${b.num}" data-aula="${a.num}">
-              <span class="num">${numeroAula(a)}</span><span class="label">${esc(a.title)}${(a.sections&&a.sections.some(s=>s.type==='atividade'))?' <span class="nav-aula-practice-badge" title="Esta aula tem atividade respondível — gera nota e tem prazo">📝</span>':''}${(!isAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.seen && STUDENT_PROGRESS.seen[a.id])?' <span class="nav-aula-seen" title="Você já viu esta aula">✓</span>':''}${a.hidden?' <em>(oculta)</em>':''}</span>
+              <span class="num">${numeroAula(a)}</span><span class="label">${esc(a.title)}${(a.sections&&a.sections.some(s=>s.type==='atividade'))?' <span class="nav-aula-practice-badge" title="Esta aula tem atividade respondível — gera nota e tem prazo">📝</span>':''}${(!isAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.seen && STUDENT_PROGRESS.seen[a.id])?' <span class="nav-aula-seen" title="Você já viu esta aula">✓</span>':''}${(isAdmin && aulaJaMinistrada(a.id))?` <span class="nav-aula-dada" title="Aula já ministrada${nomesTurmasDaAula(a.id)?' — '+escAttr(nomesTurmasDaAula(a.id)):''}">✓</span>`:''}${a.hidden?' <em>(oculta)</em>':''}</span>
             </button>
             <button class="edit-chip nav-aula-edit-btn" data-edit-block="${b.num}" data-edit-aula="${a.num}" title="Editar informações da aula">✎</button>
           </div>`).join('')}
@@ -4809,9 +4993,10 @@ function renderAtividadeStudentForm(sec, response, schedule){
     ${!locked?`<div class="atividade-save-row">
       <button type="button" class="btn-primary" data-action="save-atv-answer" data-secid="${esc(sec.id)}" data-aula="${state.aula}">💾 Salvar resposta</button>
       <button type="button" class="btn-secondary" data-action="submit-atv-answer" data-secid="${esc(sec.id)}" data-aula="${state.aula}" title="Avisa o professor que você terminou. Depois de entregar você não consegue mais editar.">📨 Entregar para correção</button>
+      <span class="atv-nao-salvo">● Você tem alterações não salvas</span>
       <span class="atividade-save-status" id="atv-save-status-${esc(sec.id)}"></span>
     </div>
-    <div class="hint">Suas respostas ficam salvas mesmo sem entregar. Entregue quando terminar — aí o professor corrige.</div>`:''}
+    <div class="hint">O que você digita <strong>não é salvo sozinho</strong> — clique em <strong>Salvar resposta</strong> antes de sair da página. Salvar quantas vezes quiser não entrega nada: entregar é o outro botão, e é ele que fecha a atividade para correção.</div>`:''}
     ${(status==='entregue' && !publicada)?`<div class="atividade-entregue-nota">📨 Entregue${response&&response.submittedAt?` em ${new Date(response.submittedAt).toLocaleString('pt-BR')}`:''}. Aguarde a correção do professor.</div>`:''}
     ${gradingHtml}
   </div>`;
@@ -4940,10 +5125,56 @@ function collectAtividadeAnswersFromDom(sectionId){
   return answers;
 }
 
-function saveAtividadeAnswerDebounced(sectionId, aulaId, aulaNum){
-  clearTimeout(atvSaveTimer);
-  atvSaveTimer = setTimeout(()=>persistAtividadeAnswer(sectionId, aulaId, aulaNum), 1200);
+// ALTERADO (v4.12.1) — o salvamento automático foi removido. Ele gravava
+// sozinho 1,2s depois de cada tecla, o que tinha duas consequências ruins: o
+// aluno nunca sabia se o que ele estava vendo já era o que estava no banco, e
+// uma tela aberta há horas podia regravar por cima de uma edição mais nova
+// feita em outro aparelho. Agora só grava quando o aluno clica em Salvar.
+//
+// O preço disso é o risco de fechar a aba com resposta digitada e não salva —
+// por isso as duas defesas abaixo: o aviso visível no cartão e o alerta do
+// navegador ao sair.
+const ATV_SECOES_ALTERADAS = new Set();
+function marcarAtividadeAlterada(campo){
+  const secid = campo && campo.dataset ? campo.dataset.secid : null;
+  if(secid) ATV_SECOES_ALTERADAS.add(secid);
+  const card = campo && campo.closest ? campo.closest('.atividade-card') : null;
+  if(card) card.classList.add('tem-mudanca');
+  const st = secid ? document.getElementById('atv-save-status-'+secid) : null;
+  if(st){ st.textContent = ''; st.classList.remove('atv-save-error'); }
 }
+function preservarRespostasNaoSalvas(){
+  if(realIsAdmin || !ATV_SECOES_ALTERADAS.size) return;
+  ATV_SECOES_ALTERADAS.forEach(secid=>{
+    if(!document.querySelector(`.atv-ans-field[data-secid="${CSS.escape(secid)}"]`)) return;
+    try{
+      const answers = collectAtividadeAnswersFromDom(secid);
+      const cache = ACTIVITY_DATA_CACHE[secid] = ACTIVITY_DATA_CACHE[secid] || {loaded:true, response:null, schedule:null};
+      cache.response = {...(cache.response||{}), answers: {...((cache.response||{}).answers||{}), ...answers}};
+    }catch(e){ console.error('Não consegui preservar a resposta em edição:', e); }
+  });
+}
+// Depois de redesenhar, o cartão precisa voltar mostrando que ainda há coisa
+// não salva — senão o aviso some no primeiro redesenho e o aluno relaxa.
+function reaplicarMarcaDeAlteracao(){
+  if(realIsAdmin || !ATV_SECOES_ALTERADAS.size) return;
+  ATV_SECOES_ALTERADAS.forEach(secid=>{
+    const campo = document.querySelector(`.atv-ans-field[data-secid="${CSS.escape(secid)}"]`);
+    const card = campo && campo.closest ? campo.closest('.atividade-card') : null;
+    if(card) card.classList.add('tem-mudanca');
+  });
+}
+function limparMarcaDeAlteracao(sectionId){
+  ATV_SECOES_ALTERADAS.delete(sectionId);
+  document.querySelectorAll('.atividade-card.tem-mudanca').forEach(card=>{
+    if(card.querySelector(`[data-secid="${CSS.escape(sectionId)}"]`)) card.classList.remove('tem-mudanca');
+  });
+}
+window.addEventListener('beforeunload', (e)=>{
+  if(realIsAdmin || !ATV_SECOES_ALTERADAS.size) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
 let LAST_ATV_SAVE_ERROR = '';
 // aulaId é a CHAVE (fixa, nunca muda com renumeração). aulaNum vai junto só
 // como informação de exibição (ex.: título de coluna no boletim).
@@ -4981,7 +5212,8 @@ async function persistAtividadeAnswer(sectionId, aulaId, aulaNum){
   try{
     await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId).set(payload, {merge:true});
     if(cache){ cache.response = {...(cache.response||{}), ...payload}; }
-    if(st){ st.textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); st.classList.remove('atv-save-error'); }
+    limparMarcaDeAlteracao(sectionId);
+    if(st){ st.textContent = '✓ Salvo às ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); st.classList.remove('atv-save-error'); }
     return true;
   }catch(e){
     // Diferente do progresso de leitura, a resposta da atividade é importante
@@ -5118,7 +5350,7 @@ function atvVerdictControlsHtml(item, saved, auto){
 }
 
 // Painel completo de UM aluno (aba "Por aluno").
-function atvGradingPanelHtml(sec, resp, user, draft){
+function atvGradingPanelHtml(sec, resp, user, draft, autoLiberado){
   const answers = (resp && resp.answers) || {};
   const eff = atvEffectiveGrading(resp, draft);
   const perItem = eff.perItem || {};
@@ -5126,7 +5358,7 @@ function atvGradingPanelHtml(sec, resp, user, draft){
   let curTotal = 0;
   const itemsHtml = (sec.items||[]).map((it,i)=>{
     const val = answers[it.itemId];
-    const auto = autoGradeClosedItem(it, val);
+    const auto = atvAutoDoItem(it, val, autoLiberado);
     const saved = perItem[it.itemId] || {};
     const keyBase = `${user.id}__${it.itemId}`;
     const ptsNow = (saved.points!=null && saved.points!=='') ? Number(saved.points) : (auto ? auto.points : 0);
@@ -5145,6 +5377,7 @@ function atvGradingPanelHtml(sec, resp, user, draft){
         : `<div class="hint atv-sem-gabarito">Esta questão não tem resposta esperada cadastrada — o aluno vai ver só o seu feedback abaixo. Para incluir um gabarito, edite a atividade na aula e preencha "Resposta esperada".</div>`}
       <label class="atv-fb-label">Feedback desta questão (o aluno só vê depois de publicada)</label>
       <textarea class="atv-item-grade-feedback" data-key="${escAttr(keyBase)}" data-item-id="${escAttr(it.itemId)}" placeholder="Onde errou, o que faltou, o que você esperava da resposta...">${esc(saved.feedback||'')}</textarea>
+      <div class="atv-fb-bank-rotulo">💬 Comentários reutilizáveis — clique para inserir no campo acima:</div>
       ${atvFeedbackBankHtml(keyBase)}
     </div>`;
   }).join('');
@@ -5188,40 +5421,148 @@ function collectAllAtividades(){
   return out;
 }
 
+// ===== CENTRAL DE ATIVIDADES, ORGANIZADA POR SITUAÇÃO (v4.12.0) =====
+// Antes era uma lista corrida com TODAS as atividades do curso, na ordem das
+// aulas. Num curso montado inteiro de uma vez — como o seu — isso significa
+// dezenas de atividades que ainda nem começaram misturadas com as duas ou três
+// que realmente pedem alguma coisa hoje. A lista existia, mas não respondia à
+// única pergunta que importa ao abrir a tela: o que preciso fazer agora?
+//
+// Agora as atividades são agrupadas por situação, e só o que pede ação nasce
+// aberto. O resto continua acessível, recolhido.
+function atvSituacaoDaAtividade(sectionId){
+  const agendas = (ATV_BOLETIM_SCHEDULES||[]).filter(s=>s.sectionId===sectionId);
+  const respostas = (ATV_BOLETIM_DATA||[]).filter(r=>r.sectionId===sectionId);
+  const entregues = respostas.filter(r=>r.submittedAt).length;
+  const publicadas = respostas.filter(r=>r.grading && r.grading.published).length;
+  const aCorrigir = respostas.filter(r=>r.submittedAt && !(r.grading && r.grading.published)).length;
+  if(!agendas.length){
+    return {chave:'semprazo', entregues, publicadas, aCorrigir,
+            detalhe: respostas.length ? `${respostas.length} resposta(s) já iniciadas` : 'nenhum prazo cadastrado'};
+  }
+  const agora = Date.now();
+  const todasFechadas = agendas.every(a=>a.closesAt && agora > a.closesAt);
+  const algumaFutura = agendas.some(a=>a.opensAt && agora < a.opensAt);
+  if(todasFechadas){
+    if(aCorrigir > 0) return {chave:'corrigir', entregues, publicadas, aCorrigir, detalhe:`${aCorrigir} entrega(s) esperando correção`};
+    return {chave:'concluida', entregues, publicadas, aCorrigir, detalhe: entregues ? `${publicadas} de ${entregues} entrega(s) com nota publicada` : 'encerrada sem entregas'};
+  }
+  if(algumaFutura){
+    const proxima = agendas.map(a=>a.opensAt).filter(Boolean).sort((x,y)=>x-y)[0];
+    return {chave:'programada', entregues, publicadas, aCorrigir, detalhe:`abre em ${new Date(proxima).toLocaleDateString('pt-BR')}`};
+  }
+  const fecha = agendas.map(a=>a.closesAt).filter(Boolean).sort((x,y)=>x-y).slice(-1)[0];
+  return {chave:'aberta', entregues, publicadas, aCorrigir,
+          detalhe: fecha ? `recebendo respostas até ${new Date(fecha).toLocaleDateString('pt-BR')}` : 'recebendo respostas'};
+}
+const ATV_SITUACOES = [
+  ['corrigir',   '📥 Esperando correção',  'Prazo encerrado e há entregas sem nota publicada. É aqui que o seu trabalho está.', true],
+  ['aberta',     '🟢 Recebendo respostas', 'Prazo em curso. A correção automática das questões fechadas entra quando o prazo fechar.', true],
+  ['semprazo',   '⚠️ Sem prazo cadastrado','Enquanto não houver prazo, a atividade nunca fecha — e a correção automática não entra.', true],
+  ['programada', '📅 Programadas',         'O prazo ainda vai abrir. Nada a fazer por enquanto.', false],
+  ['concluida',  '✅ Concluídas',           'Encerradas e com as notas publicadas.', false],
+];
 function atividadesCentralForm(){
   const all = collectAllAtividades();
-  const rows = all.map(it=>`
+  if(ATV_BOLETIM_SCHEDULES===null || ATV_BOLETIM_DATA===null){
+    return `<div class="editor-form"><div class="editing-type-banner">🗂️ Central de Atividades</div><p>Carregando prazos e respostas…</p></div>`;
+  }
+  const porSituacao = {};
+  all.forEach(it=>{
+    const st = atvSituacaoDaAtividade(it.sectionId);
+    (porSituacao[st.chave] = porSituacao[st.chave] || []).push({it, st});
+  });
+  const linha = ({it, st}) => `
     <div class="user-row atv-central-row">
       <div class="user-row-info">
         <strong>${esc(it.title)}</strong>
-        <div class="hint" style="margin:2px 0 0;">${blocoRotulo(COURSE.find(bb=>bb.num===it.blockNum))} · Aula ${it.aulaNum} — ${esc(it.aulaTitle)}${it.aulaHidden?' <em>(aula oculta)</em>':''}</div>
+        <div class="hint" style="margin:2px 0 0;">Aula ${it.aulaNum} — ${esc(it.aulaTitle)}${it.aulaHidden?' <em>(aula oculta)</em>':''} · ${it.itemCount} questão(ões)</div>
       </div>
-      <div class="user-row-status">${it.itemCount} questão(ões)${it.required===false?' · opcional':''}</div>
-      <button class="btn-secondary" data-action="open-atividade-central-item" data-block="${it.blockNum}" data-aula="${it.aulaNum}" data-secid="${esc(it.sectionId)}">📋 Gerenciar</button>
-    </div>`).join('') || '<p class="hint">Nenhuma atividade foi criada ainda em nenhuma aula deste curso.</p>';
-
+      <div class="user-row-status"><span class="atv-sit-tag atv-sit-${st.chave}">${esc(st.detalhe)}</span></div>
+      <button class="btn-secondary" data-action="open-atividade-central-item" data-block="${it.blockNum}" data-aula="${it.aulaNum}" data-secid="${esc(it.sectionId)}">📋 Abrir</button>
+    </div>`;
+  const grupos = ATV_SITUACOES.map(([chave, titulo, explica, abertoPadrao])=>{
+    const lista = porSituacao[chave] || [];
+    if(!lista.length) return '';
+    return `<details class="atv-grupo-sit" ${abertoPadrao?'open':''}>
+      <summary class="atv-grupo-sit-head">${titulo} <span class="atv-grupo-sit-n">${lista.length}</span></summary>
+      <div class="hint" style="margin:4px 0 8px;">${explica}</div>
+      <div class="users-list">${lista.map(linha).join('')}</div>
+    </details>`;
+  }).join('');
+  const aCorrigirTotal = (porSituacao['corrigir']||[]).reduce((s,x)=>s+x.st.aCorrigir, 0);
   return `<div class="editor-form">
     <div class="editing-type-banner">🗂️ Central de Atividades</div>
-    <p class="hint">Todas as atividades respondíveis do curso, em ordem de aula. Clique em "Gerenciar" para configurar prazos e corrigir as respostas de uma atividade.</p>
-    <div class="users-list" style="margin-top:12px;">${rows}</div>
+    ${aCorrigirTotal
+      ? `<div class="hint atv-chamada-acao">📥 <strong>${aCorrigirTotal} entrega(s) esperando correção</strong>, em ${(porSituacao['corrigir']||[]).length} atividade(s). Comece por aí.</div>`
+      : `<div class="hint atv-chamada-ok">✅ Nenhuma entrega esperando correção no momento.</div>`}
+    ${grupos || '<p class="hint">Nenhuma atividade foi criada ainda em nenhuma aula deste curso.</p>'}
     <div class="editor-actions">
       <button class="btn-secondary" data-action="cancel-edit">← Voltar</button>
     </div>
   </div>`;
 }
 
+// ===== CORREÇÃO AUTOMÁTICA SÓ DEPOIS DO PRAZO (v4.12.0) =====
+// A correção das questões fechadas passou a ser aplicada sozinha — mas nunca
+// antes de a atividade fechar. O motivo é pedagógico, não técnico: enquanto o
+// prazo corre, o aluno ainda pode mudar a resposta, e uma nota já calculada
+// daria a impressão de resultado fechado. Encerrado o prazo, a resposta é
+// definitiva e a correção do que tem gabarito não depende mais de ninguém.
+//
+// Sem prazo cadastrado a atividade nunca fecha — então a automática não entra,
+// e a tela avisa isso em vez de deixar você esperando por algo que não vem.
+function atvAutoLiberada(schedule){
+  return atvJanelaPrazo(schedule) === 'depois';
+}
+// Gabarito automático de um item, respeitando a liberação pelo prazo.
+function atvAutoDoItem(item, valor, liberado){
+  return liberado ? autoGradeClosedItem(item, valor) : null;
+}
 // Total de pontos de um aluno, considerando correção salva + gabarito automático.
-function atvComputeStudentTotal(sec, resp, draft){
+function atvComputeStudentTotal(sec, resp, draft, autoLiberado){
   const eff = atvEffectiveGrading(resp, draft);
   const answers = (resp && resp.answers) || {};
   let total = 0, any = false;
   (sec.items||[]).forEach(it=>{
     const saved = (eff.perItem||{})[it.itemId] || {};
     if(saved.points!=null && saved.points!==''){ total += (Number(saved.points)||0); any = true; return; }
-    const auto = autoGradeClosedItem(it, answers[it.itemId]);
+    const auto = atvAutoDoItem(it, answers[it.itemId], autoLiberado);
     if(auto){ total += auto.points; any = true; }
   });
   return {total: Math.round(total*100)/100, any};
+}
+
+// ===== O QUE AINDA FALTA CORRIGIR (v4.12.0) =====
+// Percorre alunos × questões e separa o que já está resolvido do que espera
+// por você. "Resolvido" é: nota lançada à mão, ou gabarito automático já
+// liberado. Todo o resto é pendência — e é sobre ela que a fila trabalha.
+function atvPendencias(sec, ctx){
+  const itens = sec.items || [];
+  const porAluno = {}, porQuestao = {};
+  let total = 0, primeiroAluno = null, primeiraQuestao = null;
+  ctx.alunos.forEach(u=>{
+    const resp = ctx.responsesByUid[u.id];
+    const draft = ctx.draftsByUid[u.id];
+    // Quem não entregou nada não gera pendência de correção — gera pendência
+    // de entrega, que é outro assunto e aparece no resumo.
+    const entregou = !!(resp && resp.answers && Object.keys(resp.answers).length);
+    if(!entregou){ porAluno[u.id] = 0; return; }
+    const eff = atvEffectiveGrading(resp, draft);
+    let n = 0;
+    itens.forEach((it,i)=>{
+      const saved = (eff.perItem||{})[it.itemId] || {};
+      const temNota = (saved.points!=null && saved.points!=='');
+      const auto = atvAutoDoItem(it, (resp.answers||{})[it.itemId], ctx.autoLiberado);
+      if(temNota || auto) return;
+      n++; total++;
+      porQuestao[it.itemId] = (porQuestao[it.itemId]||0) + 1;
+      if(primeiroAluno===null) primeiroAluno = u.id;
+      if(primeiraQuestao===null) primeiraQuestao = i;
+    });
+    porAluno[u.id] = n;
+  });
+  return {total, porAluno, porQuestao, primeiroAluno, primeiraQuestao};
 }
 
 function atvManageContext(){
@@ -5233,49 +5574,11 @@ function atvManageContext(){
   const responsesByUid = {};
   (ATV_MANAGE_RESPONSES||[]).forEach(r=>{ responsesByUid[r.studentUid]=r; });
   const draftsByUid = ATV_MANAGE_DRAFTS || {};
-  return {turmaId, schedule, alunos, responsesByUid, draftsByUid};
+  return {turmaId, schedule, alunos, responsesByUid, draftsByUid,
+          autoLiberado: atvAutoLiberada(schedule)};
 }
 
 function atvNomeAluno(u){ return (u.profile && u.profile.fullName) || u.name || '(sem nome)'; }
-
-// ---------- ABA: PAINEL ----------
-function atvPainelHtml(sec, ctx){
-  const maxTotal = atvMaxScore(sec);
-  let responderam=0, entregues=0, rascunhos=0, publicadas=0, somaNotas=0, comNota=0;
-  ctx.alunos.forEach(u=>{
-    const r = ctx.responsesByUid[u.id], d = ctx.draftsByUid[u.id];
-    const st = computeActivityStatus(r, ctx.schedule, d);
-    if(r && r.answers && Object.keys(r.answers).length) responderam++;
-    if(st==='entregue') entregues++;
-    if(st==='corrigindo') rascunhos++;
-    if(st==='publicada'){ publicadas++; }
-    const t = atvComputeStudentTotal(sec, r, d);
-    if(t.any){ somaNotas += t.total; comNota++; }
-  });
-  const media = comNota ? Math.round((somaNotas/comNota)*100)/100 : null;
-  const naoResponderam = ctx.alunos.length - responderam;
-  const card = (n,l,cls)=>`<div class="atv-stat ${cls||''}"><div class="atv-stat-n">${n}</div><div class="atv-stat-l">${l}</div></div>`;
-  return `<div class="atv-stats-row">
-      ${card(ctx.alunos.length,'alunos na turma')}
-      ${card(responderam,'responderam')}
-      ${card(naoResponderam,'não responderam', naoResponderam?'atv-stat-warn':'')}
-      ${card(entregues,'aguardando correção','atv-stat-warn')}
-      ${card(rascunhos,'correção em rascunho')}
-      ${card(publicadas,'notas publicadas','atv-stat-ok')}
-      ${card(media!=null?`${media}`:'—', `média da turma (de ${maxTotal})`)}
-    </div>
-    <div class="atv-bulk-box">
-      <div class="atv-bulk-title">Ações para a turma toda</div>
-      <div class="atv-bulk-actions">
-        <button type="button" class="btn-secondary" data-action="atv-bulk-autograde" title="Preenche a correção das questões fechadas que têm gabarito cadastrado, para todos os alunos que responderam. Fica como rascunho — nada é publicado ainda.">✨ Aplicar gabarito a todos</button>
-        <button type="button" class="btn-secondary" data-action="atv-bulk-zero-missing" title="Lança 0 em todas as questões dos alunos que não responderam nada. Fica como rascunho.">0️⃣ Zerar quem não respondeu</button>
-        <button type="button" class="btn-primary" data-action="atv-bulk-publish" title="Publica todas as correções em rascunho desta turma de uma vez — a partir daí os alunos veem nota e feedback.">📤 Publicar correções (${rascunhos})</button>
-        <button type="button" class="btn-secondary" data-action="atv-export-csv" title="Baixa uma planilha com a nota de cada aluno nesta atividade.">⬇ Exportar CSV</button>
-        <button type="button" class="btn-secondary" data-action="open-atv-boletim" title="Ver as notas de TODAS as atividades do curso, por aluno.">📊 Boletim da turma</button>
-      </div>
-      <div class="hint">Correções ficam em rascunho até você publicar — o aluno não vê nota nem feedback antes disso.</div>
-    </div>`;
-}
 
 // ---------- ABA: POR ALUNO ----------
 function atvPorAlunoHtml(sec, ctx){
@@ -5285,14 +5588,14 @@ function atvPorAlunoHtml(sec, ctx){
     const draft = ctx.draftsByUid[u.id];
     const status = computeActivityStatus(resp, ctx.schedule, draft);
     const isGrading = editState.gradingUid === u.id;
-    const t = atvComputeStudentTotal(sec, resp, draft);
+    const t = atvComputeStudentTotal(sec, resp, draft, ctx.autoLiberado);
     const notaTag = t.any ? `<span class="atv-nota-tag">${t.total} / ${maxTotal}</span>` : '';
     return `<div class="user-row atv-student-row atv-st-${status}">
         <div class="user-row-info"><strong>${esc(atvNomeAluno(u))}</strong></div>
         <div class="user-row-status">${ATV_STATUS_LABEL[status]||status} ${notaTag}</div>
         <button class="btn-secondary" data-action="toggle-atv-grade-panel" data-uid="${escAttr(u.id)}">${isGrading?'Fechar':(status==='publicada'?'Rever correção':'Corrigir')}</button>
       </div>
-      ${isGrading ? atvGradingPanelHtml(sec, resp, u, draft) : ''}`;
+      ${isGrading ? atvGradingPanelHtml(sec, resp, u, draft, ctx.autoLiberado) : ''}`;
   }).join('') || '<p class="hint">Nenhum aluno nesta turma ainda. Cadastre alunos e atribua a turma no Painel de alunos.</p>';
   return `<div class="users-list">${rows}</div>`;
 }
@@ -5316,7 +5619,7 @@ function atvPorQuestaoHtml(sec, ctx){
     const eff = atvEffectiveGrading(resp, draft);
     const saved = (eff.perItem||{})[item.itemId] || {};
     const val = (resp && resp.answers) ? resp.answers[item.itemId] : undefined;
-    const auto = autoGradeClosedItem(item, val);
+    const auto = atvAutoDoItem(item, val, ctx.autoLiberado);
     const semResposta = (val===undefined || val===null || val==='' || (Array.isArray(val)&&!val.length));
     const keyBase = `q__${u.id}__${item.itemId}`;
     return `<div class="atv-q-row" data-uid="${escAttr(u.id)}">
@@ -5650,6 +5953,182 @@ function relatoriosCentralHtml(){
   </div>`;
 }
 
+
+// ---------- RELATÓRIO POR ALUNO ----------
+// Um dossiê individual. Serve para atendimento ("vamos ver como você está"),
+// para justificar uma reprovação por frequência e para responder a pedido de
+// revisão — situações em que a visão da turma inteira não ajuda.
+function relatoriosPorAlunoHtml(){
+  if(allTurmas===null || cachedUsersList===null || ATV_BOLETIM_DATA===null
+     || ATV_BOLETIM_SCHEDULES===null || DIARIO_TODOS===null){
+    return `<div class="editor-form"><p>Carregando dados da matéria…</p></div>`;
+  }
+  const turmaId = (editState && editState.turmaId) || (allTurmas[0] && allTurmas[0].id) || null;
+  const turmaOpts = (allTurmas||[]).map(t=>`<option value="${t.id}" ${t.id===turmaId?'selected':''}>${esc(t.name)}</option>`).join('')
+    || '<option value="">(sem turmas)</option>';
+  const alunos = (cachedUsersList||[])
+    .filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId)
+    .sort((x,y)=> String(atvNomeAluno(x)).localeCompare(String(atvNomeAluno(y))));
+  const linhas = alunos.map(u=>`
+    <div class="rel-aluno-row">
+      <span class="rel-aluno-nome">${esc(atvNomeAluno(u))}${(u.profile&&u.profile.ra)?` · RA ${esc(u.profile.ra)}`:''}</span>
+      <button type="button" class="btn-tiny btn-approve" data-action="rel-aluno-pdf" data-uid="${u.id}">🖨 PDF</button>
+      <button type="button" class="btn-tiny btn-approve" data-action="rel-aluno-csv" data-uid="${u.id}">⬇ CSV</button>
+    </div>`).join('') || '<p class="painel-vazio">Nenhum aluno nesta turma.</p>';
+  return `<div class="editor-form">
+    <div class="editing-type-banner">👤 Relatório individual</div>
+    <div class="hint">Um documento por aluno, com tudo que ele registrou nesta matéria: presença encontro a encontro, entregas, notas, feedback e o registro de acesso. É o que se leva para uma conversa individual ou para justificar uma decisão de frequência.</div>
+    <div class="atv-turma-row"><label>Turma</label><select id="rel-turma-select">${turmaOpts}</select></div>
+    ${linhas}
+    <div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">Fechar</button></div>
+  </div>`;
+}
+function relAlunoHtml(d, u){
+  const aulasTotais = d.chamadas.reduce((s,r)=>s+aulasDoRegistro(r), 0);
+  const aulasFalta = d.chamadas.reduce((s,r)=> s + (alunoFaltouNaChamada(u,r) ? aulasDoRegistro(r) : 0), 0);
+  const pct = aulasTotais ? Math.round(((aulasTotais-aulasFalta)/aulasTotais)*100) : null;
+  const presencas = d.chamadas.map(r=>{
+    const faltou = alunoFaltouNaChamada(u, r);
+    const b = COURSE.find(x=>(x.aulas||[]).some(a=>a.id===r.aulaId));
+    const a = b && (b.aulas||[]).find(x=>x.id===r.aulaId);
+    return `<tr><td>${esc(dataBR(r.date))}</td><td>${a?esc(rotuloAula(a)+' — '+a.title):'—'}</td><td>${aulasDoRegistro(r)}</td><td class="${faltou?'falta':'presenca'}">${faltou?'FALTA':'presente'}</td></tr>`;
+  }).join('');
+  const entregas = d.atividades.map(at=>{
+    const info = d.secaoPorId[at.sectionId];
+    if(!info) return '';
+    const sec = info.sec;
+    const resp = (d.respostaPorSecao[at.sectionId]||{})[u.id];
+    const agenda = d.prazoPorSecao[at.sectionId];
+    const g = (resp && resp.grading && resp.grading.published) ? resp.grading : null;
+    const sit = relSituacao(resp, agenda);
+    const questoes = (sec.items||[]).map((it,i)=>{
+      const valor = (resp && resp.answers) ? resp.answers[it.itemId] : undefined;
+      const pi = g && g.perItem ? (g.perItem[it.itemId]||{}) : {};
+      return `<h3>${i+1}. ${esc(it.prompt||'')}${pi.points!=null?` <span class="nota">${esc(String(pi.points))} / ${atvItemMaxPoints(it)}</span>`:''}</h3>
+        <div class="resposta">${renderAtividadeAnswerReadonly(it, valor)}</div>
+        ${pi.feedback?`<div class="fb"><strong>Feedback:</strong> ${esc(pi.feedback)}</div>`:''}`;
+    }).join('');
+    return `<h2>${esc(at.title)} <span style="font-weight:normal;font-size:10px;color:#666;">(Aula ${at.aulaNum})</span> — <span class="${sit==='Entregue no prazo'?'presenca':(sit==='Fora do prazo'?'atraso':'naoentregue')}">${sit}</span>${(g&&g.score!=null)?` — <span class="nota">Nota ${esc(String(g.score))}${g.maxScore!=null?' / '+esc(String(g.maxScore)):''}</span>`:''}</h2>${questoes}`;
+  }).join('');
+  const acessos = (u.sessions||[]).slice(-20).reverse().map(s=>{
+    const v = visitasDaSessao(s.visited);
+    return `<tr><td>${esc(fmtDateTime(s.loginAt))}</td><td>${s.durationMin!=null?s.durationMin+' min':'—'}</td><td>${esc(v.map(x=>x.aula).join(' · ')||'—')}</td></tr>`;
+  }).join('') || '<tr><td colspan="3">Nenhum acesso registrado.</td></tr>';
+  return `<h2>Resumo</h2>
+    <table><tr><th>Turma</th><th>Faltas (aulas)</th><th>Aulas dadas</th><th>Presença</th></tr>
+      <tr><td>${esc(d.turma.name)}</td><td class="${(pct!=null&&pct<75)?'falta':''}">${aulasFalta}</td><td>${aulasTotais}</td><td class="${(pct!=null&&pct<75)?'falta':''}">${pct==null?'—':pct+'%'}</td></tr></table>
+    <h2>Presença encontro a encontro</h2>
+    <table><tr><th>Data</th><th>Aula</th><th>Aulas</th><th>Situação</th></tr>${presencas || '<tr><td colspan="4">Nenhuma chamada lançada.</td></tr>'}</table>
+    <h2 class="quebra">Entregas e notas</h2>
+    ${entregas || '<p>Nenhuma atividade nesta matéria.</p>'}
+    <h2 class="quebra">Registro de acesso (20 mais recentes)</h2>
+    <table><tr><th>Entrou em</th><th>Duração</th><th>Navegou por</th></tr>${acessos}</table>`;
+}
+function relAlunoCsv(d, u){
+  const linhas = [['Relatório individual'], ['Aluno', atvNomeAluno(u)], ['RA', (u.profile&&u.profile.ra)||''],
+                  ['Turma', d.turma.name], ['Matéria', d.materia], []];
+  linhas.push(['PRESENÇA']);
+  linhas.push(['Data','Aula','Aulas no encontro','Situação']);
+  d.chamadas.forEach(r=>{
+    const b = COURSE.find(x=>(x.aulas||[]).some(a=>a.id===r.aulaId));
+    const a = b && (b.aulas||[]).find(x=>x.id===r.aulaId);
+    linhas.push([dataBR(r.date), a?(rotuloAula(a)+' — '+a.title):'', String(aulasDoRegistro(r)),
+                 alunoFaltouNaChamada(u,r)?'FALTA':'presente']);
+  });
+  linhas.push([]);
+  linhas.push(['ENTREGAS E NOTAS']);
+  linhas.push(['Atividade','Aula','Situação','Questão','Enunciado','Resposta','Nota','Vale','Feedback']);
+  d.atividades.forEach(at=>{
+    const info = d.secaoPorId[at.sectionId];
+    if(!info) return;
+    const resp = (d.respostaPorSecao[at.sectionId]||{})[u.id];
+    const agenda = d.prazoPorSecao[at.sectionId];
+    const g = (resp && resp.grading && resp.grading.published) ? resp.grading : null;
+    (info.sec.items||[]).forEach((it,i)=>{
+      const pi = g && g.perItem ? (g.perItem[it.itemId]||{}) : {};
+      linhas.push([at.title, 'Aula '+at.aulaNum, relSituacao(resp, agenda), String(i+1), it.prompt||'',
+                   respostaComoTexto(it, (resp&&resp.answers)?resp.answers[it.itemId]:undefined),
+                   pi.points!=null?String(pi.points):'', String(atvItemMaxPoints(it)), pi.feedback||'']);
+    });
+  });
+  return linhas;
+}
+
+// ---------- RELATÓRIO POR MATÉRIA ----------
+// Visão do curso, não das pessoas: o que foi construído, o que foi dado, o que
+// os alunos acessaram e onde estão os buracos.
+function relatoriosPorMateriaHtml(){
+  if(cachedUsersList===null || ATV_BOLETIM_DATA===null || DIARIO_TODOS===null){
+    return `<div class="editor-form"><p>Carregando dados da matéria…</p></div>`;
+  }
+  const atividades = collectAllAtividades();
+  const totalAulas = COURSE.reduce((s,b)=>s+(b.aulas||[]).length, 0);
+  const totalSecoes = COURSE.reduce((s,b)=>s+(b.aulas||[]).reduce((t,a)=>t+((a.sections||[]).length),0), 0);
+  const chamadas = (DIARIO_TODOS||[]).length;
+  const respostas = (ATV_BOLETIM_DATA||[]).length;
+  const corrigidas = (ATV_BOLETIM_DATA||[]).filter(r=>r.grading && r.grading.published).length;
+  return `<div class="editor-form">
+    <div class="editing-type-banner">📚 Relatório da matéria</div>
+    <div class="hint">Visão do curso, não das pessoas: quanto foi construído, quanto foi dado e quanto os alunos usaram. Serve para o relatório de fim de semestre e para enxergar onde faltou movimento.</div>
+    <div class="stats-cards">
+      <div class="stat-card"><div class="stat-big">${totalAulas}</div><div class="stat-label">aulas no curso</div></div>
+      <div class="stat-card"><div class="stat-big">${totalSecoes}</div><div class="stat-label">seções de conteúdo</div></div>
+      <div class="stat-card"><div class="stat-big">${atividades.length}</div><div class="stat-label">atividades criadas</div></div>
+      <div class="stat-card"><div class="stat-big">${chamadas}</div><div class="stat-label">chamadas lançadas</div></div>
+      <div class="stat-card"><div class="stat-big">${respostas}</div><div class="stat-label">respostas recebidas</div></div>
+      <div class="stat-card"><div class="stat-big">${corrigidas}</div><div class="stat-label">correções publicadas</div></div>
+    </div>
+    <div class="rel-card-acoes" style="margin-top:16px;">
+      <button type="button" class="btn-secondary" data-action="rel-materia-pdf">🖨 PDF</button>
+      <button type="button" class="btn-secondary" data-action="rel-materia-csv">⬇ Planilha (CSV)</button>
+    </div>
+    <div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">Fechar</button></div>
+  </div>`;
+}
+function relMateriaHtml(){
+  const atividades = collectAllAtividades();
+  const linhasAulas = COURSE.map(b=>(b.aulas||[]).map(a=>{
+    const secs = (a.sections||[]).length;
+    const temAtv = (a.sections||[]).some(s=>s.type==='atividade');
+    const chamadasDaAula = (DIARIO_TODOS||[]).filter(r=>r.aulaId===a.id).length;
+    return `<tr><td>${esc(rotuloAula(a))}</td><td>${esc(a.title)}</td><td>${secs}</td><td>${temAtv?'sim':'—'}</td><td>${chamadasDaAula}</td><td>${a.hidden?'oculta':'visível'}</td></tr>`;
+  }).join('')).join('');
+  const linhasAtv = atividades.map(at=>{
+    const respostas = (ATV_BOLETIM_DATA||[]).filter(r=>r.sectionId===at.sectionId);
+    const entregues = respostas.filter(r=>r.submittedAt).length;
+    const publicadas = respostas.filter(r=>r.grading && r.grading.published).length;
+    const notas = respostas.filter(r=>r.grading && r.grading.published && r.grading.score!=null).map(r=>r.grading.score);
+    const media = notas.length ? (notas.reduce((s,x)=>s+x,0)/notas.length).toFixed(2).replace('.',',') : '—';
+    return `<tr><td>Aula ${at.aulaNum}</td><td>${esc(at.title)}</td><td>${at.itemCount}</td><td>${entregues}</td><td>${publicadas}</td><td>${media}</td></tr>`;
+  }).join('') || '<tr><td colspan="6">Nenhuma atividade criada.</td></tr>';
+  return `<h2>Aulas do curso</h2>
+    <table><tr><th>Aula</th><th>Título</th><th>Seções</th><th>Tem atividade</th><th>Chamadas</th><th>Visibilidade</th></tr>${linhasAulas}</table>
+    <h2 class="quebra">Atividades e aproveitamento</h2>
+    <table><tr><th>Aula</th><th>Atividade</th><th>Questões</th><th>Entregues</th><th>Corrigidas</th><th>Nota média</th></tr>${linhasAtv}</table>`;
+}
+function relMateriaCsv(){
+  const atividades = collectAllAtividades();
+  const linhas = [['AULAS DO CURSO'], ['Aula','Título','Seções','Tem atividade','Chamadas','Visibilidade']];
+  COURSE.forEach(b=>(b.aulas||[]).forEach(a=>{
+    linhas.push([rotuloAula(a), a.title||'', String((a.sections||[]).length),
+                 (a.sections||[]).some(s=>s.type==='atividade')?'sim':'nao',
+                 String((DIARIO_TODOS||[]).filter(r=>r.aulaId===a.id).length),
+                 a.hidden?'oculta':'visivel']);
+  }));
+  linhas.push([]);
+  linhas.push(['ATIVIDADES E APROVEITAMENTO']);
+  linhas.push(['Aula','Atividade','Questões','Entregues','Corrigidas','Nota média']);
+  atividades.forEach(at=>{
+    const respostas = (ATV_BOLETIM_DATA||[]).filter(r=>r.sectionId===at.sectionId);
+    const notas = respostas.filter(r=>r.grading && r.grading.published && r.grading.score!=null).map(r=>r.grading.score);
+    linhas.push(['Aula '+at.aulaNum, at.title, String(at.itemCount),
+                 String(respostas.filter(r=>r.submittedAt).length),
+                 String(respostas.filter(r=>r.grading && r.grading.published).length),
+                 notas.length ? (notas.reduce((s,x)=>s+x,0)/notas.length).toFixed(2).replace('.',',') : '']);
+  });
+  return linhas;
+}
+
 function relatorioFaltasHtml(){
   if(allTurmas===null || cachedUsersList===null || DIARIO_TODOS===null){
     return `<div class="editor-form"><div class="editing-type-banner">📄 Relatório de faltas</div><p>Carregando…</p></div>`;
@@ -5876,7 +6355,7 @@ function atvAnaliseHtml(sec, ctx){
       const saved = (eff.perItem||{})[it.itemId] || {};
       let pts = (saved.points!=null && saved.points!=='') ? Number(saved.points) : null;
       if(pts === null){
-        const auto = autoGradeClosedItem(it, (resp.answers||{})[it.itemId]);
+        const auto = atvAutoDoItem(it, (resp.answers||{})[it.itemId], ctx.autoLiberado);
         if(auto) pts = auto.points;
       }
       if(pts === null){ semCorrecao++; }
@@ -5999,9 +6478,13 @@ async function atvSaveDraft(uid, perItemPartial, commentParas){
 }
 // Publica a correção: consolida rascunho + gabarito, escreve na resposta do aluno
 // (que ele lê) e apaga o rascunho.
+// A publicação usa a MESMA regra de liberação da tela. Se o gabarito
+// automático ainda não entrou (prazo aberto), ele também não entra aqui —
+// senão a nota publicada seria diferente da que você conferiu.
 async function atvPublishForStudent(sec, uid){
   const resp = (ATV_MANAGE_RESPONSES||[]).find(r=>r.studentUid===uid) || {};
   const draft = (ATV_MANAGE_DRAFTS||{})[uid];
+  const ctxPub = atvManageContext();
   const eff = atvEffectiveGrading(resp, draft);
   const answers = resp.answers || {};
   const perItem = {};
@@ -6011,7 +6494,7 @@ async function atvPublishForStudent(sec, uid){
     let pts = (saved.points!=null && saved.points!=='') ? Number(saved.points) : null;
     let verdict = saved.verdict || null;
     if(pts===null){
-      const auto = autoGradeClosedItem(it, answers[it.itemId]);
+      const auto = atvAutoDoItem(it, answers[it.itemId], atvAutoLiberada(ctxPub.schedule));
       if(auto){ pts = auto.points; verdict = auto.correct ? 'certo' : ((auto.partial && auto.partial.ok>0) ? 'parcial' : 'errado'); }
     }
     perItem[it.itemId] = {verdict, points: (pts==null||isNaN(pts))?null:pts, feedback: saved.feedback||null};
@@ -6497,6 +6980,85 @@ function diarioFrequenciaForm(){
   </div>`;
 }
 
+// ===== TELA ÚNICA DE CORREÇÃO (v4.12.0) =====
+// Antes eram 5 abas (Painel / Por aluno / Por questão / Análise / Prazo). Duas
+// delas eram só leitura e três precisavam ser visitadas em sequência pra você
+// entender o estado da correção — o que fez a tela ficar confusa exatamente
+// quando ela mais precisa ser óbvia: no meio da correção.
+//
+// Agora é uma tela só. O topo responde "onde estou" (números + situação do
+// prazo), a faixa seguinte responde "o que falta" (fila de pendências, com
+// botão que pula pro próximo), e abaixo vem o trabalho em si — por aluno ou
+// por questão, que é a única escolha que sobrou. Análise e Prazo viraram
+// blocos recolhidos: continuam ali, mas não competem com a correção.
+function atvBannerCorrecao(sec, ctx, pend){
+  const janela = atvJanelaPrazo(ctx.schedule);
+  if(!ctx.schedule || (!ctx.schedule.opensAt && !ctx.schedule.closesAt)){
+    return `<div class="corr-banner corr-banner-aviso">
+      <span>⚠️ <strong>Sem prazo cadastrado para esta turma.</strong> Enquanto não houver data de fechamento, a atividade nunca "vence" — e por isso a correção automática das questões fechadas não entra sozinha. Cadastre o prazo em <em>Prazo e visibilidade</em>, logo abaixo, ou use “Aplicar gabarito a todos” quando quiser corrigir na mão.</span>
+    </div>`;
+  }
+  if(janela==='antes'){
+    return `<div class="corr-banner corr-banner-limpo">
+      <span>📅 <strong>O prazo ainda não abriu.</strong> Os alunos ainda não podem responder. A correção automática das questões fechadas entra quando o prazo fechar.</span>
+    </div>`;
+  }
+  if(janela==='dentro'){
+    return `<div class="corr-banner corr-banner-limpo">
+      <span>🟢 <strong>Prazo aberto — a turma ainda está respondendo.</strong> As notas das questões fechadas só são calculadas depois que o prazo fechar, para você não corrigir em cima de resposta que ainda vai mudar.</span>
+    </div>`;
+  }
+  if(!ctx.autoLiberado){
+    return `<div class="corr-banner corr-banner-aviso">
+      <span>⏳ <strong>Prazo encerrado, mas a matéria aceita entrega fora do prazo.</strong> Como ainda podem chegar respostas novas, a correção automática segue esperando. Mude isso em Configurações do curso se quiser fechar de vez.</span>
+    </div>`;
+  }
+  return `<div class="corr-banner corr-banner-rascunho">
+    <span>✨ <strong>Prazo encerrado — correção automática ativa.</strong> As questões fechadas com gabarito já estão pontuadas abaixo. Falta você fechar as abertas e publicar.</span>
+  </div>`;
+}
+function atvResumoTopoHtml(sec, ctx, pend){
+  const maxTotal = atvMaxScore(sec);
+  let entregou=0, rascunhos=0, publicadas=0, soma=0, comNota=0;
+  ctx.alunos.forEach(u=>{
+    const r = ctx.responsesByUid[u.id], d = ctx.draftsByUid[u.id];
+    const st = computeActivityStatus(r, ctx.schedule, d);
+    if(r && r.answers && Object.keys(r.answers).length) entregou++;
+    if(st==='corrigindo') rascunhos++;
+    if(st==='publicada') publicadas++;
+    const t = atvComputeStudentTotal(sec, r, d, ctx.autoLiberado);
+    if(t.any){ soma += t.total; comNota++; }
+  });
+  const media = comNota ? Math.round((soma/comNota)*100)/100 : null;
+  const m = (n,rot,alerta)=>`<div class="corr-metrica"><div class="corr-metrica-num ${alerta?'alerta':''}">${n}</div><div class="corr-metrica-rot">${rot}</div></div>`;
+  return {
+    html: `<div class="corr-topo">
+      <div class="corr-metricas">
+        ${m(`${entregou}/${ctx.alunos.length}`, 'entregaram')}
+        ${m(pend.total, 'questões a corrigir', pend.total>0)}
+        ${m(publicadas, 'notas publicadas')}
+        ${m(media!=null?media:'—', `média (de ${maxTotal})`)}
+      </div>
+      <div class="atv-bulk-actions">
+        <button type="button" class="btn-secondary" data-action="atv-bulk-autograde" title="Preenche a correção das questões fechadas que têm gabarito cadastrado, para todos os alunos que responderam. Fica como rascunho — nada é publicado ainda.">✨ Aplicar gabarito a todos</button>
+        <button type="button" class="btn-secondary" data-action="atv-bulk-zero-missing" title="Lança 0 em todas as questões dos alunos que não responderam nada. Fica como rascunho.">0️⃣ Zerar quem não respondeu</button>
+        <button type="button" class="btn-primary" data-action="atv-bulk-publish" title="Publica todas as correções em rascunho desta turma de uma vez — a partir daí os alunos veem nota e feedback.">📤 Publicar tudo (${rascunhos})</button>
+      </div>
+    </div>`,
+    rascunhos
+  };
+}
+function atvFilaHtml(sec, ctx, pend){
+  if(!ctx.alunos.length) return '';
+  if(pend.total===0){
+    return `<div class="corr-fila"><span>✅ <strong>Nada pendente.</strong> Toda questão entregue já tem nota (sua ou do gabarito). Se ainda houver rascunho, use “Publicar tudo” acima.</span></div>`;
+  }
+  const nomeAluno = pend.primeiroAluno ? atvNomeAluno((ctx.alunos.find(u=>u.id===pend.primeiroAluno)||{})) : '';
+  return `<div class="corr-fila">
+    <span>📝 Faltam <strong>${pend.total} questão(ões)</strong> sem nota${nomeAluno?`. A próxima é de <strong>${esc(nomeAluno)}</strong>`:''}.</span>
+    <button type="button" class="btn-primary" data-action="atv-ir-pendente">▶ Ir para a próxima pendente</button>
+  </div>`;
+}
 function atividadeManageForm(){
   const es = editState;
   const b = COURSE.find(x=>x.num===es.blockNum);
@@ -6507,16 +7069,13 @@ function atividadeManageForm(){
     return `<div class="editor-form"><div class="editing-type-banner">📋 ${esc(sec.title||'Atividade')}</div><p>Carregando respostas da turma…</p></div>`;
   }
   const ctx = atvManageContext();
-  const tab = es.tab || 'painel';
+  const pend = atvPendencias(sec, ctx);
+  const modo = (es.tab==='questao') ? 'questao' : 'aluno';
   const turmaOptions = allTurmas.map(t=>`<option value="${t.id}" ${t.id===ctx.turmaId?'selected':''}>${esc(t.name)}</option>`).join('')
     || '<option value="">(sem turmas)</option>';
-  const tabBtn = (id,label)=>`<button class="users-tab ${tab===id?'active':''}" data-action="atv-set-tab" data-tab="${id}">${label}</button>`;
-  let body = '';
-  if(tab==='painel') body = atvPainelHtml(sec, ctx);
-  else if(tab==='aluno') body = atvPorAlunoHtml(sec, ctx);
-  else if(tab==='questao') body = atvPorQuestaoHtml(sec, ctx);
-  else if(tab==='analise') body = atvAnaliseHtml(sec, ctx);
-  else body = atvPrazoHtml(sec, ctx);
+  const topo = atvResumoTopoHtml(sec, ctx, pend);
+  const corpo = (modo==='questao') ? atvPorQuestaoHtml(sec, ctx) : atvPorAlunoHtml(sec, ctx);
+  const modoBtn = (id,label,dica)=>`<button type="button" class="${modo===id?'ativo':''}" data-action="atv-set-tab" data-tab="${id}" title="${escAttr(dica)}">${label}</button>`;
 
   return `<div class="editor-form">
     <div class="editing-type-banner">📋 Corrigir atividade — ${esc(sec.title||'(sem título)')}</div>
@@ -6525,13 +7084,27 @@ function atividadeManageForm(){
       <label>Turma</label>
       <select id="atv-manage-turma-select">${turmaOptions}</select>
     </div>
-    <div class="users-tabs">
-      ${tabBtn('painel','📊 Painel')}${tabBtn('aluno','👤 Por aluno')}${tabBtn('questao','📝 Por questão')}${tabBtn('analise','📈 Análise')}${tabBtn('prazo','⏰ Prazo')}
+    ${topo.html}
+    ${atvBannerCorrecao(sec, ctx, pend)}
+    ${atvFilaHtml(sec, ctx, pend)}
+    <div class="corr-modo">
+      ${modoBtn('aluno','👤 Corrigir por aluno','Abre um aluno por vez, com todas as questões dele — bom para dar nota e feedback pessoal.')}
+      ${modoBtn('questao','📝 Corrigir por questão','Mostra a mesma questão de todos os alunos lado a lado — bom para manter o critério igual.')}
     </div>
-    <div class="atv-tab-body">${body}</div>
+    <div class="atv-tab-body">${corpo}</div>
+    <details class="corr-extra">
+      <summary>📈 Análise das respostas</summary>
+      <div class="corr-extra-corpo">${atvAnaliseHtml(sec, ctx)}</div>
+    </details>
+    <details class="corr-extra">
+      <summary>⏰ Prazo e visibilidade</summary>
+      <div class="corr-extra-corpo">${atvPrazoHtml(sec, ctx)}</div>
+    </details>
     <div class="editor-actions">
       <button class="btn-secondary" data-action="cancel-edit">← Voltar para a aula</button>
       <button class="btn-secondary" data-action="open-atividades-central">🗂️ Central de Atividades</button>
+      <button class="btn-secondary" data-action="atv-export-csv">⬇ Exportar CSV</button>
+      <button class="btn-secondary" data-action="open-atv-boletim">📊 Boletim da turma</button>
     </div>
   </div>`;
 }
@@ -6542,7 +7115,7 @@ function renderAulaPicker(){
     <div class="picker-block-title">${blocoRotulo(b)}</div>
     ${b.aulas.filter(a=>isAdmin || !a.hidden).map(a => `
       <button class="picker-item ${a.isPractice?'practice':''} ${a.hidden?'is-hidden':''} ${(b.num===state.block && a.num===state.aula)?'current':''}" data-block="${b.num}" data-aula="${a.num}" role="menuitem">
-        <span class="n">${numeroAula(a)}</span><span>${esc(a.title)}${a.hidden?' <em>(oculta)</em>':''}</span>
+        <span class="n">${numeroAula(a)}</span><span>${esc(a.title)}${(isAdmin && aulaJaMinistrada(a.id))?' <span class="nav-aula-dada" title="Aula já ministrada">✓</span>':''}${a.hidden?' <em>(oculta)</em>':''}</span>
       </button>`).join('')}
   `).join('');
   el.querySelectorAll('.picker-item').forEach(btn=>{
@@ -8396,7 +8969,13 @@ const GESTAO_GRUPOS = {
   alunos:      {rotulo:'Alunos',        icone:'group',           abas:{
                   ativos:'Ativos', arquivados:'Arquivados',
                   boletim:'Boletim', frequencia:'Frequência',
-                  relatorios:'Relatórios', estatisticas:'Estatísticas'}},
+                  estatisticas:'Estatísticas'}},
+  // ALTERADO (v4.11.1) — Relatórios saiu de dentro de Alunos e virou grupo.
+  // A razão: relatório não é assunto "de aluno". Ele cruza aluno, turma,
+  // atividade e frequência — ficar pendurado num dos assuntos escondia os
+  // outros. Como grupo, ele tem espaço para crescer por recorte.
+  relatorios:  {rotulo:'Relatórios',    icone:'summarize',       abas:{
+                  turma:'Por turma', aluno:'Por aluno', materia:'Por matéria'}},
   turmas:      {rotulo:'Turmas',        icone:'groups',          abas:{
                   ativos:'Turmas', estatisticas:'Estatísticas'}},
   professores: {rotulo:'Professores',   icone:'school',          soMaster:true, abas:{
@@ -8413,7 +8992,7 @@ const GESTAO_GRUPOS = {
 };
 
 // Abas que so fazem sentido com UMA materia escolhida.
-const ABAS_COM_MATERIA = ['boletim','frequencia','organizar','ia','atividades','avaliacao'];
+const ABAS_COM_MATERIA = ['boletim','frequencia','organizar','ia','atividades','avaliacao','turma','aluno','materia'];
 // Abas exclusivas do master, mesmo dentro de um grupo que outros papeis acessam
 // (ex.: dentro de Configurações, so o master mexe na identidade institucional —
 // e um professor eventual so mexe no que e dele: Geral, Minha conta, Modo Aula).
@@ -8536,8 +9115,6 @@ function gestaoScreenForm(){
       corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + atividadesBoletimForm();
     } else if(aba === 'frequencia'){
       corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + diarioFrequenciaForm();
-    } else if(aba === 'relatorios'){
-      corpo = relatoriosCentralHtml() + relatorioFaltasHtml();
     } else if(aba === 'estatisticas'){
       corpo = `<div class="editor-form">
         <div class="gestao-sub">Quem procurar esta semana</div>
@@ -8549,6 +9126,13 @@ function gestaoScreenForm(){
       usersViewMode = (aba === 'arquivados') ? 'archived' : 'active';
       corpo = usersScreenForm();
     }
+  }
+  // ---------- RELATÓRIOS ----------
+  else if(grupo === 'relatorios'){
+    corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>`;
+    if(aba === 'aluno')        corpo += relatoriosPorAlunoHtml();
+    else if(aba === 'materia') corpo += relatoriosPorMateriaHtml();
+    else                       corpo += relatoriosCentralHtml();
   }
   // ---------- TURMAS ----------
   else if(grupo === 'turmas'){
@@ -9271,6 +9855,12 @@ function blankSection(type){
 
 function render(){
   updateViewAsButtonLabel();
+  // Sem o salvamento automático (v4.12.1), qualquer redesenho da tela
+  // reconstruiria os campos a partir do cache e apagaria o que o aluno digitou
+  // e ainda não salvou. Então, antes de redesenhar, o que está no DOM é
+  // copiado para o cache em memória. Isso NÃO grava no banco — só impede que
+  // um redesenho engula texto digitado.
+  preservarRespostasNaoSalvas();
   // Safety net: if the current state points to a block/aula that no longer exists
   // (e.g., just deleted), or to a hidden aula while not in admin mode, fall back
   // to the first available (visible) aula in the course.
@@ -9360,7 +9950,8 @@ function render(){
     // Cada aba busca so o que ela usa — carregar tudo sempre deixaria as
     // abas simples (listas) lentas sem motivo.
     const abaAtual = editState.aba;
-    if(abaAtual === 'boletim' || abaAtual === 'estatisticas' || abaAtual === 'relatorios'){
+    const abaDeRelatorio = (editState.grupo === 'relatorios');
+    if(abaDeRelatorio || abaAtual === 'boletim' || abaAtual === 'estatisticas'){
       if(ATV_BOLETIM_DATA===null){
         fetchAllActivityResponses().then(l=>{ ATV_BOLETIM_DATA = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ ATV_BOLETIM_DATA = []; });
       }
@@ -9371,7 +9962,7 @@ function render(){
     }
     // ALTERADO (v4.10.0) — o boletim passou a mostrar frequencia tambem,
     // entao precisa dos registros de chamada, nao so das respostas.
-    if(abaAtual === 'boletim' || abaAtual === 'frequencia' || abaAtual === 'estatisticas' || abaAtual === 'relatorios'){
+    if(abaDeRelatorio || abaAtual === 'boletim' || abaAtual === 'frequencia' || abaAtual === 'estatisticas'){
       if(DIARIO_TODOS===null){
         fetchDiarioCompleto().then(l=>{ DIARIO_TODOS = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ DIARIO_TODOS = []; });
       }
@@ -9525,6 +10116,14 @@ function render(){
   }
   if(editState && editState.kind==='atividadesCentral'){
     content.innerHTML = comCabecalho('atividadesCentral', atividadesCentralForm());
+    // A central agora agrupa por situacao, e situacao depende de prazos +
+    // respostas — por isso ela passou a carregar os dois (v4.12.0).
+    if(ATV_BOLETIM_DATA===null){
+      fetchAllActivityResponses().then(l=>{ ATV_BOLETIM_DATA = l; if(editState && editState.kind==='atividadesCentral') render(); }).catch(()=>{ ATV_BOLETIM_DATA = []; });
+    }
+    if(ATV_BOLETIM_SCHEDULES===null){
+      fetchAllActivitySchedules().then(l=>{ ATV_BOLETIM_SCHEDULES = l; if(editState && editState.kind==='atividadesCentral') render(); }).catch(()=>{ ATV_BOLETIM_SCHEDULES = []; });
+    }
     return;
   }
   if(editState && editState.kind==='diarioAula'){
@@ -9753,6 +10352,7 @@ function render(){
       ${(!realIsAdmin && currentUser && STUDENT_PROGRESS)?`<div class="aula-seen-toggle-row">
         <button class="aula-seen-toggle ${STUDENT_PROGRESS.seen[a.id]?'is-seen':''}" data-action="toggle-aula-seen">${STUDENT_PROGRESS.seen[a.id]?'✓ Aula assistida':'○ Marcar como assistida'}</button>
       </div>`:''}
+      ${isAdminNaTela() ? barraMinistradaHtml(a) : ''}
       ${a.updatedAt?`<div class="aula-updated-at">Atualizado em ${new Date(a.updatedAt).toLocaleDateString('pt-BR')}</div>`:''}
       ${(isAdminNaTela() && a.roteiro)?`
       <details class="roteiro-professor">
@@ -9839,6 +10439,17 @@ function render(){
   updateNavFabs();
   wireImageSizeFields();
   wireTypeDescription();
+  reaplicarMarcaDeAlteracao();
+  // A barra "aula ministrada" precisa do registro e da lista de turmas. Os dois
+  // são leitura única por sessão e só para a equipe — o aluno nunca dispara.
+  if(isAdminNaTela() && firebaseReady && activeSubjectId){
+    if(AULAS_MINISTRADAS===null && !MINISTRADAS_CARREGANDO){
+      carregarAulasMinistradas().then(()=>render()).catch(()=>{});
+    }
+    if(allTurmas===null){
+      fetchTurmas().then(()=>render()).catch(()=>{ allTurmas = []; });
+    }
+  }
   
   document.getElementById('progress-pill-text').textContent =
     (state.aula === 0) ? 'Apresentação da disciplina' : `Aula ${globalAulaNumber()} de ${totalAulas()}`;
@@ -10040,25 +10651,42 @@ function showPlacementLineAt(targetEl, before){
 // A conta é feita sobre a lista inteira, não sobre a seção sob o cursor:
 // o índice de inserção é quantas seções têm o seu MEIO acima do ponteiro.
 // Assim, arrastar para qualquer lugar do vão dá sempre o mesmo resultado.
+// CORRIGIDO (v4.11.2) — a conta misturava dois tipos de índice.
+//
+// Nem toda seção da aula é desenhada na tela: uma imagem encaixada num texto
+// aparece DENTRO dele, não como seção própria. Então a lista visível tem menos
+// itens que a lista real. O cálculo anterior devolvia a posição na lista
+// VISÍVEL, e a movimentação era feita na lista REAL — a cada imagem encaixada
+// acima do ponto de destino, a seção caía uma casa fora do lugar.
+//
+// Agora a posição é sempre a da lista real: cada seção desenhada já carrega o
+// próprio índice verdadeiro (data-section-idx), e é ele que usamos. A linha na
+// tela e o destino final passam a falar a mesma língua.
 function calcularInsercaoSecao(clientY){
   const secoes = [...document.querySelectorAll('#content .section[data-section-idx]')]
-    .sort((x,y)=> (+x.dataset.sectionIdx) - (+y.dataset.sectionIdx));
+    .map(el=>({el, idx: +el.dataset.sectionIdx}))
+    .filter(s=>!isNaN(s.idx))
+    .sort((x,y)=> x.idx - y.idx);
   if(!secoes.length) return null;
-  let indice = secoes.length;
-  for(let i=0; i<secoes.length; i++){
-    const r = secoes[i].getBoundingClientRect();
-    if(clientY < r.top + r.height/2){ indice = i; break; }
+  const bAtual = COURSE.find(x=>x.num===state.block);
+  const aAtual = bAtual && bAtual.aulas.find(x=>x.num===state.aula);
+  const total = (aAtual && aAtual.sections) ? aAtual.sections.length : secoes.length;
+  let destino = total;                       // nada abaixo do cursor: vai para o fim
+  for(const s of secoes){
+    const r = s.el.getBoundingClientRect();
+    if(clientY < r.top + r.height/2){ destino = s.idx; break; }
   }
-  return {indice, secoes};
+  return {destino, secoes};
 }
-// Desenha a linha no MEIO do vão correspondente ao índice — um lugar só,
+// Desenha a linha no MEIO do vão correspondente ao destino — um lugar só,
 // nem colada embaixo de uma seção nem colada em cima da seguinte.
-function mostrarLinhaNoVao(indice, secoes){
+function mostrarLinhaNoVao(destino, secoes){
   const line = ensurePlacementLine();
-  const anterior = secoes[indice-1] || null;
-  const proxima  = secoes[indice] || null;
-  const rAnt = anterior ? anterior.getBoundingClientRect() : null;
-  const rPro = proxima ? proxima.getBoundingClientRect() : null;
+  const proxima = secoes.find(s=>s.idx >= destino) || null;
+  const antes = secoes.filter(s=>s.idx < destino);
+  const anterior = antes.length ? antes[antes.length-1] : null;
+  const rAnt = anterior ? anterior.el.getBoundingClientRect() : null;
+  const rPro = proxima ? proxima.el.getBoundingClientRect() : null;
   let top;
   if(rAnt && rPro)      top = (rAnt.bottom + rPro.top) / 2;
   else if(rPro)         top = rPro.top - 6;
@@ -10086,8 +10714,8 @@ document.getElementById('content').addEventListener('dragover', (e)=>{
   e.preventDefault();
   const calc = calcularInsercaoSecao(e.clientY);
   if(!calc) return;
-  posicaoDestinoSecao = calc.indice;      // guardado para o drop
-  mostrarLinhaNoVao(calc.indice, calc.secoes);
+  posicaoDestinoSecao = calc.destino;     // índice na lista REAL, igual ao do drop
+  mostrarLinhaNoVao(calc.destino, calc.secoes);
 });
 document.getElementById('content').addEventListener('drop', async (e)=>{
   hidePlacementLine();
@@ -11412,8 +12040,8 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='atv-add-row'){
-    // Aluno adiciona uma linha numa questão do tipo "tabela" — fica só na memória
-    // (a tela) até o próximo autosave, sem precisar de ida e volta ao banco agora.
+    // Aluno adiciona uma linha numa questão do tipo "tabela" — fica só na
+    // memória (a tela) até ele clicar em Salvar, sem ida e volta ao banco.
     if(realIsAdmin || !currentUser) return;
     const secid = btn.dataset.secid, itemId = btn.dataset.itemId;
     const currentAnswers = collectAtividadeAnswersFromDom(secid);
@@ -11427,12 +12055,13 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const cache = ACTIVITY_DATA_CACHE[secid] = ACTIVITY_DATA_CACHE[secid] || {loaded:true, response:null, schedule:null};
     cache.response = cache.response || {};
     cache.response.answers = {...(cache.response.answers||{}), ...currentAnswers, [itemId]: rows};
+    ATV_SECOES_ALTERADAS.add(secid);   // linha nova também é alteração não salva (v4.12.1)
     render();
     return;
   }
   if(action==='open-atividade-manage'){
     const secid = btn.dataset.secid;
-    editState = {kind:'atividadeManage', blockNum: state.block, aulaNum: +btn.dataset.aula, sectionId: secid, turmaId: null, gradingUid: null, tab:'painel', questionIdx:0};
+    editState = {kind:'atividadeManage', blockNum: state.block, aulaNum: +btn.dataset.aula, sectionId: secid, turmaId: null, gradingUid: null, tab:'aluno', questionIdx:0};
     ATV_MANAGE_RESPONSES = null; ATV_MANAGE_SCHEDULES = {}; ATV_MANAGE_DRAFTS = null;
     render();
     return;
@@ -11450,7 +12079,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const blockNum = +btn.dataset.block, aulaNum = +btn.dataset.aula, secid = btn.dataset.secid;
     // Navega o estado da aula atual para a aula dona da atividade, pra "Voltar para a aula" fazer sentido
     state.block = blockNum; state.aula = aulaNum;
-    editState = {kind:'atividadeManage', blockNum, aulaNum, sectionId: secid, turmaId: null, gradingUid: null, tab:'painel', questionIdx:0};
+    editState = {kind:'atividadeManage', blockNum, aulaNum, sectionId: secid, turmaId: null, gradingUid: null, tab:'aluno', questionIdx:0};
     ATV_MANAGE_RESPONSES = null; ATV_MANAGE_SCHEDULES = {}; ATV_MANAGE_DRAFTS = null;
     render();
     return;
@@ -11500,6 +12129,31 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       pts.value = v==='certo' ? String(max) : (v==='parcial' ? String(Math.round(max*50)/100) : '0');
     }
     recalcAtvGradeTotal(btn.closest('.atv-grading-panel'));
+    return;
+  }
+  if(action==='atv-ir-pendente'){
+    // Leva o professor direto pra primeira questão sem nota, no modo em que
+    // ele já está: por aluno abre o painel do aluno, por questão pula pra
+    // questão. Sem isso, achar "o que falta" numa turma de 40 é caça ao tesouro.
+    const es = editState;
+    const b0 = COURSE.find(x=>x.num===es.blockNum);
+    const a0 = b0 && b0.aulas.find(x=>x.num===es.aulaNum);
+    const sec0 = a0 && (a0.sections||[]).find(s=>s.id===es.sectionId);
+    if(!sec0) return;
+    const ctx0 = atvManageContext();
+    const p0 = atvPendencias(sec0, ctx0);
+    if(p0.total===0){ alert('Nada pendente nesta turma — toda questão entregue já tem nota.'); return; }
+    if(es.tab==='questao'){
+      if(p0.primeiraQuestao!=null) es.questionIdx = p0.primeiraQuestao;
+    } else {
+      es.tab = 'aluno';
+      es.gradingUid = p0.primeiroAluno;
+    }
+    render();
+    setTimeout(()=>{
+      const alvo = document.querySelector('.atv-grading-panel') || document.querySelector('.atv-tab-body');
+      if(alvo) alvo.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 60);
     return;
   }
   if(action==='atv-set-tab'){
@@ -11781,7 +12435,18 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       DIARIO_REGISTROS.sort((x,y)=>String(x.date).localeCompare(String(y.date)));
       DIARIO_TODOS = null;
       editState.turmaId = turmaId; editState.date = date;
-      alert(`Registro salvo: ${payload.presentCount} presente(s), ${absences.length} falta(s).`);
+      // Registrar chamada É dar a aula. Marcar as duas coisas separadamente
+      // seria a mesma informação em dois lugares, com chance de discordarem —
+      // então o diário carimba a aula como ministrada, com a data dele.
+      // Falhar aqui não pode derrubar o salvamento da chamada, que é o
+      // que realmente importa: por isso o try/catch silencioso.
+      let avisoMinistrada = '';
+      try{
+        await carregarAulasMinistradas();
+        const ok = await setAulaMinistrada(aulaId, turmaId, true, date);
+        if(ok) avisoMinistrada = '\n\nA aula foi marcada como ministrada para esta turma em ' + date.split('-').reverse().join('/') + '.';
+      }catch(e){ console.error('Não consegui marcar a aula como ministrada:', e); }
+      alert(`Registro salvo: ${payload.presentCount} presente(s), ${absences.length} falta(s).` + avisoMinistrada);
     }catch(err){
       alert('Não foi possível salvar o registro: ' + (err && err.message ? err.message : String(err)));
     }
@@ -11809,6 +12474,24 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     });
     const t = (allTurmas||[]).find(x=>x.id===turmaId);
     baixarCsv(linhas, `frequencia-${(t&&t.name?t.name:'turma').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}.csv`);
+    return;
+  }
+  if(action==='rel-aluno-pdf' || action==='rel-aluno-csv'){
+    const turmaSel = document.getElementById('rel-turma-select');
+    const turmaId = (turmaSel && turmaSel.value) || (editState && editState.turmaId) || null;
+    const d = relatorioDados(turmaId);
+    if(d.erro){ alert(d.erro); return; }
+    const u = (cachedUsersList||[]).find(x=>x.id===btn.dataset.uid);
+    if(!u){ alert('Aluno não encontrado.'); return; }
+    const sub = `${d.materia ? d.materia + ' · ' : ''}Turma ${d.turma.name}`;
+    if(action==='rel-aluno-pdf') abrirRelatorioImpressao(atvNomeAluno(u), sub, relAlunoHtml(d, u));
+    else baixarCsv(relAlunoCsv(d, u), `relatorio-${String(atvNomeAluno(u)).replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`);
+    return;
+  }
+  if(action==='rel-materia-pdf' || action==='rel-materia-csv'){
+    const nomeMat = activeSubjectName || 'Matéria';
+    if(action==='rel-materia-pdf') abrirRelatorioImpressao('Relatório da matéria', nomeMat, relMateriaHtml());
+    else baixarCsv(relMateriaCsv(), `relatorio-materia-${String(nomeMat).replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`);
     return;
   }
   if(action==='rel-pdf' || action==='rel-csv'){
@@ -12513,7 +13196,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         const eff = atvEffectiveGrading(resp, draft);
         const saved = (eff.perItem||{})[it.itemId] || {};
         let pts = (saved.points!=null && saved.points!=='') ? Number(saved.points) : null;
-        if(pts===null){ const au = autoGradeClosedItem(it, (resp.answers||{})[it.itemId]); if(au) pts = au.points; }
+        if(pts===null){ const au = atvAutoDoItem(it, (resp.answers||{})[it.itemId], ctxA.autoLiberado); if(au) pts = au.points; }
         if(pts!==null){ comNota++; soma += pts; }
       });
       const pct = comNota && maxPts ? Math.round((soma/(comNota*maxPts))*100) : '';
@@ -12784,6 +13467,16 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='cancel-edit'){ editState=null; cachedUsersList=null; ATV_MANAGE_RESPONSES=null; ATV_MANAGE_SCHEDULES={}; ATV_MANAGE_DRAFTS=null; ATV_BOLETIM_DATA=null; ATV_BOLETIM_SCHEDULES=null; DIARIO_REGISTROS=null; DIARIO_TODOS=null; render(); return; }
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
+  if(action==='toggle-aula-ministrada'){
+    if(!isAdmin) return;
+    const aulaId = btn.dataset.aulaId, turmaId = btn.dataset.turma;
+    const ligado = !registroMinistrada(aulaId, turmaId);
+    btn.disabled = true;
+    await setAulaMinistrada(aulaId, turmaId, ligado);
+    btn.disabled = false;
+    render();
+    return;
+  }
   if(action==='edit-aula-header'){ editState={kind:'aulaHeader'}; render(); return; }
   if(action==='edit-section-code'){
     editState = {kind:'sectionCode', idx: +btn.dataset.idx};
