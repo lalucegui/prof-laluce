@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.2                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.3                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1774,6 +1774,36 @@
     background:#F2DFB8;color:#8A5A0F;white-space:nowrap;
   }
   .atv-prog-tag.completo{background:#CDEBD3;color:#1B5E20;}
+  /* Cabeçalho da questão que acompanha a rolagem (v4.12.3) */
+  .atv-q-head-fixa{
+    position:sticky;top:0;z-index:5;background:var(--surface);
+    border-bottom:2px solid var(--line);padding-bottom:10px;margin-bottom:12px;
+  }
+  .atv-q-gabarito{
+    border:1px solid #A5CDAE;background:#E7F3E9;border-radius:9px;padding:8px 12px;margin:8px 0;
+  }
+  .atv-q-gabarito > summary{cursor:pointer;font-size:12px;font-weight:800;color:#1B5E20;list-style:none;}
+  .atv-q-gabarito > summary::-webkit-details-marker{display:none;}
+  .atv-q-gabarito > summary::before{content:'▾ ';}
+  .atv-q-gabarito:not([open]) > summary::before{content:'▸ ';}
+  .atv-q-gabarito-corpo{font-size:13.5px;line-height:1.6;color:var(--ink);margin-top:6px;max-height:190px;overflow:auto;}
+  .atv-q-gabarito-extra{margin-top:8px;padding-top:8px;border-top:1px dashed #A5CDAE;font-size:12.5px;color:#1B5E20;}
+  .atv-q-sem-gabarito{border-left:3px solid #D8A857;padding-left:10px;}
+  .an-branco{border-left:3px solid var(--line);padding-left:10px;}
+  /* Recorte configurável do relatório (v4.12.3) */
+  .rel-filtros{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0 16px;background:var(--surface-raised);}
+  .rel-filtros > summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--ink);list-style:none;}
+  .rel-filtros > summary::-webkit-details-marker{display:none;}
+  .rel-filtros > summary::before{content:'▸ ';color:var(--muted);}
+  .rel-filtros[open] > summary::before{content:'▾ ';}
+  .rel-filtros-dica{font-weight:400;color:var(--muted);font-size:12.5px;}
+  .rel-filtros-grade{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0 6px;}
+  .rel-filtros-grade > div{display:flex;flex-direction:column;gap:4px;min-width:150px;}
+  .rel-filtros-grade label{font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;color:var(--muted);margin:0;}
+  .rel-filtros-grade input, .rel-filtros-grade select{
+    padding:5px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;
+    font-family:inherit;background:var(--surface);color:var(--ink);width:auto;
+  }
   .atividade-grading-ne{border-left:4px solid #C0621F;background:#FDEDE3;}
   .atividade-grading-ne .atividade-grade-comment-label{color:#8A3B12;}
   .atv-st-naoentregue{border-left:3px solid #C0621F;}
@@ -1831,6 +1861,7 @@
   .atv-sit-semprazo{background:#F7E3A1;color:#7A5A00;}
   .atv-sit-programada{background:#E3E8F5;color:#33477A;}
   .atv-sit-concluida{background:#EDEDF2;color:var(--muted);}
+  .atv-sit-vazia{background:#F3E3F0;color:#6B2C63;}
   .atv-chamada-acao{border-left:4px solid #C0621F;padding-left:12px;font-size:14px;}
   .atv-chamada-ok{border-left:4px solid #2E7D32;padding-left:12px;font-size:14px;}
   /* ===== Tela unica de correcao (v4.12.0) ===== */
@@ -3325,7 +3356,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.12.2</div>
+<div class="version-tag hidden" id="version-tag">v4.12.3</div>
 
 
 <script>
@@ -5628,7 +5659,10 @@ function atvSituacaoDaAtividade(sectionId){
   const agendas = (ATV_BOLETIM_SCHEDULES||[]).filter(s=>s.sectionId===sectionId);
   const respostas = (ATV_BOLETIM_DATA||[]).filter(r=>r.sectionId===sectionId);
   const entregues = respostas.filter(r=>r.submittedAt).length;
-  const publicadas = respostas.filter(r=>r.grading && r.grading.published).length;
+  // O zero automático de quem não entregou é uma nota publicada, mas não é uma
+  // entrega corrigida — contar junto produzia frases como "1 de 0 entregas".
+  const naoEntregues = respostas.filter(r=>r.grading && r.grading.published && r.grading.naoEntregue).length;
+  const publicadas = respostas.filter(r=>r.grading && r.grading.published && !r.grading.naoEntregue).length;
   const aCorrigir = respostas.filter(r=>r.submittedAt && !(r.grading && r.grading.published)).length;
   if(!agendas.length){
     return {chave:'semprazo', entregues, publicadas, aCorrigir,
@@ -5639,7 +5673,17 @@ function atvSituacaoDaAtividade(sectionId){
   const algumaFutura = agendas.some(a=>a.opensAt && agora < a.opensAt);
   if(todasFechadas){
     if(aCorrigir > 0) return {chave:'corrigir', entregues, publicadas, aCorrigir, detalhe:`${aCorrigir} entrega(s) esperando correção`};
-    return {chave:'concluida', entregues, publicadas, aCorrigir, detalhe: entregues ? `${publicadas} de ${entregues} entrega(s) com nota publicada` : 'encerrada sem entregas'};
+    // (v4.12.3) Prazo vencido e NINGUÉM entregou quase nunca é uma atividade
+    // concluída — é um prazo cadastrado errado (data de teste, ano trocado,
+    // aberto e fechado no passado). Misturar isso com as concluídas de
+    // verdade escondia justamente o caso que pede ação.
+    if(!entregues && !publicadas){
+      const fechou = agendas.map(a=>a.closesAt).filter(Boolean).sort((x,y)=>x-y).slice(-1)[0];
+      return {chave:'vazia', entregues, publicadas, aCorrigir,
+              detalhe:`prazo encerrou em ${new Date(fechou).toLocaleDateString('pt-BR')} sem nenhuma entrega${naoEntregues?` · ${naoEntregues} aluno(s) já zerados`:''}`};
+    }
+    return {chave:'concluida', entregues, publicadas, aCorrigir,
+            detalhe:`${publicadas} de ${entregues} entrega(s) com nota publicada${naoEntregues?` · ${naoEntregues} não entregou`:''}`};
   }
   if(algumaFutura){
     const proxima = agendas.map(a=>a.opensAt).filter(Boolean).sort((x,y)=>x-y)[0];
@@ -5650,31 +5694,38 @@ function atvSituacaoDaAtividade(sectionId){
           detalhe: fecha ? `recebendo respostas até ${new Date(fecha).toLocaleDateString('pt-BR')}` : 'recebendo respostas'};
 }
 const ATV_SITUACOES = [
-  ['corrigir',   '📥 Esperando correção',  'Prazo encerrado e há entregas sem nota publicada. É aqui que o seu trabalho está.', true],
-  ['aberta',     '🟢 Recebendo respostas', 'Prazo em curso. A correção automática das questões fechadas entra quando o prazo fechar.', true],
-  ['semprazo',   '⚠️ Sem prazo cadastrado','Enquanto não houver prazo, a atividade nunca fecha — e a correção automática não entra.', true],
-  ['programada', '📅 Programadas',         'O prazo ainda vai abrir. Nada a fazer por enquanto.', false],
-  ['concluida',  '✅ Concluídas',           'Encerradas e com as notas publicadas.', false],
+  ['corrigir',   '📥 Esperando correção',   'Prazo encerrado e há entregas sem nota publicada. É aqui que o seu trabalho está.', true],
+  ['aberta',     '🟢 Recebendo respostas',  'Prazo em curso. A correção automática das questões fechadas entra quando o prazo fechar.', true],
+  ['semprazo',   '⚠️ Sem prazo cadastrado', 'Enquanto não houver prazo, a atividade nunca fecha — e a correção automática não entra.', true],
+  ['vazia',      '🛠 Prazo encerrado sem ninguém entregar', 'Quase sempre é prazo cadastrado errado (data de teste, ano trocado). Abra e conserte a data — a atividade volta sozinha para o grupo certo.', true],
+  ['programada', '📅 Programadas',          'O prazo ainda vai abrir. Nada a fazer por enquanto.', false],
+  ['concluida',  '✅ Concluídas',            'Encerradas e com as notas publicadas.', false],
 ];
 function atividadesCentralForm(){
   const all = collectAllAtividades();
   if(ATV_BOLETIM_SCHEDULES===null || ATV_BOLETIM_DATA===null){
-    return `<div class="editor-form"><div class="editing-type-banner">🗂️ Central de Atividades</div><p>Carregando prazos e respostas…</p></div>`;
+    return `<div class="editor-form"><div class="editing-type-banner">📥 Atividades e correção</div><p>Carregando prazos e respostas…</p></div>`;
   }
   const porSituacao = {};
   all.forEach(it=>{
     const st = atvSituacaoDaAtividade(it.sectionId);
     (porSituacao[st.chave] = porSituacao[st.chave] || []).push({it, st});
   });
-  const linha = ({it, st}) => `
-    <div class="user-row atv-central-row">
+  const linha = ({it, st}) => {
+    const acao = (st.chave==='corrigir') ? '📝 Corrigir'
+               : (st.chave==='vazia')    ? '🛠 Consertar prazo'
+               : (st.chave==='semprazo') ? '⏰ Cadastrar prazo'
+               : '📋 Abrir';
+    const classe = (st.chave==='corrigir') ? 'btn-primary' : 'btn-secondary';
+    return `<div class="user-row atv-central-row">
       <div class="user-row-info">
         <strong>${esc(it.title)}</strong>
-        <div class="hint" style="margin:2px 0 0;">Aula ${it.aulaNum} — ${esc(it.aulaTitle)}${it.aulaHidden?' <em>(aula oculta)</em>':''} · ${it.itemCount} questão(ões)</div>
+        <div class="hint" style="margin:2px 0 0;">Aula ${it.aulaNum} — ${esc(it.aulaTitle)}${it.aulaHidden?' <em>(aula oculta)</em>':''} · ${it.itemCount} questão(ões) · ${st.entregues} entrega(s)</div>
       </div>
       <div class="user-row-status"><span class="atv-sit-tag atv-sit-${st.chave}">${esc(st.detalhe)}</span></div>
-      <button class="btn-secondary" data-action="open-atividade-central-item" data-block="${it.blockNum}" data-aula="${it.aulaNum}" data-secid="${esc(it.sectionId)}">📋 Abrir</button>
+      <button class="${classe}" data-action="open-atividade-central-item" data-block="${it.blockNum}" data-aula="${it.aulaNum}" data-secid="${esc(it.sectionId)}">${acao}</button>
     </div>`;
+  };
   const grupos = ATV_SITUACOES.map(([chave, titulo, explica, abertoPadrao])=>{
     const lista = porSituacao[chave] || [];
     if(!lista.length) return '';
@@ -5685,15 +5736,30 @@ function atividadesCentralForm(){
     </details>`;
   }).join('');
   const aCorrigirTotal = (porSituacao['corrigir']||[]).reduce((s,x)=>s+x.st.aCorrigir, 0);
+  // Números do curso inteiro. Ficam aqui, e não só dentro de cada atividade,
+  // porque a pergunta "como está a correção da matéria?" não se responde
+  // abrindo dezenas de telas uma a uma.
+  const totalEntregas   = (ATV_BOLETIM_DATA||[]).filter(r=>r.submittedAt).length;
+  const totalPublicadas = (ATV_BOLETIM_DATA||[]).filter(r=>r.grading && r.grading.published).length;
+  const m = (n,rot,alerta)=>`<div class="corr-metrica"><div class="corr-metrica-num ${alerta?'alerta':''}">${n}</div><div class="corr-metrica-rot">${rot}</div></div>`;
   return `<div class="editor-form">
-    <div class="editing-type-banner">🗂️ Central de Atividades</div>
+    <div class="editing-type-banner">📥 Atividades e correção</div>
+    <div class="corr-topo">
+      <div class="corr-metricas">
+        ${m(all.length, 'atividades no curso')}
+        ${m(totalEntregas, 'entregas recebidas')}
+        ${m(aCorrigirTotal, 'esperando correção', aCorrigirTotal>0)}
+        ${m(totalPublicadas, 'notas publicadas')}
+      </div>
+      <div class="atv-bulk-actions">
+        <button type="button" class="btn-secondary" data-action="open-atv-boletim" title="Notas de todas as atividades, por aluno.">📊 Boletim da turma</button>
+        <button type="button" class="btn-secondary" data-action="atv-central-recarregar" title="Relê prazos e respostas do banco.">↻ Atualizar</button>
+      </div>
+    </div>
     ${aCorrigirTotal
       ? `<div class="hint atv-chamada-acao">📥 <strong>${aCorrigirTotal} entrega(s) esperando correção</strong>, em ${(porSituacao['corrigir']||[]).length} atividade(s). Comece por aí.</div>`
       : `<div class="hint atv-chamada-ok">✅ Nenhuma entrega esperando correção no momento.</div>`}
-    ${grupos || '<p class="hint">Nenhuma atividade foi criada ainda em nenhuma aula deste curso.</p>'}
-    <div class="editor-actions">
-      <button class="btn-secondary" data-action="cancel-edit">← Voltar</button>
-    </div>
+    ${grupos || '<p class="hint">Nenhuma atividade foi criada ainda em nenhuma aula deste curso. Elas nascem dentro da aula, na seção “Atividade”.</p>'}
   </div>`;
 }
 
@@ -5772,7 +5838,11 @@ function atvManageContext(){
           autoLiberado: atvAutoLiberada(schedule)};
 }
 
-function atvNomeAluno(u){ return (u.profile && u.profile.fullName) || u.name || '(sem nome)'; }
+function atvNomeAluno(u){ return nomeDeUsuario(u); }
+function nomeDeUsuario(u){
+  if(!u) return '(sem nome)';
+  return (u.profile && u.profile.fullName) || u.name || u.email || '(sem nome)';
+}
 
 // Quantas questões deste aluno já têm nota (sua ou vinda do gabarito) — o que
 // falta para fechar a correção dele. Sem esse número a lista de alunos só
@@ -5847,10 +5917,22 @@ function atvPorQuestaoHtml(sec, ctx){
       ${atvFeedbackBankHtml(keyBase)}
     </div>`;
   }).join('') || '<p class="hint">Nenhum aluno nesta turma.</p>';
-  return `<div class="atv-q-head">
+  // O gabarito acompanha a rolagem. Corrigindo 40 dissertativas, a resposta
+  // esperada sai da tela na terceira e você passa a corrigir de memória — que
+  // é exatamente como o critério escorrega do primeiro aluno para o último.
+  const gabTexto = (item.modelAnswer && String(item.modelAnswer).trim()) ? String(item.modelAnswer).trim() : '';
+  const gabFechada = gabaritoEmTexto(item);
+  const gabarito = gabTexto || gabFechada;
+  return `<div class="atv-q-head atv-q-head-fixa">
       <label>Questão sendo corrigida</label>
       <select id="atv-question-select">${qOptions}</select>
       <div class="atv-q-prompt">${esc(item.prompt||'')} <span class="atv-item-worth">vale ${maxPts}</span></div>
+      ${gabarito
+        ? `<details class="atv-q-gabarito" open>
+             <summary>✅ Resposta esperada — fica à vista enquanto você corrige</summary>
+             <div class="atv-q-gabarito-corpo">${esc(gabarito).replace(/\n/g,'<br>')}${(gabTexto && gabFechada) ? `<div class="atv-q-gabarito-extra">${esc(gabFechada)}</div>` : ''}</div>
+           </details>`
+        : `<div class="hint atv-q-sem-gabarito">Esta questão não tem “Resposta esperada” cadastrada. Preencha na edição da atividade e ela passa a aparecer fixa aqui — e o aluno também a recebe ao publicar.</div>`}
       <div class="hint">${respondentes.length} de ${ctx.alunos.length} alunos responderam esta questão. Corrija todos aqui e salve de uma vez — é o jeito mais rápido de corrigir uma turma inteira.</div>
       <div class="atv-bulk-actions">
         <button type="button" class="btn-secondary" data-action="atv-q-mark-all" data-verdict="certo" data-max="${maxPts}">✓ Marcar todos que responderam como Certo</button>
@@ -5886,7 +5968,33 @@ function atvPorQuestaoHtml(sec, ctx){
 
 // Junta, num lugar só, tudo que os três relatórios usam. Se faltar qualquer
 // peça, devolve o motivo — relatório pela metade é pior que relatório nenhum.
-function relatorioDados(turmaId){
+// Filtros do relatório. Ficam num objeto só para poderem ser lidos da tela,
+// usados no PDF, no CSV e ainda impressos no cabeçalho do documento — um
+// relatório que não diz o próprio recorte é um relatório que não se defende
+// numa reunião de conselho.
+function lerFiltrosRelatorio(){
+  const v = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  return {
+    de:        v('rel-f-de'),
+    ate:       v('rel-f-ate'),
+    atividades:v('rel-f-atividades') || 'todas',
+    alunos:    v('rel-f-alunos')     || 'todos',
+    ocultas:   v('rel-f-ocultas')    !== 'nao',   // padrão: incluir
+  };
+}
+function filtrosEmTexto(f){
+  if(!f) return '';
+  const p = [];
+  if(f.de || f.ate) p.push(`Período: ${f.de?dataBR(f.de):'início'} a ${f.ate?dataBR(f.ate):'hoje'}`);
+  if(f.atividades==='encerradas') p.push('Só atividades com prazo encerrado');
+  if(f.atividades==='comentrega') p.push('Só atividades com alguma entrega');
+  if(f.atividades==='pendentes')  p.push('Só atividades com entrega sem correção publicada');
+  if(f.alunos==='pendentes') p.push('Só alunos com alguma pendência');
+  if(f.alunos==='faltosos')  p.push('Só alunos com 25% ou mais de faltas');
+  if(f.ocultas === false) p.push('Sem as aulas ocultas');
+  return p.join(' · ');
+}
+function relatorioDados(turmaId, filtros){
   if(allTurmas===null || cachedUsersList===null || ATV_BOLETIM_DATA===null
      || ATV_BOLETIM_SCHEDULES===null || DIARIO_TODOS===null){
     return {erro:'Os dados ainda estão carregando. Espere um instante e tente de novo.'};
@@ -5897,10 +6005,19 @@ function relatorioDados(turmaId){
     .filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId)
     .sort((x,y)=> String(atvNomeAluno(x)).localeCompare(String(atvNomeAluno(y))));
   if(!alunos.length) return {erro:'Esta turma ainda não tem alunos.'};
-  const atividades = collectAllAtividades();
-  const chamadas = (DIARIO_TODOS||[])
+  const f = filtros || {};
+  let atividades = collectAllAtividades();
+  // Excluir aula oculta só quando o professor pedir: uma aula pode ter sido
+  // escondida DEPOIS de os alunos responderem, e sumir com a resposta deles
+  // do relatório seria pior do que mostrar uma aula fora do ar.
+  if(f.ocultas === false) atividades = atividades.filter(a=>!a.aulaHidden);
+  let chamadas = (DIARIO_TODOS||[])
     .filter(r=>r.turmaId===turmaId)
     .sort((x,y)=>String(x.date).localeCompare(String(y.date)));
+  // Recorte por período: vale para as chamadas (pela data do encontro) e para
+  // as atividades (pela data de fechamento do prazo daquela turma).
+  if(f.de)  chamadas = chamadas.filter(r=>String(r.date) >= f.de);
+  if(f.ate) chamadas = chamadas.filter(r=>String(r.date) <= f.ate);
   const prazoPorSecao = {};
   (ATV_BOLETIM_SCHEDULES||[]).forEach(s=>{ if(s.turmaId===turmaId) prazoPorSecao[s.sectionId] = s; });
   const respostaPorSecao = {};
@@ -5914,8 +6031,50 @@ function relatorioDados(turmaId){
   COURSE.forEach(b=>(b.aulas||[]).forEach(a=>(a.sections||[]).forEach(s=>{
     if(s.type==='atividade') secaoPorId[s.id] = {sec:s, aula:a, bloco:b};
   })));
-  return {turma, alunos, atividades, chamadas, prazoPorSecao, respostaPorSecao, secaoPorId,
-          materia: activeSubjectName || ''};
+  // Recorte das atividades — depende de prazoPorSecao e respostaPorSecao, por
+  // isso vem depois de os dois estarem montados.
+  const naJanela = (sid)=>{
+    const ag = prazoPorSecao[sid];
+    if(!f.de && !f.ate) return true;
+    if(!ag || !ag.closesAt) return false;   // sem prazo não dá para dizer que cai no período
+    const d = new Date(ag.closesAt).toISOString().slice(0,10);
+    if(f.de && d < f.de) return false;
+    if(f.ate && d > f.ate) return false;
+    return true;
+  };
+  atividades = atividades.filter(a=>{
+    if(!naJanela(a.sectionId)) return false;
+    const resp = respostaPorSecao[a.sectionId] || {};
+    const entregues = Object.values(resp).filter(r=>r.submittedAt).length;
+    const semNota   = Object.values(resp).filter(r=>r.submittedAt && !(r.grading && r.grading.published)).length;
+    const ag = prazoPorSecao[a.sectionId];
+    if(f.atividades==='encerradas') return !!(ag && ag.closesAt && Date.now() > ag.closesAt);
+    if(f.atividades==='comentrega') return entregues > 0;
+    if(f.atividades==='pendentes')  return semNota > 0;
+    return true;
+  });
+  // Recorte dos alunos.
+  let alunosFiltrados = alunos;
+  if(f.alunos==='pendentes'){
+    alunosFiltrados = alunos.filter(u=> atividades.some(a=>{
+      const r = (respostaPorSecao[a.sectionId]||{})[u.id];
+      return !r || !r.submittedAt;
+    }));
+  } else if(f.alunos==='faltosos'){
+    const total = chamadas.length;
+    alunosFiltrados = total ? alunos.filter(u=>{
+      const faltas = chamadas.filter(r=>alunoFaltouNaChamada(u, r)).length;
+      return (faltas/total) >= 0.25;
+    }) : [];
+  }
+  if(!alunosFiltrados.length) return {erro:'Nenhum aluno atende aos filtros escolhidos. Afrouxe o recorte e tente de novo.'};
+  // Sair com um PDF de folhas em branco é pior do que não sair: o professor só
+  // descobre o problema depois de imprimir.
+  if(!atividades.length && !chamadas.length){
+    return {erro:'O recorte escolhido não deixou nenhuma atividade nem nenhuma chamada. Confira o período — atividade sem prazo cadastrado fica de fora quando você define datas.'};
+  }
+  return {turma, alunos: alunosFiltrados, atividades, chamadas, prazoPorSecao, respostaPorSecao, secaoPorId,
+          filtros: f, materia: activeSubjectName || ''};
 }
 
 // Resposta do aluno em texto puro — para o CSV, onde não cabe marcação.
@@ -6159,6 +6318,38 @@ function relatoriosCentralHtml(){
     <div class="editing-type-banner">📄 Relatórios da turma</div>
     <div class="hint">Tudo aqui é <strong>só leitura</strong>: os relatórios são montados a partir do que já está gravado e nada é alterado. Guarde-os no fim do semestre — hoje o backup do sistema cobre apenas o conteúdo das aulas, não o que os alunos produziram.</div>
     <div class="atv-turma-row"><label>Turma</label><select id="rel-turma-select">${turmaOpts}</select></div>
+    <details class="rel-filtros" ${(editState && editState.relFiltrosAbertos)?'open':''}>
+      <summary>⚙️ Recorte do relatório <span class="rel-filtros-dica">— período, atividades e alunos</span></summary>
+      <div class="rel-filtros-grade">
+        <div><label>De</label><input type="date" id="rel-f-de"></div>
+        <div><label>Até</label><input type="date" id="rel-f-ate"></div>
+        <div>
+          <label>Atividades</label>
+          <select id="rel-f-atividades">
+            <option value="todas">Todas</option>
+            <option value="encerradas">Só as com prazo encerrado</option>
+            <option value="comentrega">Só as que tiveram alguma entrega</option>
+            <option value="pendentes">Só as com entrega sem nota publicada</option>
+          </select>
+        </div>
+        <div>
+          <label>Alunos</label>
+          <select id="rel-f-alunos">
+            <option value="todos">Todos da turma</option>
+            <option value="pendentes">Só quem deixou de entregar alguma</option>
+            <option value="faltosos">Só quem tem 25% ou mais de faltas</option>
+          </select>
+        </div>
+        <div>
+          <label>Aulas ocultas</label>
+          <select id="rel-f-ocultas">
+            <option value="sim">Incluir</option>
+            <option value="nao">Não incluir</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint">O período corta as chamadas pela data do encontro e as atividades pela data de fechamento do prazo daquela turma — atividade sem prazo cadastrado fica de fora quando você define um período. O recorte escolhido sai impresso no cabeçalho do PDF, para o documento se explicar sozinho.</div>
+    </details>
     ${cartao('respostas','📝','Respostas e notas',
       'Tudo que cada aluno respondeu, questão por questão, com a nota, o seu feedback e o gabarito. É o documento insubstituível — o único registro do trabalho dos alunos fora do banco de dados.')}
     ${cartao('frequencia','📋','Chamadas e frequência',
@@ -6529,7 +6720,7 @@ function espelhoProfessorHtml(){
       : 'Bem acima do prazo usual — pode valer revisar o ritmo de correção.';
     const souEu = u.id === eu;
     return `<div class="saude-card">
-      <div class="saude-titulo">${esc(u.name||u.email||'')}${souEu?' <em>(você)</em>':''}</div>
+      <div class="saude-titulo">${esc(nomeDeUsuario(u))}${souEu?' <em>(você)</em>':''}</div>
       <div class="espelho-principal">
         <span class="espelho-principal-valor ${clsFaixa}">${rotuloTempo}</span>
         <span class="espelho-principal-rotulo">Tempo médio entre a entrega do aluno e a publicação da correção${leituraFaixa?' · '+leituraFaixa:''}</span>
@@ -6564,21 +6755,30 @@ function atvAnaliseHtml(sec, ctx){
 
   const blocos = (sec.items||[]).map((it, idx)=>{
     const maxPts = atvItemMaxPoints(it);
-    let comNota = 0, somaPts = 0, semCorrecao = 0;
+    let comNota = 0, somaPts = 0, semCorrecao = 0, emBranco = 0;
     const escolhas = {};   // para questoes fechadas: o que a turma marcou
 
     respondidas.forEach(({resp, draft})=>{
+      const val = (resp.answers||{})[it.itemId];
+      // CORREÇÃO (v4.12.3) — quem deixou ESTA questão em branco sai da conta.
+      // Antes ele entrava como zero e derrubava o percentual: uma questão que
+      // 100% dos respondentes acertaram aparecia como "reensinar" só porque
+      // metade da turma pulou a questão. Deixar em branco é informação sobre
+      // participação, não sobre aprendizado — por isso vira um número à parte.
+      const vazio = (val===undefined || val===null || val==='' ||
+                     (Array.isArray(val) && (!val.length || val.every(v=>v===undefined||v===null||v===''))));
+      if(vazio){ emBranco++; return; }
+
       const eff = atvEffectiveGrading(resp, draft);
       const saved = (eff.perItem||{})[it.itemId] || {};
       let pts = (saved.points!=null && saved.points!=='') ? Number(saved.points) : null;
       if(pts === null){
-        const auto = atvAutoDoItem(it, (resp.answers||{})[it.itemId], ctx.autoLiberado);
+        const auto = atvAutoDoItem(it, val, ctx.autoLiberado);
         if(auto) pts = auto.points;
       }
       if(pts === null){ semCorrecao++; }
       else { comNota++; somaPts += pts; }
 
-      const val = (resp.answers||{})[it.itemId];
       if(it.type==='multipla_escolha' && val){ escolhas[val] = (escolhas[val]||0)+1; }
       else if(it.type==='checklist' && Array.isArray(val)){ val.forEach(v=>{ escolhas[v] = (escolhas[v]||0)+1; }); }
     });
@@ -6625,13 +6825,14 @@ function atvAnaliseHtml(sec, ctx){
         </div>
         <div class="an-pct">${pctAcerto===null?'—':pctAcerto+'%'}<span>${esc(rotuloFaixa)}</span></div>
       </div>
+      ${emBranco ? `<div class="hint an-branco">${emBranco} aluno(s) deixaram esta questão em branco — fora da conta do percentual. O ${pctAcerto===null?'—':pctAcerto+'%'} é entre os ${comNota+semCorrecao} que responderam.</div>` : ''}
       ${semCorrecao ? `<div class="hint">${semCorrecao} resposta(s) ainda sem correção — o percentual considera só as ${comNota} já corrigidas.</div>` : ''}
       ${detalhe}
     </div>`;
   }).join('');
 
   const piores = (sec.items||[]).length;
-  return `<div class="hint">Percentual de acerto da turma <strong>em cada questão</strong>, entre os ${respondidas.length} que responderam. Serve para achar o que precisa ser reensinado — não para comparar alunos.</div>
+  return `<div class="hint">Percentual de acerto da turma <strong>em cada questão</strong>. A conta é feita só entre quem respondeu <strong>aquela</strong> questão: quem entregou em branco ou pulou o item não entra e não derruba o percentual. Serve para achar o que precisa ser reensinado — não para comparar alunos.</div>
     ${blocos}
     <div class="editor-actions"><button class="btn-secondary" data-action="atv-exportar-analise">Exportar análise (CSV)</button></div>`;
 }
@@ -6744,6 +6945,9 @@ async function atvPublishForStudent(sec, uid){
   await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId).set(payload, {merge:true});
   try{ await db.collection(`subjects/${activeSubjectId}/activity_grading_drafts`).doc(docId).delete(); }catch(e){}
   if(ATV_MANAGE_DRAFTS) delete ATV_MANAGE_DRAFTS[uid];
+  // (v4.12.3) A lista "por situação" conta entregas sem nota publicada. Sem
+  // esta linha ela continuaria contando esta, que acabou de ser publicada.
+  ATV_BOLETIM_DATA = null;
   const idx = (ATV_MANAGE_RESPONSES||[]).findIndex(r=>r.studentUid===uid);
   if(idx>=0){ ATV_MANAGE_RESPONSES[idx] = {...ATV_MANAGE_RESPONSES[idx], ...payload}; }
   else { (ATV_MANAGE_RESPONSES = ATV_MANAGE_RESPONSES || []).push({id:docId, ...payload}); }
@@ -6944,7 +7148,7 @@ function atividadesBoletimForm(){
 
     <div class="editor-actions">
       <button class="btn-secondary" data-action="atv-boletim-csv">⬇ Exportar boletim em CSV</button>
-      <button class="btn-secondary" data-action="open-atividades-central">🗂️ Central de Atividades</button>
+      <button class="btn-secondary" data-action="open-atividades-central">🗂️ Todas as atividades</button>
       <button class="btn-secondary" data-action="cancel-edit">← Voltar</button>
     </div>
   </div>`;
@@ -7266,7 +7470,6 @@ function atvResumoTopoHtml(sec, ctx, pend){
         ${m(media!=null?media:'—', `média (de ${maxTotal})`)}
       </div>
       <div class="atv-bulk-actions">
-        <button type="button" class="btn-secondary" data-action="atv-bulk-autograde" title="Preenche a correção das questões fechadas que têm gabarito cadastrado, para todos os alunos que responderam. Fica como rascunho — nada é publicado ainda.">✨ Aplicar gabarito a todos</button>
         <button type="button" class="btn-secondary" data-action="atv-bulk-zero-missing" title="Lança 0 em todas as questões dos alunos que não responderam nada. Fica como rascunho.">0️⃣ Zerar quem não respondeu</button>
         <button type="button" class="btn-primary" data-action="atv-bulk-publish" title="Publica todas as correções em rascunho desta turma de uma vez — a partir daí os alunos veem nota e feedback.">📤 Publicar tudo (${rascunhos})</button>
       </div>
@@ -7290,7 +7493,7 @@ function atividadeManageForm(){
   const b = COURSE.find(x=>x.num===es.blockNum);
   const a = b && b.aulas.find(x=>x.num===es.aulaNum);
   const sec = a && (a.sections||[]).find(s=>s.id===es.sectionId);
-  if(!sec) return `<div class="editor-form"><div class="editing-type-banner">Corrigir atividade</div><p>Esta atividade não foi encontrada (pode ter sido excluída).</p><div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">← Voltar</button><button class="btn-secondary" data-action="open-atividades-central">🗂️ Central de Atividades</button></div></div>`;
+  if(!sec) return `<div class="editor-form"><div class="editing-type-banner">Corrigir atividade</div><p>Esta atividade não foi encontrada (pode ter sido excluída).</p><div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">← Voltar</button><button class="btn-secondary" data-action="open-atividades-central">🗂️ Todas as atividades</button></div></div>`;
   if(allTurmas===null || cachedUsersList===null || ATV_MANAGE_RESPONSES===null || ATV_MANAGE_DRAFTS===null){
     return `<div class="editor-form"><div class="editing-type-banner">📋 ${esc(sec.title||'Atividade')}</div><p>Carregando respostas da turma…</p></div>`;
   }
@@ -7328,7 +7531,7 @@ function atividadeManageForm(){
     </details>
     <div class="editor-actions">
       <button class="btn-secondary" data-action="cancel-edit">← Voltar para a aula</button>
-      <button class="btn-secondary" data-action="open-atividades-central">🗂️ Central de Atividades</button>
+      <button class="btn-secondary" data-action="open-atividades-central">🗂️ Todas as atividades</button>
       <button class="btn-secondary" data-action="atv-export-csv">⬇ Exportar CSV</button>
       <button class="btn-secondary" data-action="open-atv-boletim">📊 Boletim da turma</button>
     </div>
@@ -8988,7 +9191,7 @@ function classStatsHtml(){
   const inactiveRows = lastAccess.map(u=>{
     const alerta = u.days===null || u.days>=14;
     const rotulo = u.days===null ? 'nunca acessou' : (u.days===0 ? 'hoje' : `há ${u.days} dia${u.days>1?'s':''}`);
-    return `<tr class="${alerta?'stat-alert':''}"><td>${esc(u.name)}</td><td>${rotulo}</td></tr>`;
+    return `<tr class="${alerta?'stat-alert':''}"><td>${esc(nomeDeUsuario(u))}</td><td>${rotulo}</td></tr>`;
   }).join('');
 
   // ---- Acessos por aula (a partir do campo "visited" das sessões) ----
@@ -9051,7 +9254,7 @@ function professorDetailForm(u){
     <input type="text" class="prof-brand-input" data-uid="${u.id}" data-campo="${campo}" value="${escAttr(valor||'')}" placeholder="${ph}">`;
 
   return `<div class="editor-form user-detail-screen">
-    <div class="editing-type-banner">🧑‍🏫 Cadastro do professor — ${esc(u.name||'')}</div>
+    <div class="editing-type-banner">🧑‍🏫 Cadastro do professor — ${esc(nomeDeUsuario(u))}</div>
     <div class="user-detail-grid">
       <div class="user-detail-photo-col">
         <span class="mi" style="font-size:64px;color:var(--muted);">school</span>
@@ -9121,7 +9324,7 @@ function userDetailForm(u){
     </label>`).join('');
 
   return `<div class="editor-form user-detail-screen">
-    <div class="editing-type-banner">Cadastro do aluno — ${esc(u.name||'')}</div>
+    <div class="editing-type-banner">Cadastro do aluno — ${esc(nomeDeUsuario(u))}</div>
     <label>Matérias atribuídas <span style="text-transform:none;font-weight:400;color:var(--muted);">(marque quantas quiser — o aluno escolhe entre elas se tiver mais de uma)</span></label>
     <div class="subject-checklist">${subjectCheckboxes || '<p style="font-size:13px;color:var(--muted);">Nenhuma matéria criada ainda.</p>'}</div>
     <div class="user-detail-grid">
@@ -9458,7 +9661,7 @@ function usersScreenForm(){
   });
   const rows = visibleUsers.map(u => `
     <div class="user-row">
-      <div class="user-row-info">${!roleIsStaff(u.role) ? `<button class="user-row-name-btn" data-action="open-user-detail" data-uid="${u.id}"><strong>${esc(u.name||'(sem nome)')}</strong></button>` : `<strong>${esc(u.name||'(sem nome)')}</strong>`}<span>${esc(u.email||'')}</span>${(u.turmaId && turmaNameById(u.turmaId)) ? `<span class="turma-badge">${esc(turmaNameById(u.turmaId))}</span>` : (!roleIsStaff(u.role) ? '<span class="turma-badge turma-vazia">sem turma</span>' : '')}</div>
+      <div class="user-row-info">${!roleIsStaff(u.role) ? `<button class="user-row-name-btn" data-action="open-user-detail" data-uid="${u.id}"><strong>${esc(nomeDeUsuario(u))}</strong></button>` : `<strong>${esc(nomeDeUsuario(u))}</strong>`}<span>${esc(u.email||'')}</span>${(u.turmaId && turmaNameById(u.turmaId)) ? `<span class="turma-badge">${esc(turmaNameById(u.turmaId))}</span>` : (!roleIsStaff(u.role) ? '<span class="turma-badge turma-vazia">sem turma</span>' : '')}</div>
       <div class="user-row-status">${roleIsMaster(u.role)
         ? '<span class="status-pill status-master">Master</span>'
         : (u.role==='professor'
@@ -9517,7 +9720,7 @@ function professorsScreenForm(){
   const rows = profs.map(u=>`
     <div class="turma-row">
       <button class="user-row-name-btn" data-action="open-user-detail" data-uid="${u.id}">
-        <div class="turma-row-name"><strong>🧑‍🏫 ${esc(u.name||'')}</strong><span>${esc(u.email||'')}</span></div>
+        <div class="turma-row-name"><strong>🧑‍🏫 ${esc(nomeDeUsuario(u))}</strong><span>${esc(u.email||'')}</span></div>
       </button>
     </div>`).join('') || '<p style="color:var(--muted);font-size:13px;">Nenhum professor ainda. Convide por e-mail abaixo.</p>';
   const invites = cachedProfessorInvites || [];
@@ -9551,7 +9754,7 @@ function mastersScreenForm(){
     const souEu = currentUser && u.id===currentUser.uid;
     return `
     <div class="turma-row">
-      <div class="turma-row-name"><strong>👑 ${esc(u.name||'')}</strong><span>${esc(u.email||'')}${souEu?' · você':''}</span></div>
+      <div class="turma-row-name"><strong>👑 ${esc(nomeDeUsuario(u))}</strong><span>${esc(u.email||'')}${souEu?' · você':''}</span></div>
       ${souEu ? '' : `<button class="btn-tiny" style="background:var(--terracotta);" data-action="demote-master" data-uid="${u.id}">Rebaixar a professor</button>`}
     </div>`;
   }).join('') || '<p style="color:var(--muted);font-size:13px;">Nenhum master cadastrado.</p>';
@@ -10182,7 +10385,10 @@ function render(){
     // abas simples (listas) lentas sem motivo.
     const abaAtual = editState.aba;
     const abaDeRelatorio = (editState.grupo === 'relatorios');
-    if(abaDeRelatorio || abaAtual === 'boletim' || abaAtual === 'estatisticas'){
+    // CORREÇÃO (v4.12.3) — 'atividades' faltava nesta lista. A tela pedia
+    // prazos e respostas para agrupar por situação, mas ninguém disparava a
+    // busca: o "Carregando prazos e respostas…" ficava para sempre.
+    if(abaDeRelatorio || abaAtual === 'boletim' || abaAtual === 'estatisticas' || abaAtual === 'atividades'){
       if(ATV_BOLETIM_DATA===null){
         fetchAllActivityResponses().then(l=>{ ATV_BOLETIM_DATA = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ ATV_BOLETIM_DATA = []; });
       }
@@ -10346,15 +10552,9 @@ function render(){
     return;
   }
   if(editState && editState.kind==='atividadesCentral'){
-    content.innerHTML = comCabecalho('atividadesCentral', atividadesCentralForm());
-    // A central agora agrupa por situacao, e situacao depende de prazos +
-    // respostas — por isso ela passou a carregar os dois (v4.12.0).
-    if(ATV_BOLETIM_DATA===null){
-      fetchAllActivityResponses().then(l=>{ ATV_BOLETIM_DATA = l; if(editState && editState.kind==='atividadesCentral') render(); }).catch(()=>{ ATV_BOLETIM_DATA = []; });
-    }
-    if(ATV_BOLETIM_SCHEDULES===null){
-      fetchAllActivitySchedules().then(l=>{ ATV_BOLETIM_SCHEDULES = l; if(editState && editState.kind==='atividadesCentral') render(); }).catch(()=>{ ATV_BOLETIM_SCHEDULES = []; });
-    }
+    // Rota antiga (v4.12.3): redireciona para a aba, que é o único lugar agora.
+    editState = {kind:'gestao', grupo:'materias', aba:'atividades', turmaId:null};
+    render();
     return;
   }
   if(editState && editState.kind==='diarioAula'){
@@ -12299,8 +12499,12 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='open-atividades-central'){
+    // ALTERADO (v4.12.3) — antes isto abria uma tela própria, paralela à
+    // aba Matérias › Atividades, com o mesmo conteúdo. Duas portas para a
+    // mesma sala é como se perde a noção de onde as coisas moram. Agora todo
+    // caminho desemboca na aba — que é onde o menu diz que ela está.
     if(!isAdmin) return;
-    editState = {kind:'atividadesCentral'};
+    editState = {kind:'gestao', grupo:'materias', aba:'atividades', turmaId:null};
     cachedUsersList = null; ATV_MANAGE_RESPONSES = null; ATV_MANAGE_SCHEDULES = {}; ATV_MANAGE_DRAFTS = null;
     render();
     focarConteudo();
@@ -12336,6 +12540,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       await db.collection(`subjects/${activeSubjectId}/activity_schedules`).doc(`${sectionId}_${turmaId}`)
         .set({sectionId, turmaId, aulaNum: editState.aulaNum, opensAt, closesAt, aceitaForaPrazo: permiteAtraso, updatedAt: Date.now()});
       ATV_MANAGE_SCHEDULES[turmaId] = {sectionId, turmaId, aulaNum: editState.aulaNum, opensAt, closesAt, aceitaForaPrazo: permiteAtraso};
+      ATV_BOLETIM_SCHEDULES = null;   // (v4.12.3) força reler: a situação da atividade depende deste prazo
       // CORRIGIDO (v4.9.11) — o cache da tela do aluno guardava a agenda ANTIGA
       // (normalmente "sem prazo", de antes do prazo existir) e nunca era
       // limpo. Resultado: acabava de cadastrar o prazo, abria como aluno e a
@@ -12468,40 +12673,6 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       }
       alert('Atividade reaberta para este aluno.');
     }catch(err){ alert('Não foi possível reabrir: ' + (err && err.message ? err.message : String(err))); }
-    render();
-    return;
-  }
-  if(action==='atv-bulk-autograde'){
-    const ctx = atvManageContext();
-    const b1 = COURSE.find(x=>x.num===editState.blockNum);
-    const a1 = b1 && b1.aulas.find(x=>x.num===editState.aulaNum);
-    const sec1 = a1 && (a1.sections||[]).find(s=>s.id===editState.sectionId);
-    if(!sec1) return;
-    const temGabarito = (sec1.items||[]).some(it=>it.correctOption || (it.correctOptions&&it.correctOptions.length) || (it.correctAnswers&&it.correctAnswers.length));
-    if(!temGabarito){ alert('Nenhuma questão desta atividade tem gabarito cadastrado.\n\nCadastre o gabarito editando a atividade na aula (questões de múltipla escolha, verdadeiro/falso e checklist aceitam gabarito).'); return; }
-    if(!confirm('Aplicar o gabarito automático a todos os alunos que responderam?\n\nIsso preenche só as questões fechadas que têm gabarito, como RASCUNHO. Nada é publicado agora, e correções já feitas por você não são sobrescritas.')) return;
-    let n = 0;
-    try{
-      for(const u of ctx.alunos){
-        const resp = ctx.responsesByUid[u.id];
-        if(!resp || !resp.answers) continue;
-        const draft = ctx.draftsByUid[u.id];
-        const eff = atvEffectiveGrading(resp, draft);
-        const partial = {};
-        (sec1.items||[]).forEach(it=>{
-          const saved = (eff.perItem||{})[it.itemId] || {};
-          if(saved.points!=null && saved.points!=='') return; // já corrigido à mão
-          const auto = autoGradeClosedItem(it, resp.answers[it.itemId]);
-          if(!auto) return;
-          partial[it.itemId] = {
-            verdict: auto.correct ? 'certo' : ((auto.partial && auto.partial.ok>0) ? 'parcial' : 'errado'),
-            points: auto.points, feedback: saved.feedback||null,
-          };
-        });
-        if(Object.keys(partial).length){ await atvSaveDraft(u.id, partial); n++; }
-      }
-      alert(`Gabarito aplicado a ${n} aluno(s), como rascunho.`);
-    }catch(err){ alert('Falhou: ' + (err && err.message ? err.message : String(err))); }
     render();
     return;
   }
@@ -12744,11 +12915,14 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='rel-pdf' || action==='rel-csv'){
     const turmaSel = document.getElementById('rel-turma-select');
     const turmaId = (turmaSel && turmaSel.value) || (editState && editState.turmaId) || null;
-    const d = relatorioDados(turmaId);
+    const filtros = lerFiltrosRelatorio();
+    const d = relatorioDados(turmaId, filtros);
     if(d.erro){ alert(d.erro); return; }
     const qual = btn.dataset.rel;
     const nomeArq = (t)=> `${t}-${String(d.turma.name).replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}`;
-    const sub = `${d.materia ? d.materia + ' · ' : ''}Turma ${d.turma.name} · ${d.alunos.length} aluno(s)`;
+    const recorte = filtrosEmTexto(filtros);
+    const sub = `${d.materia ? d.materia + ' · ' : ''}Turma ${d.turma.name} · ${d.alunos.length} aluno(s) · ${d.atividades.length} atividade(s)`
+              + (recorte ? ` · ${recorte}` : '');
     if(qual==='respostas'){
       if(action==='rel-pdf') abrirRelatorioImpressao('Respostas e notas', sub, relRespostasHtml(d));
       else baixarCsv(relRespostasCsv(d), nomeArq('respostas-e-notas')+'.csv');
@@ -12803,6 +12977,11 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     });
     const t = (allTurmas||[]).find(x=>x.id===turmaId);
     baixarCsv(linhasCsv, `boletim-${(t&&t.name?t.name:'turma').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}.csv`);
+    return;
+  }
+  if(action==='atv-central-recarregar'){
+    ATV_BOLETIM_DATA = null; ATV_BOLETIM_SCHEDULES = null;
+    render();
     return;
   }
   if(action==='open-atv-boletim'){
@@ -12931,8 +13110,13 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const adminNotes = { notes: document.getElementById('ud-admin-notes').value };
     const subjectIds = [...document.querySelectorAll('.ud-subject-cb:checked')].map(cb=>cb.value);
     try{
-      await db.collection('users').doc(uid).update({profile, adminNotes, subjectIds, subjectId: firebase.firestore.FieldValue.delete()});
+      // Grava o nome nos dois campos: senão a lista de alunos (que lê 'name')
+      // continuaria mostrando o nome antigo depois de você corrigir a ficha.
+      const patchUser = {profile, adminNotes, subjectIds, subjectId: firebase.firestore.FieldValue.delete()};
+      if(profile.fullName) patchUser.name = profile.fullName;
+      await db.collection('users').doc(uid).update(patchUser);
       u.profile = profile;
+      if(profile.fullName) u.name = profile.fullName;
       u.adminNotes = adminNotes;
       u.subjectIds = subjectIds;
       delete u.subjectId;
@@ -13438,21 +13622,26 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const respondidas = ctxA.alunos
       .map(u=>({resp: ctxA.responsesByUid[u.id], draft: ctxA.draftsByUid[u.id]}))
       .filter(x=> x.resp && x.resp.answers);
-    const linhas = [['Questao','Enunciado','Tipo','Respostas corrigidas','Acerto medio (%)','Vale']];
+    const linhas = [['Questao','Enunciado','Tipo','Respostas corrigidas','Deixaram em branco','Acerto medio (%)','Vale']];
     (secA.items||[]).forEach((it,i)=>{
       const maxPts = atvItemMaxPoints(it);
-      let comNota=0, soma=0;
+      let comNota=0, soma=0, emBranco=0;
       respondidas.forEach(({resp,draft})=>{
+        const val = (resp.answers||{})[it.itemId];
+        // mesma regra da tela: em branco não entra no percentual (v4.12.3)
+        const vazio = (val===undefined || val===null || val==='' ||
+                       (Array.isArray(val) && (!val.length || val.every(v=>v===undefined||v===null||v===''))));
+        if(vazio){ emBranco++; return; }
         const eff = atvEffectiveGrading(resp, draft);
         const saved = (eff.perItem||{})[it.itemId] || {};
         let pts = (saved.points!=null && saved.points!=='') ? Number(saved.points) : null;
-        if(pts===null){ const au = atvAutoDoItem(it, (resp.answers||{})[it.itemId], ctxA.autoLiberado); if(au) pts = au.points; }
+        if(pts===null){ const au = atvAutoDoItem(it, val, ctxA.autoLiberado); if(au) pts = au.points; }
         if(pts!==null){ comNota++; soma += pts; }
       });
       const pct = comNota && maxPts ? Math.round((soma/(comNota*maxPts))*100) : '';
       linhas.push([String(i+1), (it.prompt||'').replace(/\n/g,' '),
                    (ATV_ITEM_TYPES.find(([v])=>v===it.type)||[,it.type])[1],
-                   String(comNota), String(pct), String(maxPts)]);
+                   String(comNota), String(emBranco), String(pct), String(maxPts)]);
     });
     baixarCsv(linhas, 'analise-por-questao.csv');
     return;
