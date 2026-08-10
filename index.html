@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.1                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.2                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1757,12 +1757,43 @@
   .atv-sit-fechado{background:#E8E4EC;color:#5A4B7A;}
   .atv-sit-pendente{background:#EDEDF2;color:var(--muted);}
   .atv-fb-bank-rotulo{font-size:11.5px;font-weight:700;color:var(--muted);margin:8px 0 4px;}
+  /* Comentário reutilizável com botão de excluir no canto (v4.12.2) */
+  .atv-fb-chip-wrap{position:relative;display:inline-flex;}
+  .atv-fb-chip-del{
+    position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;
+    border:1px solid #E0A780;background:#FDEDE3;color:#8A3B12;
+    font-size:12px;font-weight:800;line-height:1;cursor:pointer;padding:0;
+    display:none;align-items:center;justify-content:center;
+  }
+  .atv-fb-chip-wrap:hover .atv-fb-chip-del,
+  .atv-fb-chip-del:focus-visible{display:flex;}
+  .atv-fb-chip-del:hover{background:#C0621F;border-color:#C0621F;color:#fff;}
+  /* Progresso de correção por aluno (v4.12.2) */
+  .atv-prog-tag{
+    display:inline-block;font-size:11px;font-weight:700;border-radius:20px;padding:2px 9px;
+    background:#F2DFB8;color:#8A5A0F;white-space:nowrap;
+  }
+  .atv-prog-tag.completo{background:#CDEBD3;color:#1B5E20;}
+  .atividade-grading-ne{border-left:4px solid #C0621F;background:#FDEDE3;}
+  .atividade-grading-ne .atividade-grade-comment-label{color:#8A3B12;}
+  .atv-st-naoentregue{border-left:3px solid #C0621F;}
   /* ===== Aula ministrada (v4.12.1) ===== */
   .ministrada-bar{
-    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
     margin:14px 0 4px;padding:9px 14px;border:1px dashed var(--line);border-radius:10px;
     background:var(--surface-raised);
   }
+  .ministrada-linha{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .ministrada-editor{
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    margin-top:10px;padding-top:10px;border-top:1px solid var(--line);
+  }
+  .ministrada-editor label{font-size:12.5px;color:var(--ink);margin:0;}
+  .ministrada-editor input[type=date]{
+    padding:5px 9px;border:1px solid var(--line);border-radius:8px;
+    font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);width:auto;
+  }
+  .ministrada-editor .btn-primary, .ministrada-editor .btn-secondary{padding:5px 14px;font-size:12.5px;}
+  .ministrada-chip.editando{outline:2px solid #8A5A0F;outline-offset:1px;}
   .ministrada-rot{font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;color:var(--muted);}
   .ministrada-chip{
     border:1px solid var(--line);background:var(--surface);color:var(--muted);
@@ -3294,7 +3325,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.12.1</div>
+<div class="version-tag hidden" id="version-tag">v4.12.2</div>
 
 
 <script>
@@ -3437,6 +3468,9 @@ function turmasQueTiveramAula(aulaId){
   return Object.keys(AULAS_MINISTRADAS[aulaId] || {});
 }
 function aulaJaMinistrada(aulaId){ return turmasQueTiveramAula(aulaId).length > 0; }
+// Qual turma está com o editor de data aberto. Fica fora do editState porque a
+// tela da aula não é uma tela de edição — é a aula normal, com um controle a mais.
+let MINISTRADA_EDITANDO = null;   // {aulaId, turmaId} | null
 function nomesTurmasDaAula(aulaId){
   const ids = turmasQueTiveramAula(aulaId);
   if(!ids.length || !allTurmas) return '';
@@ -3459,7 +3493,7 @@ async function setAulaMinistrada(aulaId, turmaId, ligado, dataISO){
   if(ligado){
     AULAS_MINISTRADAS[aulaId] = AULAS_MINISTRADAS[aulaId] || {};
     AULAS_MINISTRADAS[aulaId][turmaId] = {
-      date: dataISO || new Date().toISOString().slice(0,10),
+      date: dataISO || hojeISO(),   // hojeISO usa data LOCAL; toISOString viraria o dia à noite
       at: Date.now(), by: (currentUser && currentUser.uid) || null,
     };
   } else {
@@ -3482,28 +3516,45 @@ async function setAulaMinistrada(aulaId, turmaId, ligado, dataISO){
 // tem campo de data e já marca a aula como ministrada ao salvar.
 function barraMinistradaHtml(a){
   if(!a || !a.id) return '';
-  if(AULAS_MINISTRADAS === null){
-    return `<div class="ministrada-bar"><span class="ministrada-rot">Aula ministrada</span><span class="hint" style="margin:0;">carregando…</span></div>`;
-  }
-  if(allTurmas === null){
-    return `<div class="ministrada-bar"><span class="ministrada-rot">Aula ministrada</span><span class="hint" style="margin:0;">carregando turmas…</span></div>`;
-  }
-  if(!allTurmas.length){
-    return `<div class="ministrada-bar"><span class="ministrada-rot">Aula ministrada</span><span class="hint" style="margin:0;">cadastre uma turma em Gestão › Turmas para poder marcar.</span></div>`;
-  }
+  const moldura = (dentro)=>`<div class="ministrada-bar"><span class="ministrada-rot">Aula ministrada</span>${dentro}</div>`;
+  if(AULAS_MINISTRADAS === null) return moldura('<span class="hint" style="margin:0;">carregando…</span>');
+  if(allTurmas === null)         return moldura('<span class="hint" style="margin:0;">carregando turmas…</span>');
+  if(!allTurmas.length)          return moldura('<span class="hint" style="margin:0;">cadastre uma turma em Gestão › Turmas para poder marcar.</span>');
+
   const chips = allTurmas.map(t=>{
     const reg = registroMinistrada(a.id, t.id);
-    const quando = reg && reg.date ? reg.date.split('-').reverse().join('/') : '';
-    return `<button type="button" class="ministrada-chip ${reg?'on':''}"
-      data-action="toggle-aula-ministrada" data-aula-id="${escAttr(a.id)}" data-turma="${escAttr(t.id)}"
-      title="${reg?`Dada em ${quando}. Clique para desmarcar.`:'Clique para marcar como ministrada hoje.'}">
+    const quando = reg && reg.date ? dataBR(reg.date) : '';
+    const abertoAqui = MINISTRADA_EDITANDO && MINISTRADA_EDITANDO.aulaId===a.id && MINISTRADA_EDITANDO.turmaId===t.id;
+    return `<button type="button" class="ministrada-chip ${reg?'on':''} ${abertoAqui?'editando':''}"
+      data-action="abrir-editor-ministrada" data-aula-id="${escAttr(a.id)}" data-turma="${escAttr(t.id)}"
+      title="${reg?`Dada em ${quando}. Clique para mudar a data ou desmarcar.`:'Clique para registrar a data em que você deu esta aula.'}">
       ${reg?'✓':'○'} ${esc(t.name)}${quando?` <span class="ministrada-data">${quando}</span>`:''}
     </button>`;
   }).join('');
+
+  let editor = '';
+  if(MINISTRADA_EDITANDO && MINISTRADA_EDITANDO.aulaId === a.id){
+    const t = allTurmas.find(x=>x.id===MINISTRADA_EDITANDO.turmaId);
+    if(t){
+      const reg = registroMinistrada(a.id, t.id);
+      const valor = (reg && reg.date) || hojeISO();
+      editor = `<div class="ministrada-editor">
+        <label for="ministrada-data-input">${reg?'Data em que esta aula foi dada para':'Quando você deu esta aula para'} <strong>${esc(t.name)}</strong></label>
+        <input type="date" id="ministrada-data-input" value="${escAttr(valor)}">
+        <button type="button" class="btn-primary" data-action="confirmar-ministrada" data-aula-id="${escAttr(a.id)}" data-turma="${escAttr(t.id)}">${reg?'Salvar data':'✓ Marcar como ministrada'}</button>
+        ${reg?`<button type="button" class="btn-secondary" data-action="desmarcar-ministrada" data-aula-id="${escAttr(a.id)}" data-turma="${escAttr(t.id)}">Desmarcar</button>`:''}
+        <button type="button" class="btn-secondary" data-action="cancelar-ministrada">Cancelar</button>
+      </div>`;
+    }
+  }
+
   return `<div class="ministrada-bar">
-    <span class="ministrada-rot">Aula ministrada</span>
-    ${chips}
-    <span class="ministrada-ajuda" title="Marcar aqui usa a data de hoje. Para outra data (ou para registrar a chamada junto), use o Diário de classe 📒 — ele marca a aula como ministrada automaticamente ao salvar.">?</span>
+    <div class="ministrada-linha">
+      <span class="ministrada-rot">Aula ministrada</span>
+      ${chips}
+      <span class="ministrada-ajuda" title="A data que você escolher aqui é a data real da aula — não precisa ser hoje. Se preferir registrar a chamada junto, use o Diário de classe 📒: ele tem campo de data e já marca a aula como ministrada ao salvar.">?</span>
+    </div>
+    ${editor}
   </div>`;
 }
 
@@ -4674,6 +4725,75 @@ function atvSectionFullyAutoGradable(sec){
 // alguém da equipe abrir o sistema depois do prazo vencido — não existe servidor
 // rodando sozinho 24h neste projeto (é um site estático), então este é o gatilho
 // mais próximo de "automático" que dá pra ter.
+// ===== ZERO AUTOMÁTICO DE QUEM NÃO ENTREGOU (v4.12.2) =====
+// Regra, na íntegra: prazo encerrado + a matéria NÃO aceita entrega fora do
+// prazo + o aluno não tem uma única resposta gravada  ->  zero em todas as
+// questões, com o texto padrão da matéria, publicado na hora.
+//
+// Três decisões que valem registrar, porque não são óbvias:
+//
+// 1. "Não entregou" aqui significa FOLHA EM BRANCO. Quem digitou e esqueceu de
+//    clicar em Entregar NÃO é tocado — continua esperando sua correção. Zerar
+//    esse aluno seria punir um clique esquecido, não a ausência de trabalho.
+// 2. Se a matéria aceita entrega fora do prazo, nada roda. Ainda podem chegar
+//    respostas, e um zero publicado antes disso seria simplesmente errado.
+// 3. O aluno pode nunca ter aberto a atividade — nesse caso não existe
+//    documento nenhum no banco, e é esta função que cria o primeiro. Por isso
+//    ela precisa da lista de alunos da turma, não só das respostas existentes.
+async function autoZerarNaoEntregues(){
+  if(!isAdmin || !activeSubjectId) return;
+  if(aceitaForaDoPrazo()) return;   // decisão 2
+  try{
+    const schedules = await fetchAllActivitySchedules();
+    const now = Date.now();
+    const vencidos = schedules.filter(s=>s.closesAt && s.closesAt < now);
+    if(!vencidos.length) return;
+    if(cachedUsersList===null){ try{ await fetchAllUsers(); }catch(e){ return; } }
+    const secIndex = {};
+    COURSE.forEach(b=>(b.aulas||[]).forEach(a=>(a.sections||[]).forEach(s=>{
+      if(s.type==='atividade') secIndex[s.id] = {sec:s, aulaId:a.id, aulaNum:a.num};
+    })));
+    const texto = textoNaoEntregue();
+    for(const agenda of vencidos){
+      const info = secIndex[agenda.sectionId];
+      if(!info || !info.aulaId) continue;
+      const {sec, aulaId, aulaNum} = info;
+      if(!(sec.items||[]).length) continue;
+      const alunos = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===agenda.turmaId);
+      if(!alunos.length) continue;
+      let responses;
+      try{ responses = await fetchActivityResponsesForSection(agenda.sectionId); }catch(e){ continue; }
+      const porUid = {};
+      responses.forEach(r=>{ porUid[r.studentUid] = r; });
+      const maxScore = atvMaxScore(sec);
+      const perItem = {};
+      (sec.items||[]).forEach(it=>{ perItem[it.itemId] = {verdict:'errado', points:0, feedback:null}; });
+      for(const u of alunos){
+        const r = porUid[u.id];
+        const escreveuAlgo = !!(r && r.answers && Object.keys(r.answers).length);
+        const jaPublicado  = !!(r && r.grading && r.grading.published);
+        if(escreveuAlgo || jaPublicado) continue;   // decisão 1 + idempotência
+        const docId = `${aulaId}_${agenda.sectionId}_${u.id}`;
+        const payload = {
+          subjectId: activeSubjectId, aulaId, aulaNum, sectionId: agenda.sectionId,
+          studentUid: u.id, turmaId: agenda.turmaId,
+          studentName: (u.profile && u.profile.fullName) || u.name || '',
+          grading: {score: 0, maxScore, perItem, commentParas: [texto],
+                    gradedBy: 'sistema', gradedAt: Date.now(), published: true,
+                    autoPublished: true, naoEntregue: true},
+          updatedAt: Date.now(),
+        };
+        try{
+          // merge:true de propósito: se por acaso existir um documento (com
+          // answers vazio), a gravação NÃO apaga campo nenhum dele — só
+          // acrescenta a correção. Nada que o aluno tenha registrado se perde.
+          await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId).set(payload, {merge:true});
+        }catch(e){ console.error('Zero automático falhou para', u.id, e); }
+      }
+    }
+  }catch(e){ console.error('autoZerarNaoEntregues falhou:', e); }
+}
+
 async function autoPublicarAtividadesVencidas(){
   if(!isAdmin || !activeSubjectId) return;
   try{
@@ -4701,7 +4821,8 @@ async function autoPublicarAtividadesVencidas(){
         sec.items.forEach(it=>{
           const auto = autoGradeClosedItem(it, answers[it.itemId]);
           const pts = auto ? auto.points : 0;
-          perItem[it.itemId] = {verdict: auto ? (auto.correct?'certo':((auto.partial&&auto.partial.ok>0)?'parcial':'errado')) : 'errado', points: pts, feedback: null};
+          perItem[it.itemId] = {verdict: auto ? (auto.correct?'certo':((auto.partial&&auto.partial.ok>0)?'parcial':'errado')) : 'errado',
+                                points: pts, feedback: feedbackSugerido(it, {}, auto) || null};
           total += pts;
         });
         total = Math.round(total*100)/100;
@@ -4712,7 +4833,8 @@ async function autoPublicarAtividadesVencidas(){
           studentName: resp.studentName || '',
           answers,
           grading: {score: total, maxScore, perItem, commentParas: [],
-                    gradedBy: 'sistema', gradedAt: Date.now(), published: true, autoPublished: true},
+                    gradedBy: 'sistema', gradedAt: Date.now(), published: true, autoPublished: true,
+                    naoEntregue: false},
           updatedAt: Date.now(),
         };
         try{
@@ -4756,6 +4878,11 @@ function autoGradeClosedItem(item, studentValue){
 // pelo aluno > prazo encerrado > em andamento > não iniciado.
 function computeActivityStatus(response, schedule, draft){
   const g = response && response.grading;
+  // O "não entregue" é uma nota publicada como outra qualquer — o que muda é
+  // que ninguém corrigiu nada: o prazo venceu com a folha em branco. Separar
+  // os dois casos importa para você não confundir "tirou zero" com
+  // "nem apareceu", que pedem conversas diferentes com o aluno.
+  if(g && g.published && g.naoEntregue) return 'naoentregue';
   if(g && g.published) return 'publicada';
   if(draft && draft.perItem && Object.keys(draft.perItem).length) return 'corrigindo';
   if(response && response.submittedAt) return 'entregue';
@@ -4770,6 +4897,7 @@ const ATV_STATUS_LABEL = {
   entregue:    '📨 Entregue — aguardando correção',
   corrigindo:  '📝 Correção em rascunho',
   publicada:   '✅ Corrigida e publicada',
+  naoentregue: '🚫 Não entregue — fora do prazo',
 };
 // O aluno só perde o direito de editar quando entrega, quando o prazo fecha ou
 // quando a nota já foi publicada.
@@ -4831,6 +4959,16 @@ function materiaAtual(){
 }
 function aceitaForaDoPrazo(){
   return materiaAtual().aceitaForaPrazo === true;
+}
+// ===== CORREÇÃO PADRÃO DE "NÃO ENTREGUE" (v4.12.2) =====
+// Aluno que não escreveu absolutamente nada e teve o prazo encerrado recebe,
+// sozinho, uma correção padrão: zero em tudo e este texto. O texto mora na
+// matéria (não no código) para você mudar a redação sem depender de uma
+// versão nova do arquivo.
+const TEXTO_NAO_ENTREGUE_PADRAO = 'Atividade não entregue dentro do prazo estabelecido. Nenhuma resposta foi registrada na plataforma até o encerramento.';
+function textoNaoEntregue(){
+  const t = materiaAtual().textoNaoEntregue;
+  return (typeof t === 'string' && t.trim()) ? t.trim() : TEXTO_NAO_ENTREGUE_PADRAO;
 }
 function aulasPorEncontro(){
   const v = materiaAtual().aulasPorEncontro;
@@ -4920,6 +5058,7 @@ function atvResumoSituacaoHtml(sec, response, schedule){
   if(publicada){
     const g = response.grading || {};
     const nota = (g.score!=null) ? ` — ${esc(String(g.score))}${g.maxScore!=null?`/${esc(String(g.maxScore))}`:''}` : '';
+    if(g.naoEntregue) return `<span class="atividade-summary-status atv-sit-atraso">🚫 Não entregue${nota}</span>`;
     return `<span class="atividade-summary-status atv-sit-ok">✅ Corrigida${nota}</span>`;
   }
   if(response && response.submittedAt){
@@ -4980,10 +5119,20 @@ function renderAtividadeStudentForm(sec, response, schedule){
   if(publicada){
     const g = response.grading || {};
     const comentario = (g.commentParas && g.commentParas.length) ? g.commentParas.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${richOut(p)}</p>`).join('') : '';
-    gradingHtml = `<div class="atividade-grading">
-      ${g.score!=null?`<div class="atividade-grade-score">Nota: <strong>${esc(String(g.score))}${g.maxScore!=null?` / ${esc(String(g.maxScore))}`:''}</strong></div>`:''}
-      ${comentario?`<div class="atividade-grade-comment-label">Comentário geral do professor</div><div class="rich-content">${comentario}</div>`:''}
-    </div>`;
+    // Quando o zero veio do prazo vencido em branco, chamar aquilo de
+    // "comentário do professor" seria mentira — ninguém corrigiu nada. O
+    // aluno lê o motivo real, com a cara de aviso e não de correção.
+    gradingHtml = g.naoEntregue
+      ? `<div class="atividade-grading atividade-grading-ne">
+          <div class="atividade-grade-comment-label">🚫 Não entregue no prazo</div>
+          ${comentario?`<div class="rich-content">${comentario}</div>`:''}
+          ${g.score!=null?`<div class="atividade-grade-score">Nota: <strong>${esc(String(g.score))}${g.maxScore!=null?` / ${esc(String(g.maxScore))}`:''}</strong></div>`:''}
+          <div class="hint" style="margin:8px 0 0;">Se você acha que houve um engano, procure o professor.</div>
+        </div>`
+      : `<div class="atividade-grading">
+          ${g.score!=null?`<div class="atividade-grade-score">Nota: <strong>${esc(String(g.score))}${g.maxScore!=null?` / ${esc(String(g.maxScore))}`:''}</strong></div>`:''}
+          ${comentario?`<div class="atividade-grade-comment-label">Comentário geral do professor</div><div class="rich-content">${comentario}</div>`:''}
+        </div>`;
   }
   return `<div class="atividade-card">
     <div class="atividade-head"><span class="atividade-status atividade-status-${status}">${statusLabel}</span></div>
@@ -5286,7 +5435,10 @@ async function fetchAllActivitySchedules(){
 // Chips de comentários rápidos reaproveitáveis, ao lado de cada campo de feedback.
 function atvFeedbackBankHtml(targetKey){
   const bank = ATV_FEEDBACK_BANK || [];
-  const chips = bank.map((txt,i)=>`<button type="button" class="atv-fb-chip" data-action="atv-insert-feedback" data-target-key="${escAttr(targetKey)}" data-bank-i="${i}" title="${escAttr(txt)}">${esc(txt.length>42?txt.slice(0,42)+'…':txt)}</button>`).join('');
+  const chips = bank.map((txt,i)=>`<span class="atv-fb-chip-wrap">
+      <button type="button" class="atv-fb-chip" data-action="atv-insert-feedback" data-target-key="${escAttr(targetKey)}" data-bank-i="${i}" title="${escAttr(txt)}">${esc(txt.length>42?txt.slice(0,42)+'…':txt)}</button>
+      <button type="button" class="atv-fb-chip-del" data-action="atv-delete-from-bank" data-bank-i="${i}" title="Excluir este comentário do banco" aria-label="Excluir comentário">×</button>
+    </span>`).join('');
   return `<div class="atv-fb-bank">
     ${chips || '<span class="atv-fb-bank-empty">Nenhum comentário rápido salvo ainda.</span>'}
     <button type="button" class="atv-fb-chip atv-fb-chip-add" data-action="atv-save-to-bank" data-target-key="${escAttr(targetKey)}" title="Salvar o texto digitado acima como comentário rápido, para reusar em outros alunos">+ salvar este texto</button>
@@ -5327,6 +5479,48 @@ function recalcAtvGradeTotal(scopeEl){
 // Estes três botões são o coração da correção: é aqui que o professor diz se o
 // aluno acertou. Clicar preenche os pontos sozinho (cheio / metade / zero), mas
 // o número continua editável para ajuste fino.
+// ===== GABARITO AUTOMÁTICO NO FEEDBACK (v4.12.2) =====
+// Numa questão fechada, "errado" sem mais nada não ensina ninguém: o aluno
+// fica sabendo que perdeu ponto, não onde errou. Como o gabarito já está
+// cadastrado, escrever isso à mão era trabalho de digitação, não de correção.
+// Agora o texto nasce pronto no campo de feedback — e continua sendo um campo
+// de texto normal: você apaga, completa ou reescreve antes de salvar.
+function gabaritoEmTexto(item){
+  if(item.type==='multipla_escolha'){
+    if(!item.correctOption) return '';
+    const i = (item.options||[]).findIndex(o=>String(o).trim()===String(item.correctOption).trim());
+    const letra = i>=0 ? String.fromCharCode(65+i)+') ' : '';
+    return `Resposta correta: ${letra}${item.correctOption}.`;
+  }
+  if(item.type==='checklist'){
+    if(!item.correctOptions || !item.correctOptions.length) return '';
+    return `Alternativas corretas: ${item.correctOptions.join('; ')}.`;
+  }
+  if(item.type==='verdadeiro_falso'){
+    if(!item.correctAnswers || !item.correctAnswers.length) return '';
+    const linhas = (item.statements||[]).map((st,i)=>{
+      const g = item.correctAnswers[i];
+      if(!g) return null;
+      return `${g==='V'?'V':'F'} — ${st}`;
+    }).filter(Boolean);
+    return linhas.length ? `Gabarito:\n${linhas.join('\n')}` : '';
+  }
+  return '';
+}
+// Texto que vai para o campo de feedback quando a correção automática apontou
+// erro. Só entra se o professor ainda não escreveu nada ali — nunca por cima.
+function feedbackSugerido(item, saved, auto){
+  if(saved && saved.feedback) return saved.feedback;
+  if(!auto || auto.correct) return '';
+  const g = gabaritoEmTexto(item);
+  if(!g) return '';
+  const parcial = (auto.partial && auto.partial.ok>0)
+    ? `Você acertou ${auto.partial.ok} de ${auto.partial.total}. ` : '';
+  const modelo = (item.modelAnswer && String(item.modelAnswer).trim())
+    ? `\n\n${String(item.modelAnswer).trim()}` : '';
+  return `${parcial}${g}${modelo}`;
+}
+
 function atvVerdictControlsHtml(item, saved, auto){
   const maxPts = atvItemMaxPoints(item);
   let verdict = saved.verdict || null;
@@ -5376,7 +5570,7 @@ function atvGradingPanelHtml(sec, resp, user, draft, autoLiberado){
            </div>`
         : `<div class="hint atv-sem-gabarito">Esta questão não tem resposta esperada cadastrada — o aluno vai ver só o seu feedback abaixo. Para incluir um gabarito, edite a atividade na aula e preencha "Resposta esperada".</div>`}
       <label class="atv-fb-label">Feedback desta questão (o aluno só vê depois de publicada)</label>
-      <textarea class="atv-item-grade-feedback" data-key="${escAttr(keyBase)}" data-item-id="${escAttr(it.itemId)}" placeholder="Onde errou, o que faltou, o que você esperava da resposta...">${esc(saved.feedback||'')}</textarea>
+      <textarea class="atv-item-grade-feedback" data-key="${escAttr(keyBase)}" data-item-id="${escAttr(it.itemId)}" placeholder="Onde errou, o que faltou, o que você esperava da resposta...">${esc(feedbackSugerido(it, saved, auto))}</textarea>
       <div class="atv-fb-bank-rotulo">💬 Comentários reutilizáveis — clique para inserir no campo acima:</div>
       ${atvFeedbackBankHtml(keyBase)}
     </div>`;
@@ -5580,6 +5774,24 @@ function atvManageContext(){
 
 function atvNomeAluno(u){ return (u.profile && u.profile.fullName) || u.name || '(sem nome)'; }
 
+// Quantas questões deste aluno já têm nota (sua ou vinda do gabarito) — o que
+// falta para fechar a correção dele. Sem esse número a lista de alunos só
+// dizia "entregue", e você tinha que abrir um por um para descobrir quais
+// já estavam praticamente prontos por causa da correção automática.
+function atvProgressoDoAluno(sec, resp, draft, autoLiberado){
+  const itens = sec.items || [];
+  if(!itens.length) return {feitas:0, total:0};
+  const eff = atvEffectiveGrading(resp, draft);
+  const answers = (resp && resp.answers) || {};
+  let feitas = 0;
+  itens.forEach(it=>{
+    const saved = (eff.perItem||{})[it.itemId] || {};
+    if(saved.points!=null && saved.points!=='') { feitas++; return; }
+    if(atvAutoDoItem(it, answers[it.itemId], autoLiberado)) feitas++;
+  });
+  return {feitas, total: itens.length};
+}
+
 // ---------- ABA: POR ALUNO ----------
 function atvPorAlunoHtml(sec, ctx){
   const maxTotal = atvMaxScore(sec);
@@ -5590,9 +5802,14 @@ function atvPorAlunoHtml(sec, ctx){
     const isGrading = editState.gradingUid === u.id;
     const t = atvComputeStudentTotal(sec, resp, draft, ctx.autoLiberado);
     const notaTag = t.any ? `<span class="atv-nota-tag">${t.total} / ${maxTotal}</span>` : '';
+    const entregouAlgo = !!(resp && resp.answers && Object.keys(resp.answers).length);
+    const pr = atvProgressoDoAluno(sec, resp, draft, ctx.autoLiberado);
+    const progTag = (entregouAlgo && status!=='naoentregue' && pr.total)
+      ? `<span class="atv-prog-tag ${pr.feitas>=pr.total?'completo':''}" title="${pr.feitas>=pr.total?'Todas as questões já têm nota — falta publicar.':`Faltam ${pr.total-pr.feitas} questão(ões) sem nota.`}">${pr.feitas}/${pr.total} corrigidas</span>`
+      : '';
     return `<div class="user-row atv-student-row atv-st-${status}">
         <div class="user-row-info"><strong>${esc(atvNomeAluno(u))}</strong></div>
-        <div class="user-row-status">${ATV_STATUS_LABEL[status]||status} ${notaTag}</div>
+        <div class="user-row-status">${ATV_STATUS_LABEL[status]||status} ${progTag} ${notaTag}</div>
         <button class="btn-secondary" data-action="toggle-atv-grade-panel" data-uid="${escAttr(u.id)}">${isGrading?'Fechar':(status==='publicada'?'Rever correção':'Corrigir')}</button>
       </div>
       ${isGrading ? atvGradingPanelHtml(sec, resp, u, draft, ctx.autoLiberado) : ''}`;
@@ -5626,7 +5843,7 @@ function atvPorQuestaoHtml(sec, ctx){
       <div class="atv-q-student">${esc(atvNomeAluno(u))}</div>
       <div class="atv-grade-answer${semResposta?' atv-sem-resposta':''}">${renderAtividadeAnswerReadonly(item, val)}</div>
       ${atvVerdictControlsHtml(item, saved, auto)}
-      <textarea class="atv-item-grade-feedback atv-q-feedback" data-key="${escAttr(keyBase)}" data-item-id="${escAttr(item.itemId)}" placeholder="Feedback para este aluno nesta questão (opcional)">${esc(saved.feedback||'')}</textarea>
+      <textarea class="atv-item-grade-feedback atv-q-feedback" data-key="${escAttr(keyBase)}" data-item-id="${escAttr(item.itemId)}" placeholder="Feedback para este aluno nesta questão (opcional)">${esc(feedbackSugerido(item, saved, auto))}</textarea>
       ${atvFeedbackBankHtml(keyBase)}
     </div>`;
   }).join('') || '<p class="hint">Nenhum aluno nesta turma.</p>';
@@ -6493,11 +6710,16 @@ async function atvPublishForStudent(sec, uid){
     const saved = (eff.perItem||{})[it.itemId] || {};
     let pts = (saved.points!=null && saved.points!=='') ? Number(saved.points) : null;
     let verdict = saved.verdict || null;
-    if(pts===null){
-      const auto = atvAutoDoItem(it, answers[it.itemId], atvAutoLiberada(ctxPub.schedule));
-      if(auto){ pts = auto.points; verdict = auto.correct ? 'certo' : ((auto.partial && auto.partial.ok>0) ? 'parcial' : 'errado'); }
+    const auto = atvAutoDoItem(it, answers[it.itemId], atvAutoLiberada(ctxPub.schedule));
+    if(pts===null && auto){
+      pts = auto.points;
+      verdict = auto.correct ? 'certo' : ((auto.partial && auto.partial.ok>0) ? 'parcial' : 'errado');
     }
-    perItem[it.itemId] = {verdict, points: (pts==null||isNaN(pts))?null:pts, feedback: saved.feedback||null};
+    // O gabarito acompanha a nota também quando você publica sem abrir o
+    // painel do aluno (ex.: "Publicar tudo"): senão o aluno receberia o zero
+    // da questão fechada sem saber qual era a resposta certa.
+    perItem[it.itemId] = {verdict, points: (pts==null||isNaN(pts))?null:pts,
+                          feedback: saved.feedback || feedbackSugerido(it, saved, auto) || null};
     total += (pts||0);
   });
   total = Math.round(total*100)/100;
@@ -6512,7 +6734,11 @@ async function atvPublishForStudent(sec, uid){
     studentName: resp.studentName || (alunoDoc.profile && alunoDoc.profile.fullName) || alunoDoc.name || '',
     answers: resp.answers || {},
     grading: {score: total, maxScore: atvMaxScore(sec), perItem, commentParas: eff.commentParas||[],
-              gradedBy: currentUser.uid, gradedAt: Date.now(), published: true},
+              gradedBy: currentUser.uid, gradedAt: Date.now(), published: true,
+              // set(merge:true) mescla mapa aninhado campo a campo. Sem este
+              // false explícito, um aluno zerado pelo automático e corrigido
+              // de verdade depois continuaria marcado como "não entregue".
+              naoEntregue: false},
     updatedAt: Date.now(),
   };
   await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId).set(payload, {merge:true});
@@ -9450,6 +9676,11 @@ function orgScreenForm(){
         <option value="2" ${aulasPorEncontro()===2?'selected':''}>2 aulas por encontro (1h40)</option>
         <option value="1" ${aulasPorEncontro()===1?'selected':''}>1 aula por encontro (50min)</option>
       </select>
+      <label>Texto que o aluno lê quando não entrega no prazo
+        <span class="tip has-tip" data-tip="Quando o prazo fecha e o aluno não registrou uma única resposta, o sistema publica zero sozinho com este texto. Só vale quando 'Aceitar respostas fora do prazo' está em Não — se a matéria aceita atraso, nada é lançado automaticamente.">?</span>
+      </label>
+      <textarea id="org-texto-nao-entregue" rows="2" spellcheck="true" lang="pt-BR" placeholder="${escAttr(TEXTO_NAO_ENTREGUE_PADRAO)}">${esc(materiaAtual().textoNaoEntregue||'')}</textarea>
+      <div class="hint">Em branco, o sistema usa: “${esc(TEXTO_NAO_ENTREGUE_PADRAO)}” — o zero automático vale só para quem não escreveu <strong>nada</strong>. Quem respondeu e esqueceu de clicar em “Entregar” continua na sua fila de correção, intocado.</div>
       <div class="hint">Ao clicar em <strong>Salvar todas as alterações</strong> (no fim desta tela), o sistema atualiza também os prazos e os registros de chamada já gravados, para que a matéria inteira siga a mesma regra — você não precisa refazer nada à mão.</div>
     </div>
     <label>Descrição do cabeçalho (linha pequena abaixo do título)</label>
@@ -10442,6 +10673,7 @@ function render(){
   reaplicarMarcaDeAlteracao();
   // A barra "aula ministrada" precisa do registro e da lista de turmas. Os dois
   // são leitura única por sessão e só para a equipe — o aluno nunca dispara.
+  if(MINISTRADA_EDITANDO && a && MINISTRADA_EDITANDO.aulaId !== a.id) MINISTRADA_EDITANDO = null;
   if(isAdminNaTela() && firebaseReady && activeSubjectId){
     if(AULAS_MINISTRADAS===null && !MINISTRADAS_CARREGANDO){
       carregarAulasMinistradas().then(()=>render()).catch(()=>{});
@@ -12228,7 +12460,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const docId = `${aulaIdDe(editState.blockNum, editState.aulaNum)}_${editState.sectionId}_${uid}`;
     try{
       await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(docId)
-        .set({submittedAt: null, grading: {published: false}}, {merge:true});
+        .set({submittedAt: null, grading: {published: false, naoEntregue: false}}, {merge:true});
       const idx = (ATV_MANAGE_RESPONSES||[]).findIndex(r=>r.studentUid===uid);
       if(idx>=0){
         ATV_MANAGE_RESPONSES[idx].submittedAt = null;
@@ -12338,6 +12570,21 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     if(!ta) return;
     ta.value = ta.value.trim() ? (ta.value.trim() + ' ' + txt) : txt;
     ta.focus();
+    return;
+  }
+  if(action==='atv-delete-from-bank'){
+    const i = +btn.dataset.bankI;
+    const bank = ATV_FEEDBACK_BANK || [];
+    const txt = bank[i];
+    if(txt===undefined) return;
+    if(!confirm(`Excluir este comentário do banco?\n\n“${txt}”\n\nEle some dos atalhos de todas as correções. Os feedbacks que você já enviou aos alunos não mudam.`)) return;
+    const novo = bank.filter((_,j)=>j!==i);
+    try{
+      await db.collection(`subjects/${activeSubjectId}/activity_feedback_bank`).doc('default')
+        .set({items: novo, updatedAt: Date.now()}, {merge:true});
+      ATV_FEEDBACK_BANK = novo;
+    }catch(err){ alert('Não foi possível excluir o comentário: ' + (err && err.message ? err.message : String(err))); }
+    render();
     return;
   }
   if(action==='atv-save-to-bank'){
@@ -13032,13 +13279,16 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const mudouAulasEnc = novoAulasEnc !== aulasPorEncontro();
     if(newSubjectName && activeSubjectId){
       try{
+        const novoTextoNE = ((document.getElementById('org-texto-nao-entregue')||{}).value || '').trim();
         const patch = {name: newSubjectName, description: newSubjectDescription,
-                       aceitaForaPrazo: novoAceitaAtraso, aulasPorEncontro: novoAulasEnc};
+                       aceitaForaPrazo: novoAceitaAtraso, aulasPorEncontro: novoAulasEnc,
+                       textoNaoEntregue: novoTextoNE};
         if(!isNaN(novoPontos) && novoPontos > 0) patch.pontosAtividades = novoPontos;
         await db.collection('subjects').doc(activeSubjectId).update(patch);
         const s = allSubjects.find(x=>x.id===activeSubjectId);
         if(s){ s.name = newSubjectName; s.description = newSubjectDescription;
                s.aceitaForaPrazo = novoAceitaAtraso; s.aulasPorEncontro = novoAulasEnc;
+               s.textoNaoEntregue = novoTextoNE;
                if(patch.pontosAtividades) s.pontosAtividades = patch.pontosAtividades; }
         document.getElementById('site-title-text').textContent = newSubjectName;
       }catch(e){
@@ -13467,13 +13717,47 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='cancel-edit'){ editState=null; cachedUsersList=null; ATV_MANAGE_RESPONSES=null; ATV_MANAGE_SCHEDULES={}; ATV_MANAGE_DRAFTS=null; ATV_BOLETIM_DATA=null; ATV_BOLETIM_SCHEDULES=null; DIARIO_REGISTROS=null; DIARIO_TODOS=null; render(); return; }
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
-  if(action==='toggle-aula-ministrada'){
+  if(action==='abrir-editor-ministrada'){
     if(!isAdmin) return;
     const aulaId = btn.dataset.aulaId, turmaId = btn.dataset.turma;
-    const ligado = !registroMinistrada(aulaId, turmaId);
+    const jaAberto = MINISTRADA_EDITANDO && MINISTRADA_EDITANDO.aulaId===aulaId && MINISTRADA_EDITANDO.turmaId===turmaId;
+    MINISTRADA_EDITANDO = jaAberto ? null : {aulaId, turmaId};
+    render();
+    const inp = document.getElementById('ministrada-data-input');
+    if(inp) inp.focus();
+    return;
+  }
+  if(action==='cancelar-ministrada'){
+    MINISTRADA_EDITANDO = null;
+    render();
+    return;
+  }
+  if(action==='confirmar-ministrada'){
+    if(!isAdmin) return;
+    const aulaId = btn.dataset.aulaId, turmaId = btn.dataset.turma;
+    const inp = document.getElementById('ministrada-data-input');
+    const data = inp ? inp.value : '';
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(data)){
+      alert('Escolha a data em que você deu esta aula.');
+      return;
+    }
+    // Data futura quase sempre é engano de digitação (ano errado, mês trocado).
+    // Não bloqueia — só confirma, porque pode ser lançamento planejado.
+    if(data > hojeISO() && !confirm(`${dataBR(data)} ainda não chegou.\n\nMarcar mesmo assim como aula já ministrada?`)) return;
+    btn.disabled = true; btn.textContent = 'Salvando…';
+    const ok = await setAulaMinistrada(aulaId, turmaId, true, data);
+    if(ok) MINISTRADA_EDITANDO = null;
+    render();
+    return;
+  }
+  if(action==='desmarcar-ministrada'){
+    if(!isAdmin) return;
+    const aulaId = btn.dataset.aulaId, turmaId = btn.dataset.turma;
+    const t = (allTurmas||[]).find(x=>x.id===turmaId);
+    if(!confirm(`Desmarcar esta aula como ministrada para ${t?t.name:'esta turma'}?\n\nIsso apaga só o registro de que a aula foi dada. Chamada, notas e respostas dos alunos não são afetadas.`)) return;
     btn.disabled = true;
-    await setAulaMinistrada(aulaId, turmaId, ligado);
-    btn.disabled = false;
+    const ok = await setAulaMinistrada(aulaId, turmaId, false);
+    if(ok) MINISTRADA_EDITANDO = null;
     render();
     return;
   }
@@ -15334,7 +15618,7 @@ async function openSubject(subjectId){
   document.getElementById('student-switch-subject-btn').classList.remove('hidden'); // admin sempre pode trocar/criar matéria
   applySubjectBranding(allSubjects && allSubjects.find(x=>x.id===subjectId));
   AULA_TEMPLATE_CACHE = undefined; // matéria pode ter mudado — rebusca o modelo quando precisar
-  if(isAdmin){ checkLocalDraft(); updateCapacityIndicator(); autoPublicarAtividadesVencidas(); }
+  if(isAdmin){ checkLocalDraft(); updateCapacityIndicator(); autoPublicarAtividadesVencidas(); autoZerarNaoEntregues(); }
 }
 
 async function openStudentSubject(subjectId){
