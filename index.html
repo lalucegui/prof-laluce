@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.10.21                  -->
+<!-- VERSAO DESTE ARQUIVO: v4.11.0                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2015,6 +2015,15 @@
   /* NOVO (v4.10.0) — campo obrigatorio ainda em branco. */
   .campo-faltando{border-color:var(--err) !important;box-shadow:0 0 0 2px rgba(178,59,59,.12);}
   .turma-badge{font-size:11px;color:var(--navy);font-weight:700;}
+  /* NOVO (v4.11.0) — cartões da central de relatórios. */
+  .rel-card{
+    border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:12px;
+    background:var(--surface-raised);
+  }
+  .rel-card-topo{display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--navy);}
+  .rel-card-icone{font-size:18px;}
+  .rel-card-texto{font-size:12.5px;line-height:1.55;color:var(--muted);margin:7px 0 11px 0;}
+  .rel-card-acoes{display:flex;gap:8px;flex-wrap:wrap;}
   .turma-filter-row{display:flex;align-items:center;gap:8px;margin-top:12px;}
   .turma-filter-row select{font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-raised);}
   .turmas-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
@@ -3201,7 +3210,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.10.21</div>
+<div class="version-tag hidden" id="version-tag">v4.11.0</div>
 
 
 <script>
@@ -5344,6 +5353,303 @@ function atvPorQuestaoHtml(sec, ctx){
 // select): aqui as turmas aparecem todas juntas, cada uma com os alunos já
 // ordenados do que mais falta para o que menos falta — pensado para uma
 // conferência de fechamento de período, não para acompanhamento do dia a dia.
+// ===================== RELATÓRIOS (v4.11.0) =====================
+// Primeira etapa da reorganização das atividades — e a única que mexe em algo
+// hoje. Tudo aqui é LEITURA: monta documentos a partir do que já está gravado
+// e entrega em PDF (para arquivar e imprimir) ou CSV (para conferir no Excel).
+// Nenhuma linha deste bloco escreve no banco.
+//
+// Por que isso vem primeiro: hoje o único backup que existe é o do CONTEÚDO do
+// curso. Resposta de aluno, nota, feedback e chamada não têm nenhum. Antes de
+// reorganizar a correção, o professor precisa conseguir tirar da plataforma o
+// que os alunos produziram.
+
+// Junta, num lugar só, tudo que os três relatórios usam. Se faltar qualquer
+// peça, devolve o motivo — relatório pela metade é pior que relatório nenhum.
+function relatorioDados(turmaId){
+  if(allTurmas===null || cachedUsersList===null || ATV_BOLETIM_DATA===null
+     || ATV_BOLETIM_SCHEDULES===null || DIARIO_TODOS===null){
+    return {erro:'Os dados ainda estão carregando. Espere um instante e tente de novo.'};
+  }
+  const turma = (allTurmas||[]).find(t=>t.id===turmaId);
+  if(!turma) return {erro:'Escolha uma turma.'};
+  const alunos = (cachedUsersList||[])
+    .filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId)
+    .sort((x,y)=> String(atvNomeAluno(x)).localeCompare(String(atvNomeAluno(y))));
+  if(!alunos.length) return {erro:'Esta turma ainda não tem alunos.'};
+  const atividades = collectAllAtividades();
+  const chamadas = (DIARIO_TODOS||[])
+    .filter(r=>r.turmaId===turmaId)
+    .sort((x,y)=>String(x.date).localeCompare(String(y.date)));
+  const prazoPorSecao = {};
+  (ATV_BOLETIM_SCHEDULES||[]).forEach(s=>{ if(s.turmaId===turmaId) prazoPorSecao[s.sectionId] = s; });
+  const respostaPorSecao = {};
+  (ATV_BOLETIM_DATA||[]).forEach(r=>{
+    respostaPorSecao[r.sectionId] = respostaPorSecao[r.sectionId] || {};
+    respostaPorSecao[r.sectionId][r.studentUid] = r;
+  });
+  // A seção completa (com as questões) precisa vir do curso — a resposta
+  // guarda só o que o aluno escreveu, não o enunciado.
+  const secaoPorId = {};
+  COURSE.forEach(b=>(b.aulas||[]).forEach(a=>(a.sections||[]).forEach(s=>{
+    if(s.type==='atividade') secaoPorId[s.id] = {sec:s, aula:a, bloco:b};
+  })));
+  return {turma, alunos, atividades, chamadas, prazoPorSecao, respostaPorSecao, secaoPorId,
+          materia: activeSubjectName || ''};
+}
+
+// Resposta do aluno em texto puro — para o CSV, onde não cabe marcação.
+function respostaComoTexto(item, valor){
+  if(valor===undefined || valor===null || valor==='' || (Array.isArray(valor) && !valor.length)) return '(sem resposta)';
+  const limpa = h => String(h).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+  switch(item.type){
+    case 'dissertativa': return (Array.isArray(valor)?valor:[valor]).map(limpa).join(' ');
+    case 'lista':        return (valor||[]).join(' | ');
+    case 'checklist':    return (valor||[]).join(' | ');
+    case 'tabela':       return (valor||[]).map(l=>(l||[]).join(', ')).join(' | ');
+    case 'verdadeiro_falso':
+      return (item.statements||[]).map((st,i)=>`${st}: ${valor[i]==='V'?'V':(valor[i]==='F'?'F':'—')}`).join(' | ');
+    case 'associacao':
+      return (item.left||[]).map((l,i)=>`${l} → ${valor[i]||'—'}`).join(' | ');
+    default: return limpa(valor);
+  }
+}
+
+// Situação da entrega, em palavra — usada nos três relatórios.
+function relSituacao(resp, agenda){
+  if(!resp || !resp.submittedAt) return 'Não entregue';
+  return atvEntregaAtrasada(resp, agenda) ? 'Fora do prazo' : 'Entregue no prazo';
+}
+
+// ---------- Documento imprimível (vira PDF pelo "Salvar como PDF" do navegador) ----------
+function abrirRelatorioImpressao(titulo, subtitulo, corpoHtml){
+  const inst = (instConfig.instNome || '').trim();
+  const curso = (instConfig.cursoNome || '').trim();
+  const prof = (instConfig.profNome || '').trim();
+  const quando = new Date().toLocaleString('pt-BR');
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(titulo)}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm 10mm; }
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+  body{font-family:'Helvetica','Arial',sans-serif;color:#2B2B2B;margin:0;font-size:11px;}
+  .cab{border-bottom:2px solid #3D3E77;padding-bottom:10px;margin-bottom:14px;}
+  .cab .inst{font-size:10px;color:#666;}
+  .cab h1{font-size:17px;color:#3D3E77;margin:4px 0 2px 0;}
+  .cab .sub{font-size:11.5px;color:#555;}
+  .cab .meta{font-size:9.5px;color:#888;margin-top:5px;}
+  h2{font-size:13px;color:#3D3E77;margin:16px 0 6px 0;border-bottom:1px solid #ddd;padding-bottom:3px;}
+  h3{font-size:11.5px;color:#444;margin:12px 0 4px 0;}
+  table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  th{background:#3D3E77 !important;color:#fff !important;text-align:left;padding:5px 7px;font-size:9.5px;}
+  td{padding:4px 7px;border-bottom:1px solid #e2e2e2;vertical-align:top;font-size:10px;}
+  tr:nth-child(even) td{background:#F7F7FA;}
+  .falta{background:#FBEAEA !important;color:#A33;font-weight:bold;}
+  .presenca{color:#2E7D32;}
+  .atraso{color:#8A5A0F;font-weight:bold;}
+  .naoentregue{color:#A33;}
+  .resposta{background:#F7F7FA;padding:5px 7px;border-left:2px solid #ccc;margin:3px 0;white-space:pre-wrap;}
+  .fb{background:#F1F7F2;padding:5px 7px;border-left:2px solid #7FA882;margin:3px 0;}
+  .nota{font-weight:bold;color:#3D3E77;}
+  .rodape{margin-top:18px;border-top:1px solid #ddd;padding-top:6px;font-size:8.5px;color:#999;}
+  .quebra{page-break-before:always;}
+  .aluno-bloco{page-break-inside:avoid;margin-bottom:14px;}
+</style></head><body>
+  <div class="cab">
+    ${inst?`<div class="inst">${esc(inst)}${curso?' · '+esc(curso):''}</div>`:''}
+    <h1>${esc(titulo)}</h1>
+    <div class="sub">${esc(subtitulo)}</div>
+    <div class="meta">Emitido em ${esc(quando)}${prof?' · '+esc(prof):''}</div>
+  </div>
+  ${corpoHtml}
+  <div class="rodape">Documento gerado pela plataforma — confira sempre contra o diário oficial da instituição.</div>
+</body></html>`;
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if(!win){
+    alert('O navegador bloqueou a janela de impressão. Permita pop-ups para este site e tente de novo.');
+    URL.revokeObjectURL(url);
+    return;
+  }
+  win.addEventListener('load', ()=>{ win.print(); setTimeout(()=>URL.revokeObjectURL(url), 10000); });
+}
+
+// ---------- 1) RESPOSTAS E NOTAS ----------
+function relRespostasHtml(d){
+  if(!d.atividades.length) return '<p>Nenhuma atividade criada nesta matéria.</p>';
+  return d.alunos.map(u=>{
+    const blocos = d.atividades.map(at=>{
+      const info = d.secaoPorId[at.sectionId];
+      if(!info) return '';
+      const sec = info.sec;
+      const resp = (d.respostaPorSecao[at.sectionId]||{})[u.id];
+      const agenda = d.prazoPorSecao[at.sectionId];
+      const g = (resp && resp.grading && resp.grading.published) ? resp.grading : null;
+      const sit = relSituacao(resp, agenda);
+      const clsSit = sit==='Entregue no prazo' ? 'presenca' : (sit==='Fora do prazo' ? 'atraso' : 'naoentregue');
+      const questoes = (sec.items||[]).map((it,i)=>{
+        const valor = (resp && resp.answers) ? resp.answers[it.itemId] : undefined;
+        const pi = g && g.perItem ? (g.perItem[it.itemId]||{}) : {};
+        const nota = (pi.points!=null) ? `<span class="nota">${esc(String(pi.points))} / ${atvItemMaxPoints(it)}</span>` : '';
+        return `<h3>${i+1}. ${esc(it.prompt||'')} ${nota}</h3>
+          <div class="resposta">${renderAtividadeAnswerReadonly(it, valor)}</div>
+          ${pi.feedback?`<div class="fb"><strong>Feedback:</strong> ${esc(pi.feedback)}</div>`:''}
+          ${(it.modelAnswer&&String(it.modelAnswer).trim())?`<div class="fb"><strong>Gabarito:</strong> ${esc(String(it.modelAnswer))}</div>`:''}`;
+      }).join('');
+      const comentario = (g && g.commentParas && g.commentParas.length)
+        ? `<div class="fb"><strong>Comentário geral:</strong> ${esc(g.commentParas.map(p=>String(p).replace(/<[^>]*>/g,' ')).join(' '))}</div>` : '';
+      const notaTotal = g && g.score!=null ? ` — <span class="nota">Nota ${esc(String(g.score))}${g.maxScore!=null?' / '+esc(String(g.maxScore)):''}</span>` : '';
+      return `<h2>${esc(at.title)} <span style="font-weight:normal;font-size:10px;color:#666;">(Aula ${at.aulaNum})</span> — <span class="${clsSit}">${sit}</span>${notaTotal}</h2>
+        ${questoes || '<p>Esta atividade não tem questões.</p>'}
+        ${comentario}`;
+    }).join('');
+    return `<div class="aluno-bloco"><h2 style="background:#EDEDF5;padding:5px 8px;">${esc(atvNomeAluno(u))}${u.profile&&u.profile.ra?` · RA ${esc(u.profile.ra)}`:''}</h2>${blocos}</div>`;
+  }).join('<div class="quebra"></div>');
+}
+function relRespostasCsv(d){
+  const linhas = [['Aluno','RA','Atividade','Aula','Situação','Questão','Enunciado','Resposta','Nota da questão','Vale','Feedback da questão','Nota final','Comentário geral']];
+  d.alunos.forEach(u=>{
+    d.atividades.forEach(at=>{
+      const info = d.secaoPorId[at.sectionId];
+      if(!info) return;
+      const sec = info.sec;
+      const resp = (d.respostaPorSecao[at.sectionId]||{})[u.id];
+      const agenda = d.prazoPorSecao[at.sectionId];
+      const g = (resp && resp.grading && resp.grading.published) ? resp.grading : null;
+      const sit = relSituacao(resp, agenda);
+      const comentario = (g && g.commentParas) ? g.commentParas.map(p=>String(p).replace(/<[^>]*>/g,' ')).join(' ') : '';
+      (sec.items||[]).forEach((it,i)=>{
+        const valor = (resp && resp.answers) ? resp.answers[it.itemId] : undefined;
+        const pi = g && g.perItem ? (g.perItem[it.itemId]||{}) : {};
+        linhas.push([
+          atvNomeAluno(u), (u.profile&&u.profile.ra)||'', at.title, 'Aula '+at.aulaNum, sit,
+          String(i+1), it.prompt||'', respostaComoTexto(it, valor),
+          pi.points!=null?String(pi.points):'', String(atvItemMaxPoints(it)),
+          pi.feedback||'', (g&&g.score!=null)?String(g.score):'', comentario,
+        ]);
+      });
+    });
+  });
+  return linhas;
+}
+
+// ---------- 2) CHAMADAS E FREQUÊNCIA ----------
+function relFrequenciaHtml(d){
+  if(!d.chamadas.length) return '<p>Nenhuma chamada lançada para esta turma.</p>';
+  const aulasTotais = d.chamadas.reduce((s,r)=>s+aulasDoRegistro(r), 0);
+  const cab = `<tr><th>Aluno</th>${d.chamadas.map(r=>`<th>${esc(dataBR(r.date).slice(0,5))}</th>`).join('')}<th>Faltas<br>(aulas)</th><th>Presença</th></tr>`;
+  const corpo = d.alunos.map(u=>{
+    const marcas = d.chamadas.map(r=>{
+      const faltou = alunoFaltouNaChamada(u, r);
+      return `<td class="${faltou?'falta':'presenca'}">${faltou?'F':'P'}</td>`;
+    }).join('');
+    const aulasFalta = d.chamadas.reduce((s,r)=> s + (alunoFaltouNaChamada(u,r) ? aulasDoRegistro(r) : 0), 0);
+    const pct = aulasTotais ? Math.round(((aulasTotais-aulasFalta)/aulasTotais)*100) : null;
+    return `<tr><td>${esc(atvNomeAluno(u))}</td>${marcas}<td><strong>${aulasFalta}</strong></td><td class="${(pct!=null&&pct<75)?'falta':''}">${pct==null?'—':pct+'%'}</td></tr>`;
+  }).join('');
+  const detalhe = d.chamadas.map(r=>{
+    const b = COURSE.find(x=>(x.aulas||[]).some(a=>a.id===r.aulaId));
+    const a = b && (b.aulas||[]).find(x=>x.id===r.aulaId);
+    return `<tr><td>${esc(dataBR(r.date))}</td><td>${a?esc(rotuloAula(a)+' — '+a.title):'—'}</td><td>${aulasDoRegistro(r)}</td><td>${(r.absences||[]).length}</td><td>${esc(r.conteudo||'')}</td><td>${esc(r.obs||'')}</td></tr>`;
+  }).join('');
+  return `<h2>Mapa de presença — ${esc(d.turma.name)}</h2>
+    <p style="font-size:10px;color:#666;">P = presente, F = falta. ${d.chamadas.length} chamada(s), somando ${aulasTotais} aula(s). Presença abaixo de 75% destacada.</p>
+    <table>${cab}${corpo}</table>
+    <h2 class="quebra">Diário de classe — o que foi dado em cada encontro</h2>
+    <table><tr><th>Data</th><th>Aula</th><th>Aulas</th><th>Faltas</th><th>Conteúdo dado</th><th>Observações</th></tr>${detalhe}</table>`;
+}
+function relFrequenciaCsv(d){
+  const linhas = [['Aluno','RA', ...d.chamadas.map(r=>dataBR(r.date)), 'Faltas (aulas)','Aulas dadas','Presença %']];
+  const aulasTotais = d.chamadas.reduce((s,r)=>s+aulasDoRegistro(r), 0);
+  d.alunos.forEach(u=>{
+    const marcas = d.chamadas.map(r=> alunoFaltouNaChamada(u,r) ? 'F' : 'P');
+    const aulasFalta = d.chamadas.reduce((s,r)=> s + (alunoFaltouNaChamada(u,r) ? aulasDoRegistro(r) : 0), 0);
+    const pct = aulasTotais ? Math.round(((aulasTotais-aulasFalta)/aulasTotais)*100) : '';
+    linhas.push([atvNomeAluno(u), (u.profile&&u.profile.ra)||'', ...marcas, String(aulasFalta), String(aulasTotais), String(pct)]);
+  });
+  linhas.push([]);
+  linhas.push(['Data','Aula','Aulas no encontro','Faltas','Conteúdo dado','Observações']);
+  d.chamadas.forEach(r=>{
+    const b = COURSE.find(x=>(x.aulas||[]).some(a=>a.id===r.aulaId));
+    const a = b && (b.aulas||[]).find(x=>x.id===r.aulaId);
+    linhas.push([dataBR(r.date), a?(rotuloAula(a)+' — '+a.title):'', String(aulasDoRegistro(r)),
+                 String((r.absences||[]).length), r.conteudo||'', r.obs||'']);
+  });
+  return linhas;
+}
+
+// ---------- 3) BOLETIM CONSOLIDADO ----------
+function relBoletimHtml(d){
+  const b = boletimDadosDaTurma(d.turma.id);
+  if(!b.linhas.length) return '<p>Sem alunos nesta turma.</p>';
+  const simbolo = {ok:'Entregue', atraso:'Fora do prazo', nao:'—'};
+  const cab = `<tr><th>Aluno</th><th>RA</th><th>Faltas<br>(aulas)</th><th>Presença</th><th>Entregues<br>no prazo</th><th>Atrasadas</th><th>Pontos<br>(0–${String(b.totalPontos).replace('.',',')})</th></tr>`;
+  const corpo = b.linhas.map(l=>`<tr>
+      <td>${esc(atvNomeAluno(l.u))}</td>
+      <td>${esc((l.u.profile&&l.u.profile.ra)||'')}</td>
+      <td class="${(l.pctPresenca!=null&&l.pctPresenca<75)?'falta':''}">${l.aulasFalta}</td>
+      <td class="${(l.pctPresenca!=null&&l.pctPresenca<75)?'falta':''}">${l.pctPresenca==null?'—':l.pctPresenca+'%'}</td>
+      <td>${l.noPrazo} de ${b.atividades.length}</td>
+      <td>${l.atrasadas||'—'}</td>
+      <td class="nota">${String(l.pontosAtv).replace('.',',')}</td>
+    </tr>`).join('');
+  const detalheCab = `<tr><th>Aluno</th>${b.atividades.map(at=>`<th>A${at.aulaNum}</th>`).join('')}</tr>`;
+  const detalheCorpo = b.linhas.map(l=>`<tr><td>${esc(atvNomeAluno(l.u))}</td>${
+    l.situacoes.map(s=>`<td class="${s==='ok'?'presenca':(s==='atraso'?'atraso':'naoentregue')}">${simbolo[s]}</td>`).join('')
+  }</tr>`).join('');
+  return `<h2>Boletim — ${esc(d.turma.name)}</h2>
+    <p style="font-size:10px;color:#666;">A nota de atividades vale ${String(b.totalPontos).replace('.',',')} ponto(s), proporcional às entregas no prazo. Presença abaixo de 75% destacada.</p>
+    <table>${cab}${corpo}</table>
+    <h2 class="quebra">Entrega atividade por atividade</h2>
+    <table>${detalheCab}${detalheCorpo}</table>`;
+}
+function relBoletimCsv(d){
+  const b = boletimDadosDaTurma(d.turma.id);
+  const rot = {ok:'No prazo', atraso:'Fora do prazo', nao:'Nao entregue'};
+  const linhas = [['Aluno','RA','Faltas (aulas)','Aulas dadas','Presença %','Entregues no prazo','Atrasadas','Total de atividades',`Pontos (0-${b.totalPontos})`,
+                   ...b.atividades.map(at=>`Aula ${at.aulaNum} - ${at.title}`)]];
+  b.linhas.forEach(l=>{
+    linhas.push([atvNomeAluno(l.u), (l.u.profile&&l.u.profile.ra)||'', String(l.aulasFalta), String(b.aulasTotais),
+                 l.pctPresenca==null?'':String(l.pctPresenca), String(l.noPrazo), String(l.atrasadas),
+                 String(b.atividades.length), String(l.pontosAtv).replace('.',','),
+                 ...l.situacoes.map(s=>rot[s])]);
+  });
+  return linhas;
+}
+
+// ---------- A tela ----------
+function relatoriosCentralHtml(){
+  if(allTurmas===null || cachedUsersList===null || ATV_BOLETIM_DATA===null
+     || ATV_BOLETIM_SCHEDULES===null || DIARIO_TODOS===null){
+    return `<div class="editor-form"><div class="editing-type-banner">📄 Relatórios</div><p>Carregando dados da matéria…</p></div>`;
+  }
+  const turmaId = (editState && editState.turmaId) || (allTurmas[0] && allTurmas[0].id) || null;
+  const turmaOpts = (allTurmas||[]).map(t=>`<option value="${t.id}" ${t.id===turmaId?'selected':''}>${esc(t.name)}</option>`).join('')
+    || '<option value="">(sem turmas)</option>';
+  const cartao = (id, icone, titulo, texto) => `
+    <div class="rel-card">
+      <div class="rel-card-topo"><span class="rel-card-icone">${icone}</span><strong>${titulo}</strong></div>
+      <div class="rel-card-texto">${texto}</div>
+      <div class="rel-card-acoes">
+        <button type="button" class="btn-secondary" data-action="rel-pdf" data-rel="${id}">🖨 PDF</button>
+        <button type="button" class="btn-secondary" data-action="rel-csv" data-rel="${id}">⬇ Planilha (CSV)</button>
+      </div>
+    </div>`;
+  return `<div class="editor-form">
+    <div class="editing-type-banner">📄 Relatórios da turma</div>
+    <div class="hint">Tudo aqui é <strong>só leitura</strong>: os relatórios são montados a partir do que já está gravado e nada é alterado. Guarde-os no fim do semestre — hoje o backup do sistema cobre apenas o conteúdo das aulas, não o que os alunos produziram.</div>
+    <div class="atv-turma-row"><label>Turma</label><select id="rel-turma-select">${turmaOpts}</select></div>
+    ${cartao('respostas','📝','Respostas e notas',
+      'Tudo que cada aluno respondeu, questão por questão, com a nota, o seu feedback e o gabarito. É o documento insubstituível — o único registro do trabalho dos alunos fora do banco de dados.')}
+    ${cartao('frequencia','📋','Chamadas e frequência',
+      'O mapa de presença (alunos × datas), as faltas contadas em aulas e o percentual de cada um. Traz também o diário de classe com o conteúdo dado e as observações de cada encontro.')}
+    ${cartao('boletim','📊','Boletim consolidado',
+      'A tabela de fechamento: faltas, presença, entregas no prazo e os pontos de atividade. Mais o detalhamento de entrega atividade por atividade.')}
+    <div class="hint" style="margin-top:16px;">O PDF abre numa janela nova já na tela de impressão — escolha "Salvar como PDF" no destino. Se preferir sem o cabeçalho e o rodapé do navegador, desmarque "Cabeçalhos e rodapés" em Mais configurações.</div>
+    <div class="editor-actions"><button class="btn-secondary" data-action="cancel-edit">Fechar</button></div>
+  </div>`;
+}
+
 function relatorioFaltasHtml(){
   if(allTurmas===null || cachedUsersList===null || DIARIO_TODOS===null){
     return `<div class="editor-form"><div class="editing-type-banner">📄 Relatório de faltas</div><p>Carregando…</p></div>`;
@@ -8231,7 +8537,7 @@ function gestaoScreenForm(){
     } else if(aba === 'frequencia'){
       corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + diarioFrequenciaForm();
     } else if(aba === 'relatorios'){
-      corpo = relatorioFaltasHtml();
+      corpo = relatoriosCentralHtml() + relatorioFaltasHtml();
     } else if(aba === 'estatisticas'){
       corpo = `<div class="editor-form">
         <div class="gestao-sub">Quem procurar esta semana</div>
@@ -9054,7 +9360,7 @@ function render(){
     // Cada aba busca so o que ela usa — carregar tudo sempre deixaria as
     // abas simples (listas) lentas sem motivo.
     const abaAtual = editState.aba;
-    if(abaAtual === 'boletim' || abaAtual === 'estatisticas'){
+    if(abaAtual === 'boletim' || abaAtual === 'estatisticas' || abaAtual === 'relatorios'){
       if(ATV_BOLETIM_DATA===null){
         fetchAllActivityResponses().then(l=>{ ATV_BOLETIM_DATA = l; if(editState && editState.kind==='gestao') render(); }).catch(()=>{ ATV_BOLETIM_DATA = []; });
       }
@@ -9649,6 +9955,56 @@ document.getElementById('content').addEventListener('drop', async (e)=>{
   render();
 });
 document.addEventListener('dragend', ()=>{ draggingFigureIdx = null; hideDockGrid(); });
+
+// ===== ROLAR A PÁGINA ENQUANTO ARRASTA (v4.10.22) =====
+// A rolagem automática do navegador durante um arraste é propositalmente
+// lenta e não dá para configurá-la. Numa aula longa, levar uma seção do fim
+// até o começo virava um exercício de paciência.
+//
+// Esta rolagem é nossa: começa quando o cursor entra numa faixa de 140px da
+// borda e acelera conforme ele se aproxima dela — encostado na borda, corre a
+// 1600px/s, cerca de quatro vezes o ritmo do navegador. Como ela SOMA com a do
+// navegador, o ganho real é ainda maior.
+let arrasteRolagemTimer = null;
+let arrastePonteiroY = null;
+const ARRASTE_FAIXA = 140;      // px de distância da borda em que a rolagem começa
+const ARRASTE_VEL_MAX = 1600;   // px por segundo, encostado na borda
+
+function arrasteIniciarRolagem(){
+  if(arrasteRolagemTimer) return;
+  let ultimo = performance.now();
+  arrasteRolagemTimer = setInterval(()=>{
+    const agora = performance.now();
+    const dt = Math.min(0.1, (agora - ultimo) / 1000);
+    ultimo = agora;
+    if(arrastePonteiroY === null) return;
+    const alturaJanela = window.innerHeight;
+    let fator = 0;   // -1 (sobe rápido) .. +1 (desce rápido)
+    if(arrastePonteiroY < ARRASTE_FAIXA){
+      fator = -(1 - (arrastePonteiroY / ARRASTE_FAIXA));
+    } else if(arrastePonteiroY > alturaJanela - ARRASTE_FAIXA){
+      fator = 1 - ((alturaJanela - arrastePonteiroY) / ARRASTE_FAIXA);
+    }
+    if(!fator) return;
+    // Curva ao quadrado: perto do limite da faixa quase não anda; encostado na
+    // borda vai a toda. Sem isso, entrar na faixa já daria um tranco.
+    const intensidade = Math.sign(fator) * Math.pow(Math.min(1, Math.abs(fator)), 2);
+    window.scrollBy(0, intensidade * ARRASTE_VEL_MAX * dt);
+  }, 16);
+}
+function arrastePararRolagem(){
+  if(arrasteRolagemTimer){ clearInterval(arrasteRolagemTimer); arrasteRolagemTimer = null; }
+  arrastePonteiroY = null;
+}
+// Um só ouvinte para os três arrastes do sistema (seção, imagem e aula do
+// menu) — a rolagem é a mesma para todos.
+document.addEventListener('dragover', (e)=>{
+  if(draggingSectionIdx===null && draggingFigureIdx===null && draggingNavAulaNum===null) return;
+  arrastePonteiroY = e.clientY;
+  arrasteIniciarRolagem();
+}, true);
+document.addEventListener('dragend', arrastePararRolagem);
+document.addEventListener('drop', arrastePararRolagem, true);
 
 // ===================== ARRASTAR SEÇÃO INTEIRA PARA REORDENAR =====================
 let sectionPlacementLineEl = null;
@@ -11455,6 +11811,26 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     baixarCsv(linhas, `frequencia-${(t&&t.name?t.name:'turma').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}.csv`);
     return;
   }
+  if(action==='rel-pdf' || action==='rel-csv'){
+    const turmaSel = document.getElementById('rel-turma-select');
+    const turmaId = (turmaSel && turmaSel.value) || (editState && editState.turmaId) || null;
+    const d = relatorioDados(turmaId);
+    if(d.erro){ alert(d.erro); return; }
+    const qual = btn.dataset.rel;
+    const nomeArq = (t)=> `${t}-${String(d.turma.name).replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}`;
+    const sub = `${d.materia ? d.materia + ' · ' : ''}Turma ${d.turma.name} · ${d.alunos.length} aluno(s)`;
+    if(qual==='respostas'){
+      if(action==='rel-pdf') abrirRelatorioImpressao('Respostas e notas', sub, relRespostasHtml(d));
+      else baixarCsv(relRespostasCsv(d), nomeArq('respostas-e-notas')+'.csv');
+    } else if(qual==='frequencia'){
+      if(action==='rel-pdf') abrirRelatorioImpressao('Chamadas e frequência', sub, relFrequenciaHtml(d));
+      else baixarCsv(relFrequenciaCsv(d), nomeArq('frequencia')+'.csv');
+    } else if(qual==='boletim'){
+      if(action==='rel-pdf') abrirRelatorioImpressao('Boletim consolidado', sub, relBoletimHtml(d));
+      else baixarCsv(relBoletimCsv(d), nomeArq('boletim')+'.csv');
+    }
+    return;
+  }
   if(action==='relatorio-faltas-csv'){
     const linhas = [['Turma', 'Aluno', 'Faltas', 'Aulas registradas', '% de faltas']];
     (allTurmas||[]).forEach(t=>{
@@ -12914,6 +13290,11 @@ document.getElementById('content').addEventListener('change', async (e)=>{
   }
   if(e.target.id==='atv-question-select'){
     editState.questionIdx = +e.target.value;
+    render();
+    return;
+  }
+  if(e.target.id==='rel-turma-select'){
+    editState.turmaId = e.target.value;
     render();
     return;
   }
