@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.4                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.5                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2360,6 +2360,12 @@
   .editor-form input[type=color]{width:34px;height:32px;border:1px solid var(--line);border-radius:6px;padding:2px;cursor:pointer;flex:0 0 auto;}
   .rich-toolbar .sep{width:1px;height:20px;background:var(--line);margin:0 4px;}
   div.rich-text{border-radius:0 0 8px 8px;border-top:none;}
+  /* Linha em branco proposital (v4.12.5). Um <p> vazio tem altura zero por
+     padrão; sem isto, o Enter que o professor dá entre dois parágrafos seria
+     salvo mas não apareceria. Vale para a aula, o caderno e a atividade. */
+  .prose p:empty, .rich-content p:empty, .aula-intro p:empty{
+    min-height:1em; margin:0 0 14px 0;
+  }
   .rich-content b, .rich-content strong{font-weight:700;}
   .rich-content i, .rich-content em{font-style:italic;}
   .rich-content ul, .rich-content ol{margin:10px 0;padding-left:24px;list-style-position:inside;}
@@ -3388,7 +3394,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.12.4</div>
+<div class="version-tag hidden" id="version-tag">v4.12.5</div>
 
 
 <script>
@@ -4653,7 +4659,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       const topHtml = dockedItemsHtml(topItems, allSections||[]);
       const bottomHtml = dockedItemsHtml(bottomItems, allSections||[]);
       const paraArr = (sec.paragraphs||[]).map(p=>{
-        const isList = /^<(ul|ol)[ >]/i.test(p.trim());
+        const isList = ehBlocoSolto(p);
         return isList ? richOut(p) : `<p>${richOut(p)}</p>`;
       });
       let mid;
@@ -4673,11 +4679,11 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
     }
     case 'points': {
       const bullets = sec.bullets||[];
-      const isNewFormat = bullets.some(b=>/^<(ul|ol)[ >]/i.test(b.trim()));
+      const isNewFormat = bullets.some(b=>ehBlocoSolto(b));
       let listHtml;
       if(isNewFormat){
         // Formato novo: cada item já é uma lista de verdade (criada com o menu de marcador unificado)
-        listHtml = `<div class="bullets rich-content">${bullets.map(b=>/^<(ul|ol)[ >]/i.test(b.trim())?b:`<p>${richOut(b)}</p>`).join('')}</div>`;
+        listHtml = `<div class="bullets rich-content">${bullets.map(b=>ehBlocoSolto(b)?b:`<p>${richOut(b)}</p>`).join('')}</div>`;
       } else {
         // Formato antigo (compatibilidade): texto puro com ">" indicando nível
         const markerTypes = sec.markerTypes || [sec.markerType || 'square'];
@@ -4746,7 +4752,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
     }
     case 'nota': {
       const paras = (sec.paragraphs && sec.paragraphs.length) ? sec.paragraphs : [];
-      const corpo = paras.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${richOut(p)}</p>`).join('');
+      const corpo = paras.map(p=>ehBlocoSolto(p)?p:`<p>${richOut(p)}</p>`).join('');
       // ALTERADO (v4.10.5) — vem RECOLHIDA por padrão, igual ao roteiro do
       // topo da aula: numa aula com muitas anotações, todas abertas empurram
       // o conteúdo real para longe. Fechada, ocupa uma linha; o clique no
@@ -4874,7 +4880,8 @@ async function autoZerarNaoEntregues(){
       (sec.items||[]).forEach(it=>{ perItem[it.itemId] = {verdict:'errado', points:0, feedback:null}; });
       for(const u of alunos){
         const r = porUid[u.id];
-        const escreveuAlgo = !!(r && r.answers && Object.keys(r.answers).length);
+        // Régua idêntica à do boletim: campo em branco não conta como resposta.
+        const escreveuAlgo = atvTemRespostaValida(r);
         const jaPublicado  = !!(r && r.grading && r.grading.published);
         if(escreveuAlgo || jaPublicado) continue;   // decisão 1 + idempotência
         const docId = `${aulaId}_${agenda.sectionId}_${u.id}`;
@@ -4945,7 +4952,7 @@ async function autoPublicarAtividadesVencidas(){
       if(!sec || !atvSectionFullyAutoGradable(sec)) continue;
       let responses;
       try{ responses = await fetchActivityResponsesForSection(agenda.sectionId); }catch(e){ continue; }
-      const pendentes = responses.filter(r=> r.turmaId===agenda.turmaId && r.submittedAt && (!r.grading || !r.grading.published));
+      const pendentes = responses.filter(r=> r.turmaId===agenda.turmaId && atvEntregou(r) && (!r.grading || !r.grading.published));
       if(!pendentes.length) continue;
       const maxScore = atvMaxScore(sec);
       for(const resp of pendentes){
@@ -5073,12 +5080,57 @@ function atvIsLocked(response, schedule){
   if(j === 'antes' || j === 'depois') return true;
   return false;
 }
+// ===== O QUE CONTA COMO ENTREGA (v4.12.5) =====
+// Até aqui, "entregue" era o clique no botão Entregar (submittedAt). O aluno
+// que respondia tudo e esquecia de clicar aparecia como não entregue no
+// boletim — punido por um clique, não pelo trabalho.
+//
+// Agora vale o trabalho: uma resposta preenchida em qualquer questão já é
+// entrega. Só é "não entregue" quem não respondeu absolutamente nada.
+//
+// O clique continua existindo e continua tendo função: ele fecha a atividade
+// para edição e sinaliza "terminei". Só deixou de ser a régua do boletim.
+function respostaPreenchida(v){
+  if(v === undefined || v === null) return false;
+  if(typeof v === 'string') return v.trim() !== '';
+  if(typeof v === 'number' || typeof v === 'boolean') return true;
+  if(Array.isArray(v)) return v.some(respostaPreenchida);   // pega tabela (array de arrays) também
+  if(typeof v === 'object') return Object.values(v).some(respostaPreenchida);
+  return false;
+}
+function atvTemRespostaValida(resposta){
+  const a = resposta && resposta.answers;
+  if(!a) return false;
+  return Object.values(a).some(respostaPreenchida);
+}
+// A régua única de entrega. Usada pelo boletim, pelos relatórios e pelo CSV,
+// para a tela e a planilha nunca discordarem.
+function atvEntregou(resposta){
+  if(!resposta) return false;
+  if(resposta.submittedAt) return true;
+  return atvTemRespostaValida(resposta);
+}
+// Momento que vale como "hora da entrega": o clique, se houve; senão a última
+// gravação de resposta.
+function atvMomentoEntrega(resposta){
+  if(!resposta) return null;
+  // Só campos que a gravação DO ALUNO escreve. 'updatedAt' não serve: ele é
+  // reescrito quando o professor publica a nota, e usá-lo faria uma correção
+  // feita depois do prazo carimbar o aluno como atrasado.
+  return resposta.submittedAt || resposta.answersAt || null;
+}
 // A entrega foi feita fora do prazo? Usado pelo boletim para separar
 // "Entregue" de "Fora do prazo". Sem prazo cadastrado, nada e atrasado.
 function atvEntregaAtrasada(resposta, agenda){
-  if(!resposta || !resposta.submittedAt) return false;
+  if(!atvEntregou(resposta)) return false;
   if(!agenda || !agenda.closesAt) return false;
-  return resposta.submittedAt > agenda.closesAt;
+  const quando = atvMomentoEntrega(resposta);
+  // Sem carimbo confiável (registro antigo, anterior ao campo answersAt), a
+  // resposta conta como no prazo. Na dúvida, a favor do aluno: marcar de
+  // atraso o que não se consegue provar tiraria ponto de quem talvez tenha
+  // entregue em dia.
+  if(!quando) return false;
+  return quando > agenda.closesAt;
 }
 // Quanto valem, no total, as entregas no prazo desta materia. Ate a v3.6.0
 // eram 3 pontos fixos, escritos direto na formula em dois lugares. Cada
@@ -5255,7 +5307,7 @@ function renderAtividadeStudentForm(sec, response, schedule){
   let gradingHtml = '';
   if(publicada){
     const g = response.grading || {};
-    const comentario = (g.commentParas && g.commentParas.length) ? g.commentParas.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${richOut(p)}</p>`).join('') : '';
+    const comentario = (g.commentParas && g.commentParas.length) ? g.commentParas.map(p=>ehBlocoSolto(p)?p:`<p>${richOut(p)}</p>`).join('') : '';
     // Quando o zero veio do prazo vencido em branco, chamar aquilo de
     // "comentário do professor" seria mentira — ninguém corrigiu nada. O
     // aluno lê o motivo real, com a cara de aviso e não de correção.
@@ -5324,7 +5376,7 @@ function renderAtividadeItemInput(sectionId, item, idx, value, locked, revelar){
     body = `<div class="atv-ans-lida">${renderAtividadeAnswerReadonly(item, value)}</div>`;
   } else if(item.type==='dissertativa'){
     const paras = (value && value.length) ? value : [''];
-    const html = paras.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${p}</p>`).join('');
+    const html = paras.map(p=>ehBlocoSolto(p)?p:`<p>${p}</p>`).join('');
     const fieldId = 'atv-ans-'+sectionId+'-'+item.itemId;
     body = `${richToolbarHtml(fieldId)}<div id="${fieldId}" class="rich-text atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="dissertativa" contenteditable="true" spellcheck="true" lang="pt-BR">${html}</div>`;
   } else if(item.type==='curta'){
@@ -5492,7 +5544,12 @@ async function persistAtividadeAnswer(sectionId, aulaId, aulaNum){
     subjectId: activeSubjectId, turmaId: (currentUserDoc&&currentUserDoc.turmaId)||null,
     aulaId, aulaNum, sectionId, studentUid: currentUser.uid,
     studentName: (currentUserDoc&&((currentUserDoc.profile&&currentUserDoc.profile.fullName)||currentUserDoc.name))||'',
-    answers, updatedAt: Date.now(),
+    answers,
+    updatedAt: Date.now(),
+    // Carimbo da gravação DO ALUNO (v4.12.5). Fica separado de updatedAt
+    // justamente porque updatedAt também é escrito pelo professor ao publicar
+    // a nota — e a hora da entrega precisa ser só do aluno.
+    answersAt: Date.now(),
   };
   const st = document.getElementById('atv-save-status-'+sectionId);
   try{
@@ -5587,7 +5644,7 @@ function renderAtividadeAnswerReadonly(item, value){
   if(vazio) return '<em>(sem resposta)</em>';
   if(item.type==='dissertativa'){
     const paras = Array.isArray(value) ? value : [value];
-    return `<div class="rich-content">${paras.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${richOut(p)}</p>`).join('')}</div>`;
+    return `<div class="rich-content">${paras.map(p=>ehBlocoSolto(p)?p:`<p>${richOut(p)}</p>`).join('')}</div>`;
   }
   if(item.type==='curta') return esc(String(value));
   if(item.type==='lista') return `<ul>${(value||[]).map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`;
@@ -5713,7 +5770,7 @@ function atvGradingPanelHtml(sec, resp, user, draft, autoLiberado){
     </div>`;
   }).join('');
   const commentParas = (eff.commentParas && eff.commentParas.length) ? eff.commentParas : [''];
-  const commentHtml = commentParas.map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${p}</p>`).join('');
+  const commentHtml = commentParas.map(p=>ehBlocoSolto(p)?p:`<p>${p}</p>`).join('');
   const jaPublicada = !!(resp && resp.grading && resp.grading.published);
   return `<div class="atv-grading-panel" data-uid="${escAttr(user.id)}">
     ${eff.fromDraft?'<div class="atv-draft-warn">📝 Há uma correção em rascunho para este aluno — ele ainda não vê nada. Use "Salvar e publicar" para liberar.</div>':''}
@@ -5791,12 +5848,12 @@ function atvSituacaoDaAtividade(sectionId){
   const vivos = atvRegistrosVivos(sectionId);
   const agendas = vivos.agendas;
   const respostas = vivos.respostas;
-  const entregues = respostas.filter(r=>r.submittedAt).length;
+  const entregues = respostas.filter(atvEntregou).length;
   // O zero automático de quem não entregou é uma nota publicada, mas não é uma
   // entrega corrigida — contar junto produzia frases como "1 de 0 entregas".
   const naoEntregues = respostas.filter(r=>r.grading && r.grading.published && r.grading.naoEntregue).length;
   const publicadas = respostas.filter(r=>r.grading && r.grading.published && !r.grading.naoEntregue).length;
-  const aCorrigir = respostas.filter(r=>r.submittedAt && !(r.grading && r.grading.published)).length;
+  const aCorrigir = respostas.filter(r=>atvEntregou(r) && !(r.grading && r.grading.published)).length;
   if(!agendas.length){
     return {chave:'semprazo', entregues, publicadas, aCorrigir,
             detalhe: respostas.length ? `${respostas.length} resposta(s) já iniciadas` : 'nenhum prazo cadastrado'};
@@ -5881,7 +5938,7 @@ function atividadesCentralForm(){
   const contaveis = alunosVivos.size
     ? (ATV_BOLETIM_DATA||[]).filter(r=> !r.studentUid || alunosVivos.has(r.studentUid))
     : (ATV_BOLETIM_DATA||[]);
-  const totalEntregas   = contaveis.filter(r=>r.submittedAt).length;
+  const totalEntregas   = contaveis.filter(atvEntregou).length;
   const totalPublicadas = contaveis.filter(r=>r.grading && r.grading.published).length;
   const m = (n,rot,alerta)=>`<div class="corr-metrica"><div class="corr-metrica-num ${alerta?'alerta':''}">${n}</div><div class="corr-metrica-rot">${rot}</div></div>`;
   return `<div class="editor-form">
@@ -5950,7 +6007,7 @@ function atvPendencias(sec, ctx){
     const draft = ctx.draftsByUid[u.id];
     // Quem não entregou nada não gera pendência de correção — gera pendência
     // de entrega, que é outro assunto e aparece no resumo.
-    const entregou = !!(resp && resp.answers && Object.keys(resp.answers).length);
+    const entregou = atvEntregou(resp);
     if(!entregou){ porAluno[u.id] = 0; return; }
     const eff = atvEffectiveGrading(resp, draft);
     let n = 0;
@@ -6016,7 +6073,7 @@ function atvPorAlunoHtml(sec, ctx){
     const isGrading = editState.gradingUid === u.id;
     const t = atvComputeStudentTotal(sec, resp, draft, ctx.autoLiberado);
     const notaTag = t.any ? `<span class="atv-nota-tag">${t.total} / ${maxTotal}</span>` : '';
-    const entregouAlgo = !!(resp && resp.answers && Object.keys(resp.answers).length);
+    const entregouAlgo = atvEntregou(resp);
     const pr = atvProgressoDoAluno(sec, resp, draft, ctx.autoLiberado);
     const progTag = (entregouAlgo && status!=='naoentregue' && pr.total)
       ? `<span class="atv-prog-tag ${pr.feitas>=pr.total?'completo':''}" title="${pr.feitas>=pr.total?'Todas as questões já têm nota — falta publicar.':`Faltam ${pr.total-pr.feitas} questão(ões) sem nota.`}">${pr.feitas}/${pr.total} corrigidas</span>`
@@ -6189,8 +6246,8 @@ function relatorioDados(turmaId, filtros){
   atividades = atividades.filter(a=>{
     if(!naJanela(a.sectionId)) return false;
     const resp = respostaPorSecao[a.sectionId] || {};
-    const entregues = Object.values(resp).filter(r=>r.submittedAt).length;
-    const semNota   = Object.values(resp).filter(r=>r.submittedAt && !(r.grading && r.grading.published)).length;
+    const entregues = Object.values(resp).filter(atvEntregou).length;
+    const semNota   = Object.values(resp).filter(r=>atvEntregou(r) && !(r.grading && r.grading.published)).length;
     const ag = prazoPorSecao[a.sectionId];
     if(f.atividades==='encerradas') return !!(ag && ag.closesAt && Date.now() > ag.closesAt);
     if(f.atividades==='comentrega') return entregues > 0;
@@ -6202,7 +6259,7 @@ function relatorioDados(turmaId, filtros){
   if(f.alunos==='pendentes'){
     alunosFiltrados = alunos.filter(u=> atividades.some(a=>{
       const r = (respostaPorSecao[a.sectionId]||{})[u.id];
-      return !r || !r.submittedAt;
+      return !atvEntregou(r);
     }));
   } else if(f.alunos==='faltosos'){
     const total = chamadas.length;
@@ -6240,7 +6297,7 @@ function respostaComoTexto(item, valor){
 
 // Situação da entrega, em palavra — usada nos três relatórios.
 function relSituacao(resp, agenda){
-  if(!resp || !resp.submittedAt) return 'Não entregue';
+  if(!atvEntregou(resp)) return 'Não entregue';
   return atvEntregaAtrasada(resp, agenda) ? 'Fora do prazo' : 'Entregue no prazo';
 }
 
@@ -6647,7 +6704,7 @@ function relMateriaHtml(){
   }).join('')).join('');
   const linhasAtv = atividades.map(at=>{
     const respostas = (ATV_BOLETIM_DATA||[]).filter(r=>r.sectionId===at.sectionId);
-    const entregues = respostas.filter(r=>r.submittedAt).length;
+    const entregues = respostas.filter(atvEntregou).length;
     const publicadas = respostas.filter(r=>r.grading && r.grading.published).length;
     const notas = respostas.filter(r=>r.grading && r.grading.published && r.grading.score!=null).map(r=>r.grading.score);
     const media = notas.length ? (notas.reduce((s,x)=>s+x,0)/notas.length).toFixed(2).replace('.',',') : '—';
@@ -6674,7 +6731,7 @@ function relMateriaCsv(){
     const respostas = (ATV_BOLETIM_DATA||[]).filter(r=>r.sectionId===at.sectionId);
     const notas = respostas.filter(r=>r.grading && r.grading.published && r.grading.score!=null).map(r=>r.grading.score);
     linhas.push(['Aula '+at.aulaNum, at.title, String(at.itemCount),
-                 String(respostas.filter(r=>r.submittedAt).length),
+                 String(respostas.filter(atvEntregou).length),
                  String(respostas.filter(r=>r.grading && r.grading.published).length),
                  notas.length ? (notas.reduce((s,x)=>s+x,0)/notas.length).toFixed(2).replace('.',',') : '']);
   });
@@ -6755,7 +6812,7 @@ function riscoPorAlunoHtml(){
       if(!sc || !sc.closesAt || sc.closesAt > agora) return; // ainda dá tempo
       cobradas++;
       const r = (entregas[at.sectionId]||{})[u.id];
-      if(!r || !r.submittedAt || r.submittedAt > sc.closesAt) perdidas++;
+      if(!atvEntregou(r) || atvEntregaAtrasada(r, sc)) perdidas++;
     });
     // Pesos: falta e ausencia da aula, entrega perdida e ausencia do trabalho.
     // As duas juntas sao o padrao de quem esta abandonando em silencio.
@@ -7152,7 +7209,7 @@ function aulasDoRegistro(r){
 // 'atraso' (entregue depois do fechamento, só existe se a matéria aceitar)
 // ou 'nao' (não entregue).
 function atvSituacaoEntrega(resposta, agenda){
-  if(!resposta || !resposta.submittedAt) return 'nao';
+  if(!atvEntregou(resposta)) return 'nao';
   return atvEntregaAtrasada(resposta, agenda) ? 'atraso' : 'ok';
 }
 
@@ -7833,11 +7890,24 @@ let savedRichRange = null;
 document.addEventListener('focusin', (e)=>{
   const el = e.target;
   if(!(el.classList && el.classList.contains('rich-text'))) return;
-  if(!el.querySelector('p, div')){
-    el.innerHTML = '<p><br></p>';
+  // BUG CORRIGIDO (v4.12.5) — a linha abaixo dizia apenas
+  //     if(!el.querySelector('p, div')) el.innerHTML = '<p><br></p>';
+  // A intenção era criar um parágrafo vazio numa caixa vazia. Só que um texto
+  // feito INTEIRAMENTE de marcadores vira <ul><li>…</li></ul>: não tem <p>
+  // nem <div> dentro. A condição dava verdadeira e o clique na caixa apagava
+  // o texto inteiro — exatamente o "sumiu tudo, tenho que digitar de novo".
+  //
+  // Agora a regra é: nunca destruir conteúdo. Só cria o parágrafo quando a
+  // caixa está de fato vazia; havendo conteúdo solto sem bloco, ele é
+  // embrulhado, não substituído.
+  const temBloco = el.querySelector('p, div, ul, ol, li, blockquote, table, h1, h2, h3, h4, h5, h6');
+  if(!temBloco){
+    const conteudo = el.innerHTML.trim();
+    const vazio = !conteudo || /^(<br\s*\/?>)+$/i.test(conteudo) || !el.textContent.trim();
+    el.innerHTML = vazio ? '<p><br></p>' : `<p>${conteudo}</p>`;
   }
   const sel = window.getSelection();
-  const firstP = el.querySelector('p, div');
+  const firstP = el.querySelector('p, div, li');
   if(firstP && sel && sel.rangeCount===0){
     const range = document.createRange();
     range.selectNodeContents(firstP);
@@ -8389,7 +8459,14 @@ function richFieldToArray(el){
         let html = node.innerHTML.trim();
         const align = node.style && node.style.textAlign;
         const indent = node.style && node.style.marginLeft;
-        if(html && html.toLowerCase()!=='<br>'){
+        // BUG CORRIGIDO (v4.12.5) — parágrafo vazio era simplesmente jogado
+        // fora aqui. Como o Enter cria exatamente um parágrafo vazio, apertar
+        // Enter para afastar duas linhas "não funcionava": a linha aparecia na
+        // tela e sumia ao salvar. Agora ele vira um marcador (null) e a
+        // decisão de manter ou não é tomada no fim, com a lista inteira à
+        // vista — dá para distinguir espaçamento proposital de sobra de edição.
+        if(!html || html.toLowerCase()==='<br>'){ items.push(null); return; }
+        if(html){
           if(estiloHerdado) html = `<span style="${estiloHerdado};">${html}</span>`;
           if(align || indent){
             let styleStr = 'display:block';
@@ -8433,27 +8510,58 @@ function richFieldToArray(el){
   }
   processNodes([...el.childNodes], '');
   flushStray();
-  if(!sawBlock && items.length===0){
+  if(!sawBlock && items.filter(x=>x!==null).length===0){
     const html = el.innerHTML.trim();
     if(html && html.toLowerCase()!=='<br>') items.push(html);
   }
-  return items;
+  // Agora decide o destino das linhas vazias:
+  //   - no começo e no fim: descartadas (sobra de edição, ninguém quer)
+  //   - no meio: uma é mantida (espaçamento proposital entre parágrafos)
+  //   - várias seguidas: viram uma só, para o texto não crescer sem controle
+  let ini = 0, fim = items.length;
+  while(ini < fim && items[ini] === null) ini++;
+  while(fim > ini && items[fim-1] === null) fim--;
+  const limpos = [];
+  for(let i = ini; i < fim; i++){
+    if(items[i] === null && limpos[limpos.length-1] === '') continue;
+    limpos.push(items[i] === null ? '' : items[i]);
+  }
+  return limpos;
 }
 // Lê o campo de introdução preservando os parágrafos. Listas passam
 // inteiras; o resto vira <p>. É o mesmo formato usado na seção de Texto,
 // então negrito, cor, link e nota de rodapé funcionam igual ali.
 function introParaGuardar(el){
   return richFieldToArray(el)
-    .map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim()) ? p : `<p>${p}</p>`)
+    .map(blocoParaEditor)
     .join('');
 }
 // Introdução gravada ANTES desta versão é texto solto, sem <p>. Ao abrir o
 // editor ela precisa virar um parágrafo, senão o campo nasce sem bloco e o
 // primeiro Enter é engolido pelo navegador.
+// Como um item salvo volta para o campo de edição. Lista NUNCA pode entrar
+// dentro de <p>: o navegador desmonta a estrutura na hora de exibir, e o que
+// era um parágrafo com marcadores volta quebrado. Vale também quando a lista
+// está embrulhada num <span> de tamanho/cor — que é o que acontece quando
+// você aumenta a fonte de uma lista inteira.
+function ehBlocoSolto(p){
+  const t = String(p==null?'':p).trim();
+  if(/^<(ul|ol|blockquote|table|h[1-6])[\s>]/i.test(t)) return true;
+  // Lista embrulhada num <span> de tamanho/cor — o que acontece quando você
+  // aumenta a fonte de uma lista inteira.
+  if(/^<[a-z]+[^>]*>\s*<(ul|ol)[\s>]/i.test(t)) return true;
+  return false;
+}
+function blocoParaEditor(p){
+  const t = String(p==null?'':p).trim();
+  if(!t) return '<p><br></p>';
+  return ehBlocoSolto(t) ? t : `<p>${t}</p>`;
+}
 function introParaEditor(txt){
   const s = String(txt||'').trim();
   if(!s) return '<p><br></p>';
-  return /^<(p|div|ul|ol)[ >]/i.test(s) ? s : `<p>${s}</p>`;
+  if(/^<(p|div)[\s>]/i.test(s)) return s;
+  return ehBlocoSolto(s) ? s : `<p>${s}</p>`;
 }
 function richFieldToText(el){
   const arr = richFieldToArray(el);
@@ -8824,7 +8932,7 @@ function sectionEditorForm(sec, idx){
       <label>Título da seção (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
       <label>Parágrafos (um por linha)</label>
       ${richToolbarHtml('ef-paragraphs')}
-      <div id="ef-paragraphs" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR" style="min-height:140px">${(sec.paragraphs&&sec.paragraphs.length?sec.paragraphs:['']).map(p=>/^<(ul|ol)[ >]/i.test(p.trim())?p:`<p>${p}</p>`).join('')}</div>
+      <div id="ef-paragraphs" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR" style="min-height:140px">${(sec.paragraphs&&sec.paragraphs.length?sec.paragraphs:['']).map(blocoParaEditor).join('')}</div>
       <div class="hint">Selecione um texto e clique nos botões acima para formatar (negrito, itálico, cor, fonte, tamanho). Os botões de alinhar afetam a linha/parágrafo inteiro.</div>
       <div class="hint">Para criar um <strong>link</strong>: selecione o texto e clique em 🔗. Pode colar o endereço sem o "https://". Clicando de novo com o cursor dentro de um link, você troca o endereço ou remove o link.</div>
       <div class="hint">Para uma <strong>nota de rodapé</strong>: selecione o trecho, clique em <strong>*</strong> e escreva a explicação. No editor ela aparece como um asterisco; na aula vira um número, e a explicação vai para o pé da seção. Apagar o trecho apaga a nota junto.</div>`;
@@ -8834,7 +8942,7 @@ function sectionEditorForm(sec, idx){
       <label>Título da anotação (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
       <label>Sua anotação</label>
       ${richToolbarHtml('ef-nota-body')}
-      <div id="ef-nota-body" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR" style="min-height:130px">${(sec.paragraphs&&sec.paragraphs.length?sec.paragraphs:['']).map(p=>/^<(ul|ol)[ >]/i.test(String(p).trim())?p:`<p>${p}</p>`).join('')}</div>
+      <div id="ef-nota-body" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR" style="min-height:130px">${(sec.paragraphs&&sec.paragraphs.length?sec.paragraphs:['']).map(blocoParaEditor).join('')}</div>
       <div class="hint">Ex.: como explicar a imagem acima, o exemplo que você quer dar em sala, a pergunta que costuma render discussão, o que deu errado da última vez.</div>`;
   } else if(type==='points'){
     fields = `
@@ -8842,7 +8950,7 @@ function sectionEditorForm(sec, idx){
       <label>Título</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-title" value="${escAttr(sec.title||'')}">
       <label>Itens</label>
       ${richToolbarHtml('ef-bullets', true)}
-      <div id="ef-bullets" class="rich-text bullets-preview" contenteditable="true" spellcheck="true" lang="pt-BR" style="min-height:120px">${(sec.bullets&&sec.bullets.length?sec.bullets:['']).map(b=>/^<(ul|ol)[ >]/i.test(b.trim())?b:`<p>${b}</p>`).join('')}</div>
+      <div id="ef-bullets" class="rich-text bullets-preview" contenteditable="true" spellcheck="true" lang="pt-BR" style="min-height:120px">${(sec.bullets&&sec.bullets.length?sec.bullets:['']).map(blocoParaEditor).join('')}</div>
       <div class="hint">Selecione o texto e clique no botão de marcador (•) para transformar em lista — escolha o estilo no menu. Use ⇤/⇥ para mudar o nível, funciona em lista ou em texto normal, como no Word.</div>
       <label>Caixa de destaque — título (opcional, deixe vazio para remover)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-note-heading" value="${escAttr((sec.note&&sec.note.heading)||'')}">
       <label>Caixa de destaque — cor de fundo</label>
@@ -10373,7 +10481,7 @@ function migrarListasParaTexto(){
         const corpoNota = Array.isArray(nota.body) ? nota.body.join('') : (nota.body || '');
         if((nota.heading || '').trim() || String(corpoNota).trim()) return;   // tem caixa: fica como está
         const itens = sec.bullets || [];
-        const jaEhListaHtml = itens.some(x=>/^<(ul|ol)[ >]/i.test(String(x).trim()));
+        const jaEhListaHtml = itens.some(x=>ehBlocoSolto(x));
         if(jaEhListaHtml){
           // Formato novo: cada entrada já é um parágrafo ou uma lista pronta —
           // é exatamente o formato do Texto. Passa igual, sem tocar em nada.
@@ -15481,16 +15589,16 @@ function sectionToPrintHtml(sec){
     case 'prose':
       // O PDF leva as notas de rodapé com a mesma numeração da tela.
       body = comNotasDeRodape((sec.paragraphs||[]).map(p=>{
-        const isList = /^<(ul|ol)[ >]/i.test(p.trim());
+        const isList = ehBlocoSolto(p);
         return isList ? richOut(p) : `<p>${richOut(p)}</p>`;
       }).join(''));
       break;
     case 'points': {
       const rawBullets = sec.bullets||[];
-      const isNewFormat = rawBullets.some(b=>/^<(ul|ol)[ >]/i.test(b.trim()));
+      const isNewFormat = rawBullets.some(b=>ehBlocoSolto(b));
       let bullets;
       if(isNewFormat){
-        bullets = `<div class="pdf-bullets">${rawBullets.map(b=>/^<(ul|ol)[ >]/i.test(b.trim())?b:`<p>${richOut(b)}</p>`).join('')}</div>`;
+        bullets = `<div class="pdf-bullets">${rawBullets.map(b=>ehBlocoSolto(b)?b:`<p>${richOut(b)}</p>`).join('')}</div>`;
       } else {
         const markerTypes = sec.markerTypes || [sec.markerType || 'square'];
         bullets = buildNestedListHtml(rawBullets, markerTypes, richOut).replace(/^<(ul|ol)/, `<$1 class="pdf-bullets"`);
@@ -15644,6 +15752,8 @@ function buildAulaPrintHtml(b, a){
   .pdf-kicker { font-size:10.5px; color:#F79C31; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; font-family:'Helvetica',sans-serif; margin-bottom:3px; }
   .pdf-sec-title { font-size:16px; color:#3D3E77; margin:0 0 8px 0; }
   .pdf-section p { font-size:13px; line-height:1.7; margin:0 0 10px 0; text-align:justify; }
+  /* Linha em branco proposital também vale no PDF (v4.12.5) */
+  .pdf-section p:empty, .intro p:empty { min-height:1em; }
   .pdf-table { width:100%; border-collapse:collapse; font-size:12px; margin:10px 0; }
   .pdf-table th { background:#3D3E77 !important; color:#fff !important; padding:8px 10px; text-align:left; font-family:'Helvetica',sans-serif; font-size:11px; }
   .pdf-table td { padding:7px 10px; border-bottom:1px solid #e0e0e0; vertical-align:top; }
