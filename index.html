@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.3                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.4                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -363,7 +363,16 @@
     font-family:'Source Serif 4',Georgia,serif;
     font-size:18px;color:var(--navy);line-height:1.2;
   }
-  .tela-acoes{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .tela-acoes{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  /* Ações da tela reunidas no topo (v4.12.4) */
+  .tela-acoes-topo{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .tela-acoes-topo .btn-primary, .tela-acoes-topo .btn-secondary{
+    padding:5px 14px;font-size:12.5px;border-radius:20px;margin:0;
+  }
+  .tela-acoes-topo .btn-primary .mi, .tela-acoes-topo .btn-secondary .mi{font-size:15px;}
+  @media (max-width:720px){
+    .tela-acoes-topo{width:100%;justify-content:flex-start;}
+  }
   /* Atalhos e fechar vivem fora da barra laranja, entao usam o tingido
      do tema em vez do branco translucido que o .btn-tiny tem la. */
   .tela-acoes .btn-tiny{
@@ -1790,6 +1799,28 @@
   .atv-q-gabarito-extra{margin-top:8px;padding-top:8px;border-top:1px dashed #A5CDAE;font-size:12.5px;color:#1B5E20;}
   .atv-q-sem-gabarito{border-left:3px solid #D8A857;padding-left:10px;}
   .an-branco{border-left:3px solid var(--line);padding-left:10px;}
+  /* Aviso de capacidade (v4.12.4) */
+  .capacidade-alerta{
+    max-width:900px;margin:16px auto 0;padding:0 24px;
+  }
+  .capacidade-alerta-corpo{
+    background:#FDEDE3;border:1px solid #C0621F;border-left-width:5px;border-radius:10px;
+    padding:12px 16px;font-size:13.5px;line-height:1.6;color:#8A3B12;
+  }
+  .capacidade-alerta-acao{display:block;margin-top:6px;font-weight:700;}
+  /* Rascunhos (v4.12.4) */
+  .rascunho-card{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0;background:var(--surface-raised);}
+  .rascunho-card > summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;}
+  .rascunho-card > summary::-webkit-details-marker{display:none;}
+  .rascunho-card > summary::before{content:'▸ ';color:var(--muted);}
+  .rascunho-card[open] > summary::before{content:'▾ ';}
+  .rascunho-meta{font-size:12px;color:var(--muted);margin-left:auto;}
+  .rascunho-texto{
+    width:100%;min-height:150px;margin-top:10px;font-family:ui-monospace,monospace;font-size:12.5px;
+    line-height:1.5;border:1px solid var(--line);border-radius:8px;padding:10px;
+    background:var(--surface);color:var(--ink);
+  }
+  .rascunho-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
   /* Recorte configurável do relatório (v4.12.3) */
   .rel-filtros{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0 16px;background:var(--surface-raised);}
   .rel-filtros > summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--ink);list-style:none;}
@@ -3267,6 +3298,7 @@
     <nav class="nav-list" id="nav-list"></nav>
   </aside>
   <div class="nav-backdrop" id="nav-backdrop"></div>
+  <div class="capacidade-alerta hidden" id="capacidade-alerta"></div>
   <main class="content" id="content"></main>
 </div>
 
@@ -3356,7 +3388,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.12.3</div>
+<div class="version-tag hidden" id="version-tag">v4.12.4</div>
 
 
 <script>
@@ -3599,16 +3631,45 @@ function touchCurrentAula(){
 // "Medidor de combustível": mostra quanto do teto de 1 MB por matéria (limite
 // rígido do Firestore) o texto do curso já ocupa. Discreto enquanto há folga,
 // amarelo a partir de 70%, vermelho a partir de 90%.
+// Quantas aulas existem hoje e quanto ocupa cada uma, em média. Serve para
+// transformar "85% da capacidade" numa informação acionável: quantas aulas
+// ainda cabem antes de a gravação começar a ser recusada.
+function capacidadeDoCurso(){
+  const bytes = new Blob([JSON.stringify(COURSE)]).size;
+  const limite = 1048576;
+  const pct = Math.round(100 * bytes / limite);
+  let aulas = 0;
+  COURSE.forEach(b=>{ aulas += (b.aulas||[]).length; });
+  const porAula = aulas ? bytes/aulas : 0;
+  const cabemAinda = porAula ? Math.max(0, Math.floor((limite - bytes)/porAula)) : null;
+  return {bytes, pct, aulas, porAula, cabemAinda, limite};
+}
 function updateCapacityIndicator(){
   const el = document.getElementById('capacity-indicator');
-  if(!el) return;
-  try{
-    const bytes = new Blob([JSON.stringify(COURSE)]).size;
-    const pct = Math.round(100 * bytes / 1048576);
-    el.textContent = `Matéria usando ${pct}% da capacidade`;
-    el.style.color = pct >= 90 ? '#FFD6D6' : (pct >= 70 ? '#FFE9A8' : '');
-    el.style.fontWeight = pct >= 70 ? '700' : '';
-  }catch(e){ el.textContent = ''; }
+  const alerta = document.getElementById('capacidade-alerta');
+  let cap = null;
+  try{ cap = capacidadeDoCurso(); }catch(e){ if(el) el.textContent=''; return; }
+  if(el){
+    el.textContent = `Matéria usando ${cap.pct}% da capacidade`;
+    el.style.color = cap.pct >= 90 ? '#FFD6D6' : (cap.pct >= 70 ? '#FFE9A8' : '');
+    el.style.fontWeight = cap.pct >= 70 ? '700' : '';
+  }
+  // A partir de 90% o número no rodapé da barra não basta: quem está escrevendo
+  // uma aula não olha para lá, e descobriria o teto no momento em que o
+  // salvamento falhasse. Por isso o aviso sobe para o corpo da tela.
+  if(!alerta) return;
+  if(!isAdmin || cap.pct < 90){ alerta.classList.add('hidden'); alerta.innerHTML=''; return; }
+  const restam = (cap.cabemAinda===null) ? '' :
+    (cap.cabemAinda === 0
+      ? ' <strong>Não cabe mais nenhuma aula nova.</strong>'
+      : ` No ritmo atual (~${Math.round(cap.porAula/1024)} KB por aula), ainda cabem cerca de <strong>${cap.cabemAinda} aula(s)</strong>.`);
+  alerta.classList.remove('hidden');
+  alerta.innerHTML = `<div class="capacidade-alerta-corpo">
+      <strong>⚠ Esta matéria está com ${cap.pct}% do limite de armazenamento.</strong>
+      O curso inteiro é gravado num único documento, e o Firestore recusa documentos acima de 1 MB.${restam}
+      Ao chegar a 100%, o conteúdo já salvo continua no ar e os alunos seguem acessando — o que trava é <strong>salvar edições novas</strong>.
+      <span class="capacidade-alerta-acao">Baixe o backup do curso (Matérias › Organizar curso) e me avise para dividir o armazenamento por bloco.</span>
+    </div>`;
 }
 async function saveCourseToStorage(){
   const indicator = document.getElementById('save-status-indicator');
@@ -3630,6 +3691,18 @@ async function saveCourseToStorage(){
         'O que fazer: pressione F5 para recarregar esta página com a versão mais recente, e refaça a alteração desta tela (que era só a última edição — o resto está salvo).');
       return false;
     }
+    // Perto do teto, avisa ANTES de tentar gravar. Falhar no meio de uma
+    // edição longa é a pior hora de descobrir o limite.
+    try{
+      const cap = capacidadeDoCurso();
+      if(cap.pct >= 97 && !confirm(
+          `Esta matéria está com ${cap.pct}% do limite de 1 MB por documento.\n\n` +
+          `Se passar de 100%, o Firestore recusa a gravação e você não conseguirá mais salvar edições — o conteúdo já salvo continua intacto.\n\n` +
+          `Salvar assim mesmo?`)){
+        if(indicator){ indicator.textContent = '⚠ Salvamento cancelado por você'; indicator.style.color = 'var(--err)'; }
+        return false;
+      }
+    }catch(e){ /* medir capacidade nunca pode impedir um salvamento */ }
     const writtenAt = await withRetry(()=>subjectDbSet(STORAGE_KEY, JSON.stringify(COURSE)));
     if(typeof writtenAt === 'number') COURSE_LOADED_AT = writtenAt; // esta tela agora é dona da versão mais recente
     clearLocalDraft();      // salvo de verdade — o rascunho de emergência pode ir embora
@@ -4825,6 +4898,39 @@ async function autoZerarNaoEntregues(){
   }catch(e){ console.error('autoZerarNaoEntregues falhou:', e); }
 }
 
+// Contrapartida obrigatória do zero automático: se o prazo for reaberto (você
+// corrige uma data errada, ou estende o prazo), os zeros lançados sozinhos
+// precisam ser desfeitos. Sem isto o aluno fica trancado — a atividade aparece
+// aberta, mas ele não consegue responder, porque nota publicada bloqueia a
+// edição. Foi exatamente o que aconteceu na aula 04.
+//
+// Desfazer significa despublicar, não apagar: o documento continua lá, sem
+// nota e sem marca, e o aluno volta a poder escrever.
+async function revogarZerosDeAtividadeReaberta(){
+  if(!isAdmin || !activeSubjectId) return;
+  try{
+    const schedules = await fetchAllActivitySchedules();
+    const now = Date.now();
+    // Só interessam os prazos que NÃO estão encerrados agora.
+    const abertos = schedules.filter(s=> !s.closesAt || s.closesAt > now);
+    if(!abertos.length) return;
+    for(const agenda of abertos){
+      let responses;
+      try{ responses = await fetchActivityResponsesForSection(agenda.sectionId); }catch(e){ continue; }
+      const zerados = responses.filter(r=> r.turmaId===agenda.turmaId
+                                        && r.grading && r.grading.published && r.grading.naoEntregue);
+      for(const r of zerados){
+        if(!r.id) continue;
+        try{
+          await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(r.id)
+            .set({grading: {published:false, naoEntregue:false, score:null, autoPublished:false}}, {merge:true});
+        }catch(e){ console.error('Não consegui revogar o zero de', r.studentUid, e); }
+      }
+      if(zerados.length){ ATV_BOLETIM_DATA = null; }
+    }
+  }catch(e){ console.error('revogarZerosDeAtividadeReaberta falhou:', e); }
+}
+
 async function autoPublicarAtividadesVencidas(){
   if(!isAdmin || !activeSubjectId) return;
   try{
@@ -5655,9 +5761,36 @@ function collectAllAtividades(){
 //
 // Agora as atividades são agrupadas por situação, e só o que pede ação nasce
 // aberto. O resto continua acessível, recolhido.
+// ALTERADO (v4.12.4) — a situação passou a ser calculada TURMA A TURMA, e a
+// ignorar registro órfão.
+//
+// Dois problemas reais que isto resolve:
+//
+// 1. Aluno excluído deixava a resposta dele para trás. O documento continua no
+//    banco (excluir a conta não apaga o que ela produziu), e era contado. Daí
+//    frases impossíveis como "1 de 0 entregas" numa turma de 15.
+// 2. Prazo de turma que não existe mais mantinha a atividade como "encerrada",
+//    mesmo com a turma viva recebendo respostas.
+//
+// A regra de agregação: se QUALQUER turma viva ainda pode responder, a
+// atividade está aberta. Só é "encerrada" quando encerrou para todas.
+function atvRegistrosVivos(sectionId){
+  const turmas  = new Set((allTurmas||[]).map(t=>t.id));
+  const alunos  = new Set((cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived).map(u=>u.id));
+  // Se as listas ainda não carregaram, não filtra nada — sumir com registro
+  // por falta de dado seria pior do que mostrar um a mais.
+  const filtraTurma = turmas.size > 0;
+  const filtraAluno = alunos.size > 0;
+  const agendas = (ATV_BOLETIM_SCHEDULES||[])
+    .filter(s=>s.sectionId===sectionId && (!filtraTurma || turmas.has(s.turmaId)));
+  const respostas = (ATV_BOLETIM_DATA||[])
+    .filter(r=>r.sectionId===sectionId && (!filtraAluno || alunos.has(r.studentUid)));
+  return {agendas, respostas};
+}
 function atvSituacaoDaAtividade(sectionId){
-  const agendas = (ATV_BOLETIM_SCHEDULES||[]).filter(s=>s.sectionId===sectionId);
-  const respostas = (ATV_BOLETIM_DATA||[]).filter(r=>r.sectionId===sectionId);
+  const vivos = atvRegistrosVivos(sectionId);
+  const agendas = vivos.agendas;
+  const respostas = vivos.respostas;
   const entregues = respostas.filter(r=>r.submittedAt).length;
   // O zero automático de quem não entregou é uma nota publicada, mas não é uma
   // entrega corrigida — contar junto produzia frases como "1 de 0 entregas".
@@ -5739,8 +5872,17 @@ function atividadesCentralForm(){
   // Números do curso inteiro. Ficam aqui, e não só dentro de cada atividade,
   // porque a pergunta "como está a correção da matéria?" não se responde
   // abrindo dezenas de telas uma a uma.
-  const totalEntregas   = (ATV_BOLETIM_DATA||[]).filter(r=>r.submittedAt).length;
-  const totalPublicadas = (ATV_BOLETIM_DATA||[]).filter(r=>r.grading && r.grading.published).length;
+  // Respostas de contas que não existem mais. Só conta como órfão quando a
+  // lista de alunos já carregou — senão todo mundo pareceria órfão.
+  const alunosVivos = new Set((cachedUsersList||[]).filter(u=>!roleIsStaff(u.role)).map(u=>u.id));
+  const orfaos = alunosVivos.size
+    ? (ATV_BOLETIM_DATA||[]).filter(r=> r.studentUid && !alunosVivos.has(r.studentUid))
+    : [];
+  const contaveis = alunosVivos.size
+    ? (ATV_BOLETIM_DATA||[]).filter(r=> !r.studentUid || alunosVivos.has(r.studentUid))
+    : (ATV_BOLETIM_DATA||[]);
+  const totalEntregas   = contaveis.filter(r=>r.submittedAt).length;
+  const totalPublicadas = contaveis.filter(r=>r.grading && r.grading.published).length;
   const m = (n,rot,alerta)=>`<div class="corr-metrica"><div class="corr-metrica-num ${alerta?'alerta':''}">${n}</div><div class="corr-metrica-rot">${rot}</div></div>`;
   return `<div class="editor-form">
     <div class="editing-type-banner">📥 Atividades e correção</div>
@@ -5756,6 +5898,8 @@ function atividadesCentralForm(){
         <button type="button" class="btn-secondary" data-action="atv-central-recarregar" title="Relê prazos e respostas do banco.">↻ Atualizar</button>
       </div>
     </div>
+    ${orfaos.length ? `<div class="hint atv-chamada-acao">🧹 Encontrei <strong>${orfaos.length} registro(s) órfão(s)</strong> — respostas de contas de aluno que não existem mais (teste apagado, cadastro excluído). Eles não aparecem mais nas contas acima, mas continuam ocupando espaço no banco.
+      <button type="button" class="btn-secondary" data-action="atv-limpar-orfaos" style="margin-left:8px;">🧹 Excluir registros órfãos</button></div>` : ''}
     ${aCorrigirTotal
       ? `<div class="hint atv-chamada-acao">📥 <strong>${aCorrigirTotal} entrega(s) esperando correção</strong>, em ${(porSituacao['corrigir']||[]).length} atividade(s). Comece por aí.</div>`
       : `<div class="hint atv-chamada-ok">✅ Nenhuma entrega esperando correção no momento.</div>`}
@@ -9415,13 +9559,13 @@ const GESTAO_GRUPOS = {
                   ativos:'Ativas', arquivados:'Arquivadas',
                   organizar:'Organizar curso', ia:'Criar com IA',
                   atividades:'Atividades', avaliacao:'Avaliação',
-                  estatisticas:'Estatísticas'}},
+                  rascunhos:'Rascunhos', estatisticas:'Estatísticas'}},
   config:      {rotulo:'Configurações', icone:'settings',        abas:{
                   geral:'Geral', conta:'Minha conta', instituicao:'Instituição', modoaula:'Modo Aula'}},
 };
 
 // Abas que so fazem sentido com UMA materia escolhida.
-const ABAS_COM_MATERIA = ['boletim','frequencia','organizar','ia','atividades','avaliacao','turma','aluno','materia'];
+const ABAS_COM_MATERIA = ['boletim','frequencia','organizar','ia','atividades','avaliacao','rascunhos','turma','aluno','materia'];
 // Abas exclusivas do master, mesmo dentro de um grupo que outros papeis acessam
 // (ex.: dentro de Configurações, so o master mexe na identidade institucional —
 // e um professor eventual so mexe no que e dele: Geral, Minha conta, Modo Aula).
@@ -9587,6 +9731,8 @@ function gestaoScreenForm(){
       corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + atividadesCentralForm();
     } else if(aba === 'avaliacao'){
       corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + avaliacaoResultadoForm();
+    } else if(aba === 'rascunhos'){
+      corpo = `<div class="editor-form">${gestaoSeletorMateriaHtml()}</div>` + rascunhosScreenForm();
     } else if(aba === 'estatisticas'){
       corpo = `<div class="editor-form">${saudeMateriaHtml()}</div>`;
     } else {
@@ -10140,12 +10286,15 @@ function newSectionForm(aula){
   // justamente as que ja estao prontas. Como oferecer o tipo na lista nao
   // altera nada da aula (so aparece se o professor escolher adicionar), a
   // trava saiu: qualquer aula pode receber uma atividade.
-  const tiposDisponiveis = [...FRIENDLY_TYPES, ...ADVANCED_TYPES];
+  const jaTemAtividade = !!(aula && (aula.sections||[]).some(s=>s.type==='atividade'));
+  const tiposDisponiveis = [...FRIENDLY_TYPES, ...ADVANCED_TYPES]
+    .filter(t=> t!=='atividade' || !jaTemAtividade);   // uma atividade por aula (v4.12.4)
   const opts = tiposDisponiveis.map(t=>`<option value="${t}">${esc(TYPE_LABELS[t])}</option>`).join('');
   const firstType = tiposDisponiveis[0];
   return `<div class="editor-form" data-kind="newSectionPicker">
     <label>Tipo de conteúdo a adicionar</label>
     <select id="ef-new-type">${opts}</select>
+    ${jaTemAtividade ? '<div class="hint">Esta aula já tem uma atividade, então o tipo “Atividade” não aparece na lista. Cada aula tem uma só — é ela que carrega o prazo, a visibilidade e a correção do encontro.</div>' : ''}
     <div class="type-description-box" id="ef-type-description">${esc(TYPE_DESCRIPTIONS[firstType]||'')}</div>
     <div class="editor-actions">
       <button class="btn-primary" data-action="confirm-new-type">Continuar</button>
@@ -10490,6 +10639,14 @@ function render(){
           e.target.value = '';
         });
       }
+    }
+    // As abas que dependem de matéria carregam o conteúdo se ninguém abriu
+    // nenhuma ainda (v4.12.4) — senão o seletor mostraria uma matéria
+    // "escolhida" que na verdade nunca foi lida do banco.
+    if(ABAS_COM_MATERIA.includes(abaAtual) && (!activeSubjectId || !COURSE || !COURSE.length)){
+      garantirMateriaAberta().then(ok=>{
+        if(ok && editState && editState.kind==='gestao') render();
+      });
     }
     // Seletor de materia das abas que dependem de uma.
     const selMat = document.getElementById('gestao-materia-select');
@@ -12979,6 +13136,52 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     baixarCsv(linhasCsv, `boletim-${(t&&t.name?t.name:'turma').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}.csv`);
     return;
   }
+  if(action==='rascunho-copiar'){
+    const lista = lerRascunhos().slice().sort((x,y)=> y.at - x.at);
+    const r = lista[+btn.dataset.i];
+    if(!r) return;
+    try{
+      await navigator.clipboard.writeText(r.text);
+      const antes = btn.textContent; btn.textContent = '✓ Copiado';
+      setTimeout(()=>{ btn.textContent = antes; }, 1500);
+    }catch(e){
+      alert('Não consegui copiar automaticamente. Selecione o texto na caixa e use Ctrl+C.');
+    }
+    return;
+  }
+  if(action==='rascunho-descartar'){
+    const chave = btn.dataset.chave;
+    if(!confirm('Descartar este rascunho?\n\nIsso apaga só a cópia de segurança guardada no navegador. O conteúdo salvo da aula não é afetado.')) return;
+    gravarRascunhos(lerRascunhos().filter(r=>r.chave !== chave));
+    render();
+    return;
+  }
+  if(action==='rascunhos-limpar-todos'){
+    if(!confirm('Descartar TODOS os rascunhos desta matéria?\n\nIsso apaga só as cópias de segurança guardadas no navegador. O conteúdo salvo das aulas não é afetado.')) return;
+    gravarRascunhos([]);
+    render();
+    return;
+  }
+  if(action==='atv-limpar-orfaos'){
+    if(!isAdmin) return;
+    const vivos = new Set((cachedUsersList||[]).filter(u=>!roleIsStaff(u.role)).map(u=>u.id));
+    if(!vivos.size){ alert('A lista de alunos ainda não carregou. Espere um instante e tente de novo.'); return; }
+    const orfs = (ATV_BOLETIM_DATA||[]).filter(r=> r.studentUid && !vivos.has(r.studentUid));
+    if(!orfs.length){ alert('Nenhum registro órfão encontrado.'); return; }
+    if(!confirm(`Excluir ${orfs.length} registro(s) de resposta de contas que não existem mais?\n\nIsso NÃO afeta nenhum aluno atual: são respostas de cadastros já apagados. A ação é definitiva.`)) return;
+    let ok = 0, falhou = 0;
+    for(const r of orfs){
+      if(!r.id){ falhou++; continue; }
+      try{
+        await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(r.id).delete();
+        ok++;
+      }catch(e){ falhou++; console.error('Falha ao excluir órfão', r.id, e); }
+    }
+    ATV_BOLETIM_DATA = null;
+    alert(`${ok} registro(s) excluído(s).` + (falhou ? ` ${falhou} não puderam ser excluídos — veja o console.` : ''));
+    render();
+    return;
+  }
   if(action==='atv-central-recarregar'){
     ATV_BOLETIM_DATA = null; ATV_BOLETIM_SCHEDULES = null;
     render();
@@ -14084,6 +14287,19 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='start-new-section'){ editState={kind:'newSectionPicker'}; render(); return; }
   if(action==='confirm-new-type'){
     const type = document.getElementById('ef-new-type').value;
+    // Uma aula só pode ter UMA atividade. Prazo, visibilidade e correção são
+    // cadastrados por (aula + turma); com duas atividades na mesma aula, o
+    // professor passa a ter dois prazos concorrentes para o mesmo encontro e
+    // o boletim deixa de saber qual delas vale.
+    if(type === 'atividade'){
+      const bA = COURSE.find(x=>x.num===state.block);
+      const aA = bA && bA.aulas.find(x=>x.num===state.aula);
+      const jaTem = aA && (aA.sections||[]).some(s=>s.type==='atividade');
+      if(jaTem){
+        alert('Esta aula já tem uma atividade.\n\nCada aula pode ter apenas uma — é ela que carrega o prazo, a visibilidade e a correção daquele encontro. Para mudar as questões, edite a atividade existente; para trocar de atividade, exclua a atual primeiro.');
+        return;
+      }
+    }
     editState = {kind:'newSection', draft: blankSection(type)};
     render(); return;
   }
@@ -14274,9 +14490,11 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
 
   if(action==='save-section'){
-    const form = btn.closest('.editor-form');
-    const type = form.dataset.type;
-    const idx = +form.dataset.idx;
+    // O botão pode ter sido levado para o topo da tela (v4.12.4), então já não
+    // está dentro do formulário. Nesse caso, os dados vêm do próprio botão.
+    const form = btn.closest('.editor-form') || document.querySelector('#content .editor-form[data-type]');
+    const type = (btn.dataset.formType != null) ? btn.dataset.formType : (form && form.dataset.type);
+    const idx  = +((btn.dataset.formIdx != null) ? btn.dataset.formIdx : (form && form.dataset.idx));
     let newSec = null;
     try{
       if(type==='prose'){
@@ -15099,7 +15317,53 @@ function telaCabecalho(kind, acoesExtras){
 
 // Envolve o HTML que a tela ja produzia. Nenhuma das 15 funcoes de tela
 // precisou ser reescrita — elas continuam devolvendo o que sempre devolveram.
+// Todo botão de ação de uma tela sobe para o canto superior direito, junto do
+// "Voltar". Antes cada tela decidia sozinha onde pôr os seus: umas em cima,
+// outras no rodapé, outras nos dois — e a pessoa tinha que procurar o botão
+// em vez de procurar a ação.
+//
+// A junção acontece no DOM (não no texto do HTML) porque é o único jeito
+// seguro: as telas são montadas por dezenas de funções diferentes e mexer nas
+// 34 delas por substituição de texto seria pedir para quebrar alguma.
+//
+// Duas exceções deliberadas: botões dentro de <details> ficam onde estão (eles
+// pertencem ao bloco recolhível, não à tela), e botões repetidos são
+// descartados para o topo não virar uma parede.
+function padronizarBotoes(){
+  const topo = document.querySelector('#content .tela-topo .tela-acoes');
+  if(!topo) return;
+  const blocos = [...document.querySelectorAll('#content .editor-actions')]
+    .filter(el => !el.closest('details'));
+  if(!blocos.length) return;
+  const chaveDe = b => (b.dataset.action||'') + '|' + (b.textContent||'').replace(/\s+/g,' ').trim();
+  const vistos = new Set([...topo.querySelectorAll('button')].map(chaveDe));
+  const caixa = document.createElement('span');
+  caixa.className = 'tela-acoes-topo';
+  blocos.forEach(bl=>{
+    [...bl.children].forEach(btn=>{
+      if(btn.tagName !== 'BUTTON'){ caixa.appendChild(btn); return; }
+      const k = chaveDe(btn);
+      if(vistos.has(k)){ btn.remove(); return; }
+      vistos.add(k);
+      // O botão sai de dentro do formulário; quem lia dados do formulário pelo
+      // ancestral precisa continuar achando. Carimba no próprio botão.
+      const form = btn.closest('.editor-form');
+      if(form){
+        if(form.dataset.type!=null && btn.dataset.formType==null) btn.dataset.formType = form.dataset.type;
+        if(form.dataset.idx!=null  && btn.dataset.formIdx==null)  btn.dataset.formIdx  = form.dataset.idx;
+      }
+      caixa.appendChild(btn);
+    });
+    bl.remove();
+  });
+  if(!caixa.children.length) return;
+  const fechar = topo.querySelector('.tela-fechar');
+  if(fechar) topo.insertBefore(caixa, fechar); else topo.appendChild(caixa);
+}
+
 function comCabecalho(kind, html, acoesExtras){
+  // Roda depois que este HTML virar DOM (o innerHTML acontece no chamador).
+  setTimeout(padronizarBotoes, 0);
   // ALTERADO (v4.9.10) — telas de contexto (ficha do aluno, diario de uma
   // aula, gerenciar uma atividade, novo bloco/aula, codigo da aula) ganham a
   // faixa de grupos/abas do grupo a que pertencem. Antes elas eram becos sem
@@ -15807,7 +16071,14 @@ async function openSubject(subjectId){
   document.getElementById('student-switch-subject-btn').classList.remove('hidden'); // admin sempre pode trocar/criar matéria
   applySubjectBranding(allSubjects && allSubjects.find(x=>x.id===subjectId));
   AULA_TEMPLATE_CACHE = undefined; // matéria pode ter mudado — rebusca o modelo quando precisar
-  if(isAdmin){ checkLocalDraft(); updateCapacityIndicator(); autoPublicarAtividadesVencidas(); autoZerarNaoEntregues(); }
+  if(isAdmin){
+    checkLocalDraft(); updateCapacityIndicator();
+    // Ordem importa: primeiro devolve o direito de responder a quem teve o
+    // prazo reaberto, depois zera quem de fato perdeu o prazo.
+    revogarZerosDeAtividadeReaberta()
+      .then(()=>autoPublicarAtividadesVencidas())
+      .then(()=>autoZerarNaoEntregues());
+  }
 }
 
 async function openStudentSubject(subjectId){
@@ -16071,6 +16342,29 @@ window.addEventListener('beforeunload', (e)=>{
 // fechar sem salvar, o texto pode ser recuperado no próximo login (para
 // copiar e colar de volta — sem sobrescrever nada automaticamente).
 function draftKey(){ return 'prof-laluce-rascunho-' + (activeSubjectId || 'sem-materia'); }
+// Chave da GAVETA de rascunhos (vários), separada da chave antiga de rascunho
+// único — que continua sendo lida no login para não perder nada de quem
+// atualizar o sistema com um rascunho pendente.
+function draftBoxKey(){ return 'prof-laluce-rascunhos-v2-' + (activeSubjectId || 'sem-materia'); }
+function lerRascunhos(){
+  try{
+    const raw = localStorage.getItem(draftBoxKey());
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+function gravarRascunhos(lista){
+  try{ localStorage.setItem(draftBoxKey(), JSON.stringify(lista.slice(-40))); }
+  catch(e){ /* melhor-esforço: rascunho nunca pode travar a edição */ }
+}
+function guardarRascunho(entrada){
+  const lista = lerRascunhos();
+  // Um rascunho por (aula + tipo de edição): a cópia nova substitui a anterior,
+  // senão em meia hora de trabalho haveria sessenta versões do mesmo texto.
+  const i = lista.findIndex(r=>r.chave === entrada.chave);
+  if(i >= 0) lista[i] = entrada; else lista.push(entrada);
+  gravarRascunhos(lista);
+}
 function saveLocalDraft(){
   if(!isAdmin || !editState) return;
   // BUG CORRIGIDO: antes, isto capturava QUALQUER formulário aberto (inclusive
@@ -16090,12 +16384,56 @@ function saveLocalDraft(){
     if(val && val.trim()) parts.push('—— ' + rotulo + ' ——\n' + val.trim());
   });
   if(!parts.length) return;
-  try{
-    localStorage.setItem(draftKey(), JSON.stringify({ at: Date.now(), aula: state.aula, text: parts.join('\n\n') }));
-  }catch(e){ /* armazenamento local cheio/indisponível — rascunho é melhor-esforço, nunca deve travar a edição */ }
+  const b = COURSE.find(x=>x.num===state.block);
+  const a = b && (b.aulas||[]).find(x=>x.num===state.aula);
+  guardarRascunho({
+    chave: `${state.block}-${state.aula}-${editState.kind}`,
+    at: Date.now(),
+    aula: state.aula,
+    aulaTitulo: (a && a.title) || '',
+    kind: editState.kind,
+    text: parts.join('\n\n'),
+  });
 }
+// ALTERADO (v4.12.4) — salvar a aula não apaga mais a gaveta. Ela é o histórico
+// do que você digitou; quem decide o que descartar é você, na tela de
+// Rascunhos. Só a chave antiga (rascunho único) continua sendo limpa.
 function clearLocalDraft(){
   try{ localStorage.removeItem(draftKey()); }catch(e){}
+}
+function rascunhosScreenForm(){
+  const lista = lerRascunhos().slice().sort((x,y)=> y.at - x.at);
+  const rotuloKind = {
+    section:'Seção da aula', newSection:'Nova seção', aulaCode:'Código da aula',
+    sectionCode:'Código da seção', newAula:'Nova aula', newBlock:'Novo bloco',
+  };
+  if(!lista.length){
+    return `<div class="editor-form">
+      <div class="editing-type-banner">📄 Rascunhos</div>
+      <p class="hint">Nenhum rascunho guardado nesta matéria.</p>
+      <div class="hint">Enquanto você edita o conteúdo de uma aula, uma cópia do texto é guardada aqui a cada 30 segundos, no seu próprio navegador. Serve para recuperar o que estava escrito se a aba fechar, a energia cair ou o salvamento falhar. Nada disso é enviado para a internet.</div>
+    </div>`;
+  }
+  const cartoes = lista.map((r,i)=>`
+    <details class="rascunho-card">
+      <summary>
+        <strong>Aula ${esc(String(r.aula||'?'))}${r.aulaTitulo?' — '+esc(r.aulaTitulo):''}</strong>
+        <span class="rascunho-meta">${esc(rotuloKind[r.kind]||r.kind||'edição')} · ${new Date(r.at).toLocaleString('pt-BR')}</span>
+      </summary>
+      <textarea class="rascunho-texto" readonly>${esc(r.text)}</textarea>
+      <div class="rascunho-acoes">
+        <button type="button" class="btn-secondary" data-action="rascunho-copiar" data-i="${i}">⧉ Copiar texto</button>
+        <button type="button" class="btn-secondary" data-action="rascunho-descartar" data-chave="${escAttr(r.chave||'')}">🗑 Descartar este</button>
+      </div>
+    </details>`).join('');
+  return `<div class="editor-form">
+    <div class="editing-type-banner">📄 Rascunhos (${lista.length})</div>
+    <div class="hint">Cópias do que você digitou enquanto editava aulas, guardadas <strong>no seu navegador</strong> a cada 30 segundos. Elas não substituem o conteúdo salvo — servem para você recuperar texto de uma edição interrompida. Como ficam só neste computador, não aparecem em outro aparelho.</div>
+    ${cartoes}
+    <div class="editor-actions">
+      <button type="button" class="btn-secondary" data-action="rascunhos-limpar-todos">🗑 Descartar todos</button>
+    </div>
+  </div>`;
 }
 setInterval(saveLocalDraft, 30000);
 
@@ -16107,6 +16445,10 @@ function checkLocalDraft(){
     d = JSON.parse(raw);
   }catch(e){ return; }
   if(!d || !d.text) return;
+  // Migra o rascunho do formato antigo para a gaveta, senão quem atualizar o
+  // sistema com um rascunho pendente o perderia ao fechar este aviso.
+  guardarRascunho({chave:`legado-${d.aula||'?'}`, at:d.at||Date.now(), aula:d.aula||'?',
+                   aulaTitulo:'', kind:'section', text:d.text});
   const quando = new Date(d.at).toLocaleString('pt-BR');
   const overlay = document.createElement('div');
   overlay.id = 'draft-recovery-overlay';
@@ -16115,9 +16457,10 @@ function checkLocalDraft(){
       <h3>📄 Rascunho de emergência encontrado</h3>
       <p>Encontrei um texto seu de <strong>${quando}</strong> (aula ${d.aula||'?'}) que pode não ter sido salvo — provavelmente de uma edição interrompida (aba fechada, queda de energia, travamento). Ele está abaixo para você <strong>copiar</strong> o que precisar e colar de volta na aula.</p>
       <textarea readonly>${d.text.replace(/</g,'&lt;')}</textarea>
+      <p class="hint" style="margin:8px 0 0;">Este e os próximos rascunhos ficam guardados em <strong>Matérias › Rascunhos</strong> — você pode voltar neles quando quiser e descartar de lá.</p>
       <div class="draft-recovery-actions">
-        <button type="button" class="btn-secondary" data-draft="keep">Fechar (guardar o rascunho para depois)</button>
-        <button type="button" class="btn-primary" data-draft="discard">Já copiei / não preciso — descartar rascunho</button>
+        <button type="button" class="btn-secondary" data-draft="keep">Fechar (fica guardado em Rascunhos)</button>
+        <button type="button" class="btn-primary" data-draft="discard">Já copiei — descartar</button>
       </div>
     </div>`;
   overlay.addEventListener('click', (e)=>{
@@ -16127,6 +16470,35 @@ function checkLocalDraft(){
     overlay.remove();
   });
   document.body.appendChild(overlay);
+}
+
+// Entrar direto num grupo da Gestão (Alunos, Turmas…) não passa por
+// openSubject, então COURSE fica vazio. Quando dali a pessoa clicava em
+// "Editor" ou "Ver como aluno", a tela abria sem aula nenhuma — parecia que o
+// botão não funcionava. O seletor de matéria piorava o engano: ele mostrava
+// uma matéria escolhida que na verdade nunca foi aberta.
+//
+// Esta função é a rede: garante que existe matéria ativa e conteúdo em
+// memória antes de qualquer tela que dependa disso.
+async function garantirMateriaAberta(){
+  if(!currentUser || !firebaseReady) return false;
+  if(activeSubjectId && COURSE && COURSE.length) return true;
+  try{
+    if(!allSubjects) await fetchAllSubjects();
+    const minhas = (allSubjects||[]).filter(s=> !s.archived && (isMaster || (s.ownerUid && s.ownerUid===currentUser.uid)));
+    if(!minhas.length) return false;
+    const alvo = minhas.find(s=>s.id===activeSubjectId) || minhas[0];
+    activeSubjectId = alvo.id;
+    activeSubjectName = alvo.name || '';
+    const tituloEl = document.getElementById('site-title-text');
+    if(tituloEl) tituloEl.textContent = alvo.name || 'Matéria';
+    applySubjectBranding(alvo);
+    await loadCourseFromStorage();
+    return !!(COURSE && COURSE.length);
+  }catch(e){
+    console.error('Não consegui abrir a matéria automaticamente:', e);
+    return false;
+  }
 }
 
 function updateViewAsButtonLabel(){
@@ -16172,8 +16544,9 @@ function updateViewAsButtonLabel(){
 // Alternar o papel sempre devolve para a AULA normal — nunca pode deixar a
 // pessoa "presa" numa tela de gestão fantasma. Por isso reseta MODO_GLOBAL e
 // refaz o showOnly, mesmo que o clique tenha vindo de dentro da Gestão.
-document.getElementById('user-badge-viewas-btn').addEventListener('click', ()=>{
+document.getElementById('user-badge-viewas-btn').addEventListener('click', async ()=>{
   if(!realIsAdmin) return;
+  await garantirMateriaAberta();
   isAdmin = !isAdmin;
   MODO_GLOBAL = false;
   document.body.classList.remove('modo-global');
@@ -16191,8 +16564,9 @@ document.getElementById('user-badge-viewas-btn').addEventListener('click', ()=>{
 // papel de cadastro (virou aba de Configurações) e passa a levar direto de
 // volta para a edição — o oposto de "ver como aluno". Para o aluno, continua
 // abrindo o mesmo modal de sempre (ele não tem tela de Configurações).
-function irParaEditor(){
+async function irParaEditor(){
   if(!realIsAdmin) return;
+  await garantirMateriaAberta();
   isAdmin = true;
   MODO_GLOBAL = false;
   document.body.classList.remove('modo-global');
