@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.5                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.6                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2371,6 +2371,10 @@
   .rich-content ul, .rich-content ol{margin:10px 0;padding-left:24px;list-style-position:inside;}
   .rich-content ul{list-style:disc;}
   .rich-content ol{list-style:decimal;}
+  /* font-size:inherit fecha a porta para o navegador aplicar o tamanho padrão
+     dele em lista solta. Quando VOCÊ aumenta a fonte de uma lista, o estilo
+     vai num <span> inline, que continua vencendo esta regra. */
+  .rich-content ul, .rich-content ol, .rich-content li{font-size:inherit;}
   .rich-content ul li, .rich-content ol li{margin-bottom:4px;line-height:1.6;}
   /* ===== LINKS NO TEXTO (v4.10.15) ===== */
   .rich-content a{color:var(--navy);text-decoration:underline;text-underline-offset:2px;}
@@ -2703,6 +2707,10 @@
   .aula-intro p{margin:0 0 12px 0;}
   .aula-intro p:last-child{margin-bottom:0;}
 
+  .prose{
+    font-size:15px;
+    line-height:1.7;
+  }
   .prose p{
     font-size:15px;
     line-height:1.7;
@@ -2725,7 +2733,7 @@
     color:var(--navy);
     margin:0 0 14px 0;
   }
-  .bullets{margin:0;padding-left:26px;list-style-position:inside;}
+  .bullets{margin:0;padding-left:26px;list-style-position:inside;font-size:15px;line-height:1.55;}
   .bullets li{
     margin-bottom:9px;
     font-size:15px;
@@ -3394,7 +3402,7 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.12.5</div>
+<div class="version-tag hidden" id="version-tag">v4.12.6</div>
 
 
 <script>
@@ -15754,6 +15762,10 @@ function buildAulaPrintHtml(b, a){
   .pdf-section p { font-size:13px; line-height:1.7; margin:0 0 10px 0; text-align:justify; }
   /* Linha em branco proposital também vale no PDF (v4.12.5) */
   .pdf-section p:empty, .intro p:empty { min-height:1em; }
+  /* Lista é irmã do parágrafo, não filha — sem isto ela sai maior no PDF (v4.12.6) */
+  .pdf-section { font-size:13px; line-height:1.7; }
+  .pdf-section ul, .pdf-section ol, .pdf-section li { font-size:inherit; line-height:1.7; }
+  .intro ul, .intro ol, .intro li { font-size:inherit; }
   .pdf-table { width:100%; border-collapse:collapse; font-size:12px; margin:10px 0; }
   .pdf-table th { background:#3D3E77 !important; color:#fff !important; padding:8px 10px; text-align:left; font-family:'Helvetica',sans-serif; font-size:11px; }
   .pdf-table td { padding:7px 10px; border-bottom:1px solid #e0e0e0; vertical-align:top; }
