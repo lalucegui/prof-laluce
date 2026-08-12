@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.6                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.10                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -36,6 +36,18 @@
     --terracotta-tint:#FBF1EC;
     --charcoal:#2B2B2B;
     --muted:#6B7280;
+    /* Escala de severidade usada em todo o sistema. A ideia é que o mesmo
+       significado tenha sempre a mesma cor: sem cor própria = está tudo bem,
+       amarelo = merece atenção, vermelho = crítico. Alterar aqui muda em
+       todos os avisos de uma vez. */
+    --nivel-atencao-bg:#F5C542;
+    --nivel-atencao-fg:#4A3400;
+    --nivel-atencao-linha:#D9A81F;
+    --nivel-atencao-suave:#FDF4DC;
+    --nivel-critico-bg:#C0392B;
+    --nivel-critico-fg:#FFF1EE;
+    --nivel-critico-linha:#8E2A20;
+    --nivel-critico-suave:#FDEDE3;
     --line:#E6E4F0;
     --white:#FFFFFF;
     --maxw:1180px;
@@ -261,16 +273,21 @@
     border-color:rgba(155,141,194,0.55) !important;
   }
   html[data-palette="noite"] .activity-card-oculto .activity-title,
+  html[data-palette="noite"] .activity-card-oculto .activity-summary-titulo,
   html[data-palette="noite"] .activity-card-oculto .act-tag,
   html[data-palette="noite"] .activity-card-oculto div{color:#DCD5F0 !important;}
   html[data-palette="noite"] .activity-vis-aberto{background:rgba(60,120,70,0.4) !important;color:#CFE8D2 !important;}
   html[data-palette="noite"] .activity-vis-oculto{background:rgba(110,95,150,0.4) !important;color:#DCD5F0 !important;}
   html[data-palette="noite"] .activity-title,
+  html[data-palette="noite"] .activity-summary-titulo,
   html[data-palette="noite"] .activity-head,
+  html[data-palette="noite"] .activity-summary,
   html[data-palette="noite"] .activity-card div,
   html[data-palette="noite"] .activity-card p,
   html[data-palette="noite"] .activity-card li,
   html[data-palette="noite"] .activity-card strong{color:#CFE8D2 !important;}
+  html[data-palette="noite"] .activity-summary::before{color:#CFE8D2 !important;}
+  html[data-palette="noite"] .activity-card-oculto .activity-summary::before{color:#DCD5F0 !important;}
   html[data-palette="noite"] .note-box,
   html[data-palette="noite"] .card,
   html[data-palette="noite"] .compare-col,
@@ -1011,7 +1028,6 @@
     flex:0 0 auto;
     min-width:22px;
   }
-  .picker-item.practice .n{color:var(--terracotta);}
   .picker-item.is-hidden{opacity:0.55;}
   .picker-item.is-hidden em{color:var(--terracotta);font-style:normal;font-size:10.5px;}
 
@@ -1265,7 +1281,6 @@
   .nav-aula.active{background:var(--tint-medium);box-shadow:inset 2px 0 0 var(--gold);}
   .nav-aula.active .num{color:var(--gold);}
   .nav-aula.active .label{color:var(--navy);font-weight:600;}
-  .nav-aula.practice .num{color:var(--terracotta);}
   .nav-aula .num{
     flex:0 0 auto;
     min-width:18px;
@@ -1528,6 +1543,27 @@
     gap:10px;flex-wrap:wrap;
   }
   .edit-status-bar.hidden{display:none;}
+  /* ===== Semáforo de capacidade (v4.12.7) =====
+     Escala de três níveis usada em todo o sistema: normal (sem cor própria),
+     atenção (amarelo) e crítico (vermelho). A pastilha tem fundo sólido de
+     propósito: sobre a barra escura, texto colorido sozinho não se lê. */
+  .cap-pill{
+    margin-left:14px;font-size:11.5px;font-weight:600;
+    padding:3px 10px;border-radius:20px;white-space:nowrap;
+    background:transparent;color:var(--bar-fg);opacity:0.8;
+    border:1px solid transparent;cursor:pointer;user-select:none;
+  }
+  .cap-pill:hover{filter:brightness(1.08);}
+  .cap-pill:empty{display:none;}
+  .cap-pill.nivel-atencao, .cap-pill.nivel-critico{opacity:1;}
+  .cap-pill.nivel-atencao{
+    background:var(--nivel-atencao-bg);color:var(--nivel-atencao-fg);
+    border-color:var(--nivel-atencao-linha);font-weight:800;
+  }
+  .cap-pill.nivel-critico{
+    background:var(--nivel-critico-bg);color:var(--nivel-critico-fg);
+    border-color:var(--nivel-critico-linha);font-weight:800;
+  }
 
   /* Edit affordances on sections */
   .section{position:relative;}
@@ -1713,6 +1749,27 @@
   .activity-card{
     background:#F0F7F0;border:1.5px solid #7FA882;border-radius:12px;padding:16px 18px;
   }
+  /* ===== Roteiro recolhível (v4.12.7) ===== */
+  .activity-details{padding:0;overflow:hidden;}
+  .activity-summary{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:12px 16px;cursor:pointer;user-select:none;list-style:none;
+  }
+  .activity-summary::-webkit-details-marker{display:none;}
+  .activity-summary::before{
+    content:'▸';font-size:13px;color:#2F5D33;transition:transform .15s ease;display:inline-block;flex:0 0 auto;
+  }
+  .activity-details[open] > .activity-summary::before{transform:rotate(90deg);}
+  .activity-summary:hover{background:rgba(127,168,130,0.14);}
+  .activity-summary-titulo{font-size:15px;font-weight:800;color:#234A27;}
+  .activity-feita-tag{
+    font-size:10.5px;font-weight:800;letter-spacing:0.5px;padding:3px 9px;border-radius:20px;
+    color:#2F5D33;background:#CFE6D2;border:1px solid #7FA882;white-space:nowrap;
+  }
+  .activity-corpo{padding:0 18px 16px 18px;}
+  .activity-card-oculto .activity-summary-titulo{color:#5A4B7A;}
+  .activity-card-oculto .activity-summary::before{color:#5A4B7A;}
+  .activity-card-oculto .activity-summary:hover{background:rgba(155,141,194,0.14);}
   .activity-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
   .activity-badge{font-size:11px;font-weight:800;letter-spacing:0.8px;color:#2F5D33;background:#DCEBDD;padding:4px 10px;border-radius:20px;}
   .activity-time{font-size:12.5px;font-weight:700;color:#2F5D33;}
@@ -1799,28 +1856,76 @@
   .atv-q-gabarito-extra{margin-top:8px;padding-top:8px;border-top:1px dashed #A5CDAE;font-size:12.5px;color:#1B5E20;}
   .atv-q-sem-gabarito{border-left:3px solid #D8A857;padding-left:10px;}
   .an-branco{border-left:3px solid var(--line);padding-left:10px;}
-  /* Aviso de capacidade (v4.12.4) */
-  .capacidade-alerta{
-    max-width:900px;margin:16px auto 0;padding:0 24px;
+  /* ===== Aviso de capacidade (v4.12.10) =====
+     Era uma faixa dentro da pagina: ela ENTRAVA no fluxo do layout e empurrava
+     a tela toda para o lado. Virou aviso flutuante — position:fixed, fora do
+     fluxo, sem tocar em nada do que esta embaixo. Some sozinho, tem X, e volta
+     ao clicar na pastilha da barra. */
+  .cap-toast{
+    position:fixed;right:20px;bottom:20px;z-index:9000;
+    width:min(380px, calc(100vw - 40px));
+    background:var(--surface-raised);border:1px solid var(--line);
+    border-left-width:5px;border-radius:12px;
+    padding:14px 38px 14px 16px;
+    box-shadow:0 10px 34px rgba(20,20,40,0.20);
+    font-size:13px;line-height:1.55;color:var(--charcoal);
+    animation:capToastEntra .22s ease-out;
   }
-  .capacidade-alerta-corpo{
-    background:#FDEDE3;border:1px solid #C0621F;border-left-width:5px;border-radius:10px;
-    padding:12px 16px;font-size:13.5px;line-height:1.6;color:#8A3B12;
+  @keyframes capToastEntra{ from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;} }
+  .cap-toast.nivel-ok{border-left-color:var(--navy);}
+  .cap-toast.nivel-atencao{border-left-color:var(--nivel-atencao-linha);background:var(--nivel-atencao-suave);}
+  .cap-toast.nivel-critico{border-left-color:var(--nivel-critico-linha);background:var(--nivel-critico-suave);}
+  .cap-toast-titulo{font-weight:800;font-size:13.5px;margin-bottom:5px;}
+  .cap-toast-corpo{font-size:12.8px;}
+  .cap-toast-acao{margin-top:7px;font-weight:700;font-size:12.8px;}
+  .cap-toast-rodape{margin-top:9px;font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:7px;}
+  .cap-toast-x{
+    position:absolute;top:8px;right:8px;
+    width:24px;height:24px;line-height:1;border-radius:6px;
+    border:1px solid transparent;background:transparent;color:var(--muted);
+    font-size:13px;cursor:pointer;
   }
-  .capacidade-alerta-acao{display:block;margin-top:6px;font-weight:700;}
+  .cap-toast-x:hover{background:rgba(0,0,0,0.07);color:var(--charcoal);}
+  @media (max-width:640px){ .cap-toast{right:12px;left:12px;bottom:12px;width:auto;} }
   /* Rascunhos (v4.12.4) */
   .rascunho-card{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0;background:var(--surface-raised);}
-  .rascunho-card > summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;}
-  .rascunho-card > summary::-webkit-details-marker{display:none;}
-  .rascunho-card > summary::before{content:'▸ ';color:var(--muted);}
-  .rascunho-card[open] > summary::before{content:'▾ ';}
-  .rascunho-meta{font-size:12px;color:var(--muted);margin-left:auto;}
-  .rascunho-texto{
-    width:100%;min-height:150px;margin-top:10px;font-family:ui-monospace,monospace;font-size:12.5px;
-    line-height:1.5;border:1px solid var(--line);border-radius:8px;padding:10px;
-    background:var(--surface);color:var(--ink);
+  .rascunho-card > summary{
+    cursor:pointer;list-style:none;display:grid;
+    grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:baseline;
   }
-  .rascunho-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .rascunho-card > summary::-webkit-details-marker{display:none;}
+  .rascunho-card > summary::before{content:'▸';color:var(--muted);}
+  .rascunho-card[open] > summary::before{content:'▾';}
+  .rascunho-onde{font-size:14px;color:var(--ink);}
+  .rascunho-meta{font-size:12px;color:var(--muted);white-space:nowrap;}
+  .rascunho-resumo{
+    grid-column:2 / -1;font-size:12.5px;color:var(--muted);font-style:italic;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .rascunho-card[open] .rascunho-resumo{display:none;}
+  .rascunho-corpo{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
+  .rascunho-campo{margin-bottom:12px;}
+  .rascunho-campo-rotulo{
+    display:flex;align-items:center;gap:6px;
+    font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;
+    color:var(--muted);margin-bottom:4px;
+  }
+  .rascunho-copiar-campo{
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:5px;width:22px;height:20px;font-size:11px;cursor:pointer;padding:0;line-height:1;
+  }
+  .rascunho-copiar-campo:hover{border-color:var(--navy);color:var(--navy);}
+  .rascunho-campo-texto{
+    font-size:13.5px;line-height:1.6;color:var(--ink);
+    border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--surface);
+    max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-word;
+  }
+  .rascunho-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center;}
+  .rascunho-reposto{
+    background:var(--nivel-atencao-suave);border:1px solid var(--nivel-atencao-linha);
+    border-left-width:5px;border-radius:10px;padding:10px 14px;margin-bottom:14px;
+    font-size:13.5px;line-height:1.6;color:#5A4300;
+  }
   /* Recorte configurável do relatório (v4.12.3) */
   .rel-filtros{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0 16px;background:var(--surface-raised);}
   .rel-filtros > summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--ink);list-style:none;}
@@ -2323,6 +2428,12 @@
   .editor-form .table-grid{width:100%;border-collapse:collapse;margin-top:6px;}
   .editor-form .table-grid td{padding:3px;}
   .editor-form .table-grid input{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:5px;font-size:12.5px;}
+  /* Fila de botoes que remove a coluna inteira — fica ACIMA do cabecalho, para
+     nao se confundir com os botoes de remover linha, que ficam a direita. */
+  .editor-form .table-grid .tg-colbar td{padding:0 3px 1px 3px;text-align:center;}
+  .editor-form .table-grid .tg-del-col{width:100%;max-width:64px;height:18px;line-height:1;font-size:12px;opacity:0.55;}
+  .editor-form .table-grid:hover .tg-del-col{opacity:1;}
+  .editor-form .table-grid .edit-chip[disabled]{opacity:0.25;cursor:not-allowed;pointer-events:none;}
   .editor-form .row-actions{display:flex;gap:6px;margin-top:8px;}
   .ld-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
   .ld-row .ld-label{flex:1 1 40%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;}
@@ -2891,19 +3002,6 @@
     flex:0 0 auto;
   }
 
-  .practice-card{
-    background:var(--terracotta-tint);
-    border-radius:12px;
-    padding:26px 28px;
-  }
-  .practice-card .tag{
-    display:inline-block;
-    font-size:11.5px;font-weight:700;color:#fff;background:var(--terracotta);
-    padding:4px 12px;border-radius:999px;letter-spacing:0.5px;
-    text-transform:uppercase;margin-bottom:14px;
-  }
-  .practice-card p{font-size:14.5px;line-height:1.6;margin:0 0 10px 0;}
-
   /* Real book figure */
   .figure-box{
     margin-top:16px;
@@ -3259,7 +3357,7 @@
 <div class="edit-status-bar hidden" id="edit-status-bar">
   <span><span class="mi" style="font-size:15px;vertical-align:-2px;">edit</span> Modo Edição
     <strong id="save-status-indicator" style="margin-left:10px;"></strong>
-    <span id="capacity-indicator" style="margin-left:14px;font-size:11.5px;opacity:0.85;" title="Quanto do limite de armazenamento (1 MB por matéria) o texto deste curso já ocupa"></span>
+    <span id="capacity-indicator" class="cap-pill" role="button" tabindex="0"></span>
   </span>
   <span style="display:flex;gap:8px;flex-wrap:wrap;">
     <button class="btn-tiny" data-action="gestao-ir" data-grupo="alunos" data-aba="ativos" title="Alunos: cadastro, turmas, boletim, frequência, relatórios"><span class="mi">group</span> Alunos</button>
@@ -3312,7 +3410,6 @@
     <nav class="nav-list" id="nav-list"></nav>
   </aside>
   <div class="nav-backdrop" id="nav-backdrop"></div>
-  <div class="capacidade-alerta hidden" id="capacidade-alerta"></div>
   <main class="content" id="content"></main>
 </div>
 
@@ -3402,7 +3499,8 @@
   <span id="presenter-control-label">Projetando na 2ª tela</span>
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
-<div class="version-tag hidden" id="version-tag">v4.12.6</div>
+<div class="cap-toast hidden" id="capacidade-alerta" role="status" aria-live="polite"></div>
+<div class="version-tag hidden" id="version-tag">v4.12.10</div>
 
 
 <script>
@@ -3658,33 +3756,128 @@ function capacidadeDoCurso(){
   const cabemAinda = porAula ? Math.max(0, Math.floor((limite - bytes)/porAula)) : null;
   return {bytes, pct, aulas, porAula, cabemAinda, limite};
 }
+// ===== Aviso de capacidade (v4.12.10) =====
+// Antes o aviso era uma FAIXA dentro da página: ela entrava no fluxo do layout
+// e empurrava a tela inteira para o lado. Agora é um aviso flutuante, fora do
+// fluxo — não desloca nada. Ele se anuncia sozinho uma vez por nível (e de novo
+// se o nível piorar), some sozinho, e volta sempre que você clica na pastilha
+// da barra. Enquanto o mouse estiver em cima dele, o relógio para.
+let CAP_TOAST_TIMER = null;
+let CAP_TOAST_NIVEL_ANUNCIADO = null;   // nível que já apareceu sozinho nesta sessão
+const CAP_NIVEL_ORDEM = {ok:0, atencao:1, critico:2};
+
+function capNivel(pct){ return pct >= 90 ? 'critico' : (pct >= 70 ? 'atencao' : 'ok'); }
+
+// Texto do aviso, um para cada um dos três níveis. O tempo na tela cresce com
+// a gravidade: um "está tudo bem" não precisa dos mesmos segundos que um
+// "você está prestes a não conseguir mais salvar".
+function capToastConteudo(cap){
+  const nivel = capNivel(cap.pct);
+  const cabem = (cap.cabemAinda === null) ? ''
+    : (cap.cabemAinda === 0
+        ? '<strong>Não cabe mais nenhuma aula nova.</strong>'
+        : `No ritmo atual (~${Math.round(cap.porAula/1024)} KB por aula), ainda cabem cerca de <strong>${cap.cabemAinda} aula(s)</strong>.`);
+  if(nivel === 'ok') return {
+    titulo: `✓ Matéria usando ${cap.pct}% da capacidade`,
+    corpo: `Sem motivo para preocupação. O curso inteiro é gravado num único documento, que pode ter até 1 MB. ${cabem}`,
+    acao: '', segundos: 6,
+  };
+  if(nivel === 'atencao') return {
+    titulo: `⚠ Matéria usando ${cap.pct}% da capacidade`,
+    corpo: `Dá para trabalhar normalmente, mas já convém planejar. ${cabem}`,
+    acao: 'Ao chegar perto de 90%, me avise para dividir o armazenamento por bloco.',
+    segundos: 10,
+  };
+  return {
+    titulo: `⛔ Matéria usando ${cap.pct}% da capacidade`,
+    corpo: `O Firestore recusa documentos acima de 1 MB. ${cabem} Ao chegar a 100%, o conteúdo já salvo continua no ar e os alunos seguem acessando — o que trava é <strong>salvar edições novas</strong>.`,
+    acao: 'Baixe o backup do curso (Matérias › Organizar curso) e me avise para dividir o armazenamento por bloco.',
+    segundos: 16,
+  };
+}
+
+function fecharCapToast(){
+  const t = document.getElementById('capacidade-alerta');
+  clearTimeout(CAP_TOAST_TIMER); CAP_TOAST_TIMER = null;
+  if(t) t.classList.add('hidden');
+}
+
+function abrirCapToast(){
+  const t = document.getElementById('capacidade-alerta');
+  if(!t || !isAdmin) return;
+  let cap = null;
+  try{ cap = capacidadeDoCurso(); }catch(e){ return; }
+  const c = capToastConteudo(cap);
+  t.className = 'cap-toast nivel-' + capNivel(cap.pct);
+  t.innerHTML = `
+    <button type="button" class="cap-toast-x" id="cap-toast-x" title="Fechar aviso">✕</button>
+    <div class="cap-toast-titulo">${c.titulo}</div>
+    <div class="cap-toast-corpo">${c.corpo}</div>
+    ${c.acao ? `<div class="cap-toast-acao">${c.acao}</div>` : ''}
+    <div class="cap-toast-rodape">Some sozinho em instantes. Para rever, clique na pastilha “${cap.pct}% da capacidade” lá em cima.</div>`;
+  clearTimeout(CAP_TOAST_TIMER);
+  CAP_TOAST_TIMER = setTimeout(fecharCapToast, c.segundos * 1000);
+}
+
+function alternarCapToast(){
+  const t = document.getElementById('capacidade-alerta');
+  if(!t) return;
+  if(t.classList.contains('hidden')) abrirCapToast(); else fecharCapToast();
+}
+
 function updateCapacityIndicator(){
   const el = document.getElementById('capacity-indicator');
-  const alerta = document.getElementById('capacidade-alerta');
   let cap = null;
   try{ cap = capacidadeDoCurso(); }catch(e){ if(el) el.textContent=''; return; }
+  const nivel = capNivel(cap.pct);
   if(el){
-    el.textContent = `Matéria usando ${cap.pct}% da capacidade`;
-    el.style.color = cap.pct >= 90 ? '#FFD6D6' : (cap.pct >= 70 ? '#FFE9A8' : '');
-    el.style.fontWeight = cap.pct >= 70 ? '700' : '';
+    // Três níveis, sempre as mesmas cores em todo o sistema:
+    // sem preocupação / atenção / crítico.
+    const icone = {ok:'', atencao:'⚠ ', critico:'⛔ '}[nivel];
+    el.className = 'cap-pill nivel-' + nivel;
+    el.textContent = `${icone}Matéria usando ${cap.pct}% da capacidade`;
+    el.title = 'Clique para ver o aviso completo sobre o armazenamento desta matéria.';
+    // Limpa o que a versão anterior escrevia direto no elemento, senão o
+    // estilo inline sobreviveria à troca de classe e continuaria mandando.
+    el.style.color = ''; el.style.fontWeight = ''; el.style.opacity = '';
   }
-  // A partir de 90% o número no rodapé da barra não basta: quem está escrevendo
-  // uma aula não olha para lá, e descobriria o teto no momento em que o
-  // salvamento falhasse. Por isso o aviso sobe para o corpo da tela.
-  if(!alerta) return;
-  if(!isAdmin || cap.pct < 90){ alerta.classList.add('hidden'); alerta.innerHTML=''; return; }
-  const restam = (cap.cabemAinda===null) ? '' :
-    (cap.cabemAinda === 0
-      ? ' <strong>Não cabe mais nenhuma aula nova.</strong>'
-      : ` No ritmo atual (~${Math.round(cap.porAula/1024)} KB por aula), ainda cabem cerca de <strong>${cap.cabemAinda} aula(s)</strong>.`);
-  alerta.classList.remove('hidden');
-  alerta.innerHTML = `<div class="capacidade-alerta-corpo">
-      <strong>⚠ Esta matéria está com ${cap.pct}% do limite de armazenamento.</strong>
-      O curso inteiro é gravado num único documento, e o Firestore recusa documentos acima de 1 MB.${restam}
-      Ao chegar a 100%, o conteúdo já salvo continua no ar e os alunos seguem acessando — o que trava é <strong>salvar edições novas</strong>.
-      <span class="capacidade-alerta-acao">Baixe o backup do curso (Matérias › Organizar curso) e me avise para dividir o armazenamento por bloco.</span>
-    </div>`;
+  if(!isAdmin){ fecharCapToast(); CAP_TOAST_NIVEL_ANUNCIADO = null; return; }
+  // Aparece sozinho só quando há o que avisar, e uma vez só por nível: se
+  // pipocasse a cada tela, viraria ruído e você pararia de ler. Se o nível
+  // PIORAR no meio do trabalho, ele volta — aí é notícia nova.
+  const jaAnunciado = CAP_TOAST_NIVEL_ANUNCIADO;
+  if(nivel !== 'ok' && (jaAnunciado === null || CAP_NIVEL_ORDEM[nivel] > CAP_NIVEL_ORDEM[jaAnunciado])){
+    CAP_TOAST_NIVEL_ANUNCIADO = nivel;
+    abrirCapToast();
+  } else if(jaAnunciado === null){
+    CAP_TOAST_NIVEL_ANUNCIADO = nivel;   // nível tranquilo: só registra, sem interromper
+  }
 }
+
+// O aviso vive FORA da área de conteúdo, então não passa pelo despachante de
+// ações de lá — estes dois cliques são ligados na mão.
+document.addEventListener('click', (e)=>{
+  if(e.target.closest('#cap-toast-x')){ fecharCapToast(); return; }
+  if(e.target.closest('#capacity-indicator')){ alternarCapToast(); return; }
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  if(document.activeElement && document.activeElement.id === 'capacity-indicator'){
+    e.preventDefault(); alternarCapToast();
+  }
+});
+// Com o mouse em cima, o aviso não some no meio da leitura.
+document.addEventListener('mouseover', (e)=>{
+  if(e.target.closest('#capacidade-alerta')){ clearTimeout(CAP_TOAST_TIMER); CAP_TOAST_TIMER = null; }
+});
+document.addEventListener('mouseout', (e)=>{
+  const t = document.getElementById('capacidade-alerta');
+  if(!t || t.classList.contains('hidden')) return;
+  if(e.target.closest('#capacidade-alerta') && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('#capacidade-alerta'))){
+    clearTimeout(CAP_TOAST_TIMER);
+    CAP_TOAST_TIMER = setTimeout(fecharCapToast, 3000);
+  }
+});
 async function saveCourseToStorage(){
   const indicator = document.getElementById('save-status-indicator');
   try{
@@ -4269,7 +4462,7 @@ function renderSideNav(){
       </div>
       <div class="nav-aulas">
         ${b.aulas.filter(a=>isAdmin || !a.hidden).map(a=>`
-          <div class="nav-aula-row ${a.num===state.aula?'active':''} ${a.isPractice?'practice':''} ${a.hidden?'is-hidden':''} ${(isAdmin&&sectionGridMode)?'nav-aula-grid-on':''}" data-nav-aula-block="${b.num}" data-nav-aula-num="${a.num}">
+          <div class="nav-aula-row ${a.num===state.aula?'active':''} ${a.hidden?'is-hidden':''} ${(isAdmin&&sectionGridMode)?'nav-aula-grid-on':''}" data-nav-aula-block="${b.num}" data-nav-aula-num="${a.num}">
             <button class="edit-chip nav-aula-drag-handle" draggable="true" data-drag-nav-aula-num="${a.num}" title="Arrastar para reordenar (renumera automaticamente)" style="cursor:grab;">⣿</button>
             <input type="checkbox" class="nav-aula-visible-cb" data-vis-block="${b.num}" data-vis-aula="${a.num}" ${a.hidden?'':'checked'} title="Visível para os alunos">
             <button class="nav-aula" data-block="${b.num}" data-aula="${a.num}">
@@ -4649,16 +4842,23 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
             ? '<span class="activity-vis-tag activity-vis-oculto" title="Este roteiro não aparece para o aluno. Para mudar, edite a seção e marque \'Visível para o aluno\'.">🔒 SÓ PARA VOCÊ</span>'
             : '<span class="activity-vis-tag activity-vis-aberto" title="Este roteiro aparece na aula do aluno. Para mudar, edite a seção e desmarque \'Visível para o aluno\'.">👁 O ALUNO VÊ</span>')
         : '';
-      body = `<div class="activity-card${(isAdminNaTela() && soProfessor)?' activity-card-oculto':''}">
-        <div class="activity-head">
+      // No Modo Aula o roteiro nasce aberto: o projetor não deve exigir um
+      // clique para revelar conteúdo, e ali quem olha é a turma, não você.
+      const aberto = (typeof presentationMode !== 'undefined' && presentationMode) || !!ACT_ABERTA[sec.id];
+      const resumoTitulo = sec.title ? esc(sec.title) : 'Atividade prática';
+      body = `<details class="activity-card activity-details${(isAdminNaTela() && soProfessor)?' activity-card-oculto':''}" data-act-details="${esc(sec.id)}"${aberto?' open':''}>
+        <summary class="activity-summary">
           <span class="activity-badge">🛠 ATIVIDADE PRÁTICA</span>
+          <span class="activity-summary-titulo">${resumoTitulo}</span>
           ${marcaVis}
           ${sec.timeMin?`<span class="activity-time">⏱ ${esc(sec.timeMin)}</span>`:''}
+          ${(!realIsAdmin && feita)?'<span class="activity-feita-tag">✓ concluída</span>':''}
+        </summary>
+        <div class="activity-corpo">
+          ${linhas || '<div class="act-row"><div><em>Este roteiro ainda não tem conteúdo preenchido.</em></div></div>'}
+          ${checkAluno}
         </div>
-        ${sec.title?`<div class="activity-title">${esc(sec.title)}</div>`:''}
-        ${linhas}
-        ${checkAluno}
-      </div>`;
+      </details>`;
       break;
     }
     case 'prose': {
@@ -4796,6 +4996,8 @@ let ACTIVITY_DATA_CACHE = {};
 // sozinha no meio da digitação. Some ao recarregar a página, que é o
 // comportamento esperado — abrir a aula devolve tudo recolhido.
 let ATV_ABERTA = {};
+// Mesmo papel do ATV_ABERTA, para o roteiro de atividade prática (v4.12.7).
+let ACT_ABERTA = {};
 // Envelope recolhível comum ao professor e ao aluno.
 function atividadeRecolhivelHtml(sec, resumoDireita, conteudo){
   const aberta = !!ATV_ABERTA[sec.id];
@@ -5076,7 +5278,15 @@ function atvJanelaPrazo(schedule){
   const agora = Date.now();
   if(schedule.opensAt && agora < schedule.opensAt) return 'antes';
   if(schedule.closesAt && agora > schedule.closesAt){
-    return schedule.aceitaForaPrazo === true ? 'atrasada' : 'depois';
+    // O prazo guarda a própria cópia de "aceita fora do prazo" porque é ela
+    // que as regras do Firestore conferem. Mas a configuração da matéria é a
+    // decisão vigente — se as duas discordarem (prazo gravado antes de você
+    // mudar a configuração), vale a MAIS RESTRITIVA. Ficar mais rígido que o
+    // banco nunca é perigoso: o navegador deixa de oferecer algo que as regras
+    // permitiriam. O contrário — oferecer o que o banco recusa — é que produz
+    // aquele "salvei e não salvou".
+    const aceita = (schedule.aceitaForaPrazo === true) && aceitaForaDoPrazo();
+    return aceita ? 'atrasada' : 'depois';
   }
   return 'aberta';
 }
@@ -5354,6 +5564,9 @@ function wireAtividadeDetails(){
   document.querySelectorAll('details[data-atv-details]').forEach(d=>{
     d.addEventListener('toggle', ()=>{ ATV_ABERTA[d.dataset.atvDetails] = d.open; });
   });
+  document.querySelectorAll('details[data-act-details]').forEach(d=>{
+    d.addEventListener('toggle', ()=>{ ACT_ABERTA[d.dataset.actDetails] = d.open; });
+  });
 }
 
 function atvTableHtml(sectionId, item, rows, locked){
@@ -5384,7 +5597,7 @@ function renderAtividadeItemInput(sectionId, item, idx, value, locked, revelar){
     body = `<div class="atv-ans-lida">${renderAtividadeAnswerReadonly(item, value)}</div>`;
   } else if(item.type==='dissertativa'){
     const paras = (value && value.length) ? value : [''];
-    const html = paras.map(p=>ehBlocoSolto(p)?p:`<p>${p}</p>`).join('');
+    const html = paras.map(blocoParaEditor).join('');
     const fieldId = 'atv-ans-'+sectionId+'-'+item.itemId;
     body = `${richToolbarHtml(fieldId)}<div id="${fieldId}" class="rich-text atv-ans-field" data-secid="${esc(sectionId)}" data-item-id="${esc(item.itemId)}" data-item-type="dissertativa" contenteditable="true" spellcheck="true" lang="pt-BR">${html}</div>`;
   } else if(item.type==='curta'){
@@ -5778,7 +5991,7 @@ function atvGradingPanelHtml(sec, resp, user, draft, autoLiberado){
     </div>`;
   }).join('');
   const commentParas = (eff.commentParas && eff.commentParas.length) ? eff.commentParas : [''];
-  const commentHtml = commentParas.map(p=>ehBlocoSolto(p)?p:`<p>${p}</p>`).join('');
+  const commentHtml = commentParas.map(blocoParaEditor).join('');
   const jaPublicada = !!(resp && resp.grading && resp.grading.published);
   return `<div class="atv-grading-panel" data-uid="${escAttr(user.id)}">
     ${eff.fromDraft?'<div class="atv-draft-warn">📝 Há uma correção em rascunho para este aluno — ele ainda não vê nada. Use "Salvar e publicar" para liberar.</div>':''}
@@ -7630,30 +7843,45 @@ function diarioFrequenciaForm(){
 // botão que pula pro próximo), e abaixo vem o trabalho em si — por aluno ou
 // por questão, que é a única escolha que sobrou. Análise e Prazo viraram
 // blocos recolhidos: continuam ali, mas não competem com a correção.
+// BUG CORRIGIDO (v4.12.7) — esta função testava a janela do prazo contra
+// 'dentro', mas atvJanelaPrazo() NUNCA devolve esse valor: os quatro estados
+// possíveis são 'antes', 'aberta', 'atrasada' e 'depois'. O teste jamais dava
+// verdadeiro, e toda atividade com prazo VIGENTE escorregava para a última
+// condição, que anunciava "prazo encerrado, mas a matéria aceita entrega fora
+// do prazo" — duas afirmações erradas de uma vez, e nenhuma delas vinda dos
+// dados: eram o resultado de cair na saída errada.
+//
+// A causa de fundo foi inferir estado por eliminação (`if(!ctx.autoLiberado)`)
+// em vez de perguntar qual estado é. Agora cada um dos quatro é tratado pelo
+// nome, e a última linha existe só para não haver saída silenciosa.
+const ATV_JANELAS = ['antes','aberta','atrasada','depois'];
 function atvBannerCorrecao(sec, ctx, pend){
   const janela = atvJanelaPrazo(ctx.schedule);
-  if(!ctx.schedule || (!ctx.schedule.opensAt && !ctx.schedule.closesAt)){
+  const semPrazo = !ctx.schedule || (!ctx.schedule.opensAt && !ctx.schedule.closesAt);
+  const fmt = ts => ts ? new Date(ts).toLocaleString('pt-BR') : '';
+  if(semPrazo){
     return `<div class="corr-banner corr-banner-aviso">
-      <span>⚠️ <strong>Sem prazo cadastrado para esta turma.</strong> Enquanto não houver data de fechamento, a atividade nunca "vence" — e por isso a correção automática das questões fechadas não entra sozinha. Cadastre o prazo em <em>Prazo e visibilidade</em>, logo abaixo, ou use “Aplicar gabarito a todos” quando quiser corrigir na mão.</span>
+      <span>⚠️ <strong>Sem prazo cadastrado para esta turma.</strong> Enquanto não houver data de fechamento, a atividade nunca "vence" — e por isso a correção automática das questões fechadas não entra sozinha. Cadastre o prazo em <em>Prazo e visibilidade</em>, no fim desta tela.</span>
     </div>`;
   }
-  if(janela==='antes'){
+  if(janela === 'antes'){
     return `<div class="corr-banner corr-banner-limpo">
-      <span>📅 <strong>O prazo ainda não abriu.</strong> Os alunos ainda não podem responder. A correção automática das questões fechadas entra quando o prazo fechar.</span>
+      <span>📅 <strong>O prazo ainda não abriu.</strong> Abre em ${fmt(ctx.schedule.opensAt)}${ctx.schedule.closesAt?` e fecha em ${fmt(ctx.schedule.closesAt)}`:''}. Os alunos ainda não podem responder, e a correção automática das questões fechadas entra quando o prazo fechar.</span>
     </div>`;
   }
-  if(janela==='dentro'){
+  if(janela === 'aberta'){
     return `<div class="corr-banner corr-banner-limpo">
-      <span>🟢 <strong>Prazo aberto — a turma ainda está respondendo.</strong> As notas das questões fechadas só são calculadas depois que o prazo fechar, para você não corrigir em cima de resposta que ainda vai mudar.</span>
+      <span>🟢 <strong>Prazo aberto — a turma ainda está respondendo.</strong>${ctx.schedule.closesAt?` Fecha em ${fmt(ctx.schedule.closesAt)}.`:''} As notas das questões fechadas só são calculadas depois que o prazo fechar, para você não corrigir em cima de resposta que ainda vai mudar.</span>
     </div>`;
   }
-  if(!ctx.autoLiberado){
+  if(janela === 'atrasada'){
     return `<div class="corr-banner corr-banner-aviso">
-      <span>⏳ <strong>Prazo encerrado, mas a matéria aceita entrega fora do prazo.</strong> Como ainda podem chegar respostas novas, a correção automática segue esperando. Mude isso em Configurações do curso se quiser fechar de vez.</span>
+      <span>⏳ <strong>Prazo encerrado em ${fmt(ctx.schedule.closesAt)}, mas esta matéria aceita entrega fora do prazo.</strong> Como ainda podem chegar respostas novas, a correção automática segue esperando. Mude em <em>Organizar curso › Aceitar respostas fora do prazo</em> se quiser fechar de vez.</span>
     </div>`;
   }
+  // Resta 'depois': encerrado e sem aceitar atraso.
   return `<div class="corr-banner corr-banner-rascunho">
-    <span>✨ <strong>Prazo encerrado — correção automática ativa.</strong> As questões fechadas com gabarito já estão pontuadas abaixo. Falta você fechar as abertas e publicar.</span>
+    <span>✨ <strong>Prazo encerrado em ${fmt(ctx.schedule.closesAt)} — correção automática ativa.</strong> As questões fechadas com gabarito já estão pontuadas abaixo. Falta você fechar as abertas e publicar.</span>
   </div>`;
 }
 function atvResumoTopoHtml(sec, ctx, pend){
@@ -7752,7 +7980,7 @@ function renderAulaPicker(){
   el.innerHTML = COURSE.filter(b=>isAdmin || (!b.hidden && b.aulas.some(a=>!a.hidden))).map(b => `
     <div class="picker-block-title">${blocoRotulo(b)}</div>
     ${b.aulas.filter(a=>isAdmin || !a.hidden).map(a => `
-      <button class="picker-item ${a.isPractice?'practice':''} ${a.hidden?'is-hidden':''} ${(b.num===state.block && a.num===state.aula)?'current':''}" data-block="${b.num}" data-aula="${a.num}" role="menuitem">
+      <button class="picker-item ${a.hidden?'is-hidden':''} ${(b.num===state.block && a.num===state.aula)?'current':''}" data-block="${b.num}" data-aula="${a.num}" role="menuitem">
         <span class="n">${numeroAula(a)}</span><span>${esc(a.title)}${(isAdmin && aulaJaMinistrada(a.id))?' <span class="nav-aula-dada" title="Aula já ministrada">✓</span>':''}${a.hidden?' <em>(oculta)</em>':''}</span>
       </button>`).join('')}
   `).join('');
@@ -8560,10 +8788,33 @@ function ehBlocoSolto(p){
   if(/^<[a-z]+[^>]*>\s*<(ul|ol)[\s>]/i.test(t)) return true;
   return false;
 }
+// Ao salvar, alinhamento e recuo do paragrafo sao gravados num <span> que
+// embrulha o texto (display:block + text-align/margin-left). Ao voltar para o
+// editor esse estilo precisa SUBIR de volta para o <p>: e no <p> que os botoes
+// de recuo e de alinhamento leem e escrevem. Sem isso, reabrir a secao escondia
+// o recuo dos botoes — "diminuir recuo" nao fazia nada (lia zero no <p>) e
+// "aumentar recuo" empilhava um segundo recuo por cima do que ja existia.
+function desembrulharBlocoDoEditor(t){
+  const tpl = document.createElement('template');
+  tpl.innerHTML = t;
+  const nos = [...tpl.content.childNodes].filter(n=> n.nodeType!==3 || n.textContent.trim());
+  if(nos.length !== 1) return null;
+  const sp = nos[0];
+  if(sp.nodeType!==1 || sp.tagName!=='SPAN') return null;
+  if(sp.style.getPropertyValue('display') !== 'block') return null;
+  const align  = sp.style.getPropertyValue('text-align');
+  const indent = sp.style.getPropertyValue('margin-left');
+  if(!align && !indent) return null;
+  let st = '';
+  if(align)  st += `text-align:${align};`;
+  if(indent) st += `margin-left:${indent};`;
+  return `<p style="${st}">${sp.innerHTML}</p>`;
+}
 function blocoParaEditor(p){
   const t = String(p==null?'':p).trim();
   if(!t) return '<p><br></p>';
-  return ehBlocoSolto(t) ? t : `<p>${t}</p>`;
+  if(ehBlocoSolto(t)) return t;
+  return desembrulharBlocoDoEditor(t) || `<p>${t}</p>`;
 }
 function introParaEditor(txt){
   const s = String(txt||'').trim();
@@ -8587,7 +8838,12 @@ function sanitizeRichHtml(html){
   // estilo fora, o CSS geral assumia (.rich-content ul{list-style:disc}) e a
   // lista voltava sempre para bolinha. Era esse o "marcador que muda sozinho
   // ao salvar".
-  const allowedStyle = ['color','font-family','font-size','text-align','font-weight','font-style','text-decoration','display','background-color','list-style-type','list-style-position'];
+  // CORRIGIDO (v4.12.9) — 'margin-left' faltava aqui. O botao "Aumentar recuo"
+  // grava o recuo do paragrafo como margin-left; como o saneador so devolvia as
+  // propriedades desta lista, o recuo era apagado na hora de MOSTRAR o texto.
+  // Resultado: aparecia recuado no editor (que le o HTML cru) e sem recuo
+  // nenhum na aula e no PDF. O dado sempre esteve salvo — so nao chegava a tela.
+  const allowedStyle = ['color','font-family','font-size','text-align','font-weight','font-style','text-decoration','display','background-color','list-style-type','list-style-position','margin-left'];
   // A numeração hierárquica (1 / 1.1 / 1.1.1) não é um estilo: é a classe
   // num-hier, que liga os contadores encadeados do CSS. Como o saneador
   // remove todo atributo que não seja style, ela também se perdia. Só esta
@@ -8642,6 +8898,15 @@ function sanitizeRichHtml(html){
         if(child.hasAttribute('style')){
           const kept = {};
           allowedStyle.forEach(p=>{ const v = child.style.getPropertyValue(p); if(v) kept[p]=v; });
+          // O recuo e a unica medida de layout que passa por aqui. Vinda do
+          // botao, ela e sempre um valor em px entre 0 e 168 (de 24 em 24).
+          // Colada de fora poderia vir negativa ou enorme e jogar o texto para
+          // fora da pagina — por isso so passa dentro da faixa que o botao cria.
+          if(kept['margin-left']){
+            const m = /^(\d+(?:\.\d+)?)px$/.exec(String(kept['margin-left']).trim());
+            const px = m ? Math.min(parseFloat(m[1]), 168) : 0;
+            if(px > 0) kept['margin-left'] = px + 'px'; else delete kept['margin-left'];
+          }
           child.removeAttribute('style');
           Object.entries(kept).forEach(([k,v])=>child.style.setProperty(k,v));
         }
@@ -8742,14 +9007,26 @@ const ATV_ITEM_TYPES = [
   ['associacao','Associação de colunas'],
 ];
 
+// ALTERADO (v4.12.9) — antes existia UM unico botao de remover coluna, na
+// ponta da linha de cabecalho, que apagava sempre a ULTIMA. Como ele era igual
+// aos botoes de remover linha e ficava na mesma coluna deles, ninguem via que
+// aquilo era um controle de coluna: parecia mais um "remover linha". Agora
+// cada coluna tem o seu proprio botao, em cima dela, com a seta apontando para
+// baixo — fica claro do que se trata e da para remover qualquer uma, nao so a
+// ultima. O botao some (fica desligado) quando sobrou so uma coluna ou so uma
+// linha, porque uma tabela sem nenhuma das duas nao existe.
 function tableGridHtml(headers, rows){
-  let html = '<table class="table-grid"><tr>';
+  const soUmaCol = headers.length <= 1;
+  const soUmaLin = rows.length <= 1;
+  let html = '<table class="table-grid"><tr class="tg-colbar">';
+  headers.forEach((h,ci)=> html += `<td><button type="button" class="edit-chip danger tg-del-col" data-action="del-col" data-ci="${ci}"${soUmaCol?' disabled':''} title="${soUmaCol?'A tabela precisa de pelo menos uma coluna':'Remover esta coluna inteira'}">−</button></td>`);
+  html += '<td></td></tr><tr>';
   headers.forEach((h,ci)=> html += `<td><input type="text" class="ef-th" data-ci="${ci}" value="${escAttr(h)}" placeholder="Cabeçalho"></td>`);
-  html += `<td><button type="button" class="edit-chip danger" data-action="del-col" data-ci="${headers.length-1}" title="Remover última coluna">−</button></td></tr>`;
+  html += '<td></td></tr>';
   rows.forEach((r,ri)=>{
     html += '<tr>';
     r.forEach((c,ci)=> html += `<td><input type="text" class="ef-td" data-ri="${ri}" data-ci="${ci}" value="${escAttr(c)}"></td>`);
-    html += `<td><button type="button" class="edit-chip danger" data-action="del-row" data-ri="${ri}" title="Remover linha">−</button></td></tr>`;
+    html += `<td><button type="button" class="edit-chip danger" data-action="del-row" data-ri="${ri}"${soUmaLin?' disabled':''} title="${soUmaLin?'A tabela precisa de pelo menos uma linha':'Remover esta linha inteira'}">−</button></td></tr>`;
   });
   html += '</table>';
   return html;
@@ -9224,7 +9501,7 @@ de uma matéria universitária, no formato do sistema de aulas do professor.
 ESTRUTURA DO ARQUIVO
 - Array de BLOCOS: { "num", "title", "hidden", "aulas": [...] }
 - Cada AULA: { "num", "title", "subtitle", "sources", "intro", "roteiro",
-  "hidden", "updatedAt", "contentModel", "isPractice", "sections": [...] }
+  "hidden", "updatedAt", "contentModel", "sections": [...] }
 - Tipos válidos de seção: prose, table, figure, video, activity, grid,
   compare, timeline, axes, hierarchy, chips, points.
 
@@ -11067,19 +11344,10 @@ function render(){
     </div>`;
   }
 
-  if(a.isPractice && !isAdminNaTela()){
-    inner += `<div class="practice-card">
-      <span class="tag">Aula prática / avaliação</span>
-      <p>Esta aula é dedicada à aplicação prática do conteúdo, à avaliação ou ao encerramento do curso — sem novo conteúdo conceitual.</p>
-      <p>Consulte o material das aulas anteriores deste bloco para revisar os conceitos que serão aplicados.</p>
-    </div>`;
-  } else {
-    if(a.isPractice){
-      inner += `<div class="practice-card" style="margin-bottom:20px;">
-        <span class="tag">Aula prática / avaliação</span>
-        <p>Sem conteúdo conceitual por padrão — use "+ Adicionar seção" abaixo se quiser incluir algo aqui.</p>
-      </div>`;
-    }
+  // Toda aula renderiza suas seções do mesmo jeito. (Existia aqui uma marcação
+  // automática de "aula prática/avaliação" que trocava o conteúdo por um aviso;
+  // foi removida — a aula mostra o que o professor montou nela, e só.)
+  {
     // Modelo v2 (aulas novas): imagens e vídeos podem estar "encaixados" a um
     // parágrafo de texto específico (campo dockedTo/dockPosition). Um mesmo
     // texto pode receber mais de um item encaixado (em cantos diferentes, ou
@@ -11144,6 +11412,7 @@ function render(){
   wireImageSizeFields();
   wireTypeDescription();
   reaplicarMarcaDeAlteracao();
+  reporRascunhoNoEditor();
   // A barra "aula ministrada" precisa do registro e da lista de turmas. Os dois
   // são leitura única por sessão e só para a equipe — o aluno nunca dispara.
   if(MINISTRADA_EDITANDO && a && MINISTRADA_EDITANDO.aulaId !== a.id) MINISTRADA_EDITANDO = null;
@@ -12608,7 +12877,6 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         roteiro: (dados.roteiro||'').trim(),
         hidden: document.getElementById('ef-new-a-hidden').checked,
         sections: secoesImportadas,
-        isPractice: dados.sections.some(s=>s.type==='activity'),
         contentModel: 'v2',
         atividadeEnabled: true, // aula criada a partir de agora — pode receber o bloco "Atividade" (não nasce com ele, só fica disponível para adicionar)
         updatedAt: Date.now(),
@@ -12667,7 +12935,6 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         intro: '',
         hidden: document.getElementById('ef-new-a-hidden').checked,
         sections: [initialProse],
-        isPractice: false,
         contentModel: 'v2', // aulas novas usam o modelo de página contínua com imagens "encaixáveis"
         atividadeEnabled: true, // aula criada a partir de agora — pode receber o bloco "Atividade" quando o professor quiser adicionar
       };
@@ -12805,6 +13072,20 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const closesVal = document.getElementById('atv-closes-at').value;
     const opensAt = opensVal ? new Date(opensVal).getTime() : null;
     const closesAt = closesVal ? new Date(closesVal).getTime() : null;
+    // Fechar antes de abrir cria uma atividade que nunca esteve aberta: o
+    // aluno nunca consegue responder e, para o sistema, ela nasce vencida —
+    // com direito a zero automático em quem "não entregou". Precisa ser
+    // barrado na entrada, não descoberto depois.
+    if(opensAt !== null && closesAt !== null && closesAt <= opensAt){
+      const f = ts => new Date(ts).toLocaleString('pt-BR');
+      alert('Este prazo não pode ser salvo.\n\n' +
+            `Abertura: ${f(opensAt)}\nFechamento: ${f(closesAt)}\n\n` +
+            'O fechamento tem de ser DEPOIS da abertura. Do jeito que está, a atividade nasceria já encerrada: o aluno nunca conseguiria responder, e o sistema a trataria como prazo vencido — lançando zero em quem "não entregou".\n\n' +
+            'Corrija uma das duas datas e salve de novo.');
+      const alvo = document.getElementById('atv-closes-at');
+      if(alvo){ alvo.focus(); alvo.classList.add('campo-faltando'); }
+      return;
+    }
     const sectionId = editState.sectionId;
     try{
       // A regra de atraso viaja JUNTO com o prazo — e o dado que as regras do
@@ -13252,17 +13533,46 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     baixarCsv(linhasCsv, `boletim-${(t&&t.name?t.name:'turma').replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase()}.csv`);
     return;
   }
-  if(action==='rascunho-copiar'){
-    const lista = lerRascunhos().slice().sort((x,y)=> y.at - x.at);
+  if(action==='rascunho-copiar' || action==='rascunho-copiar-campo'){
+    const lista = lerRascunhos().map(rascunhoNormalizado).sort((x,y)=> y.at - x.at);
     const r = lista[+btn.dataset.i];
     if(!r) return;
+    const texto = (action==='rascunho-copiar-campo')
+      ? ((r.campos||[])[+btn.dataset.c] || {}).texto || ''
+      : (r.campos||[]).map(cp=>`${cp.rotulo}\n${cp.texto}`).join('\n\n');
+    if(!texto){ alert('Nada para copiar aqui.'); return; }
     try{
-      await navigator.clipboard.writeText(r.text);
+      await navigator.clipboard.writeText(texto);
       const antes = btn.textContent; btn.textContent = '✓ Copiado';
       setTimeout(()=>{ btn.textContent = antes; }, 1500);
     }catch(e){
-      alert('Não consegui copiar automaticamente. Selecione o texto na caixa e use Ctrl+C.');
+      alert('Não consegui copiar automaticamente. Selecione o texto na tela e use Ctrl+C.');
     }
+    return;
+  }
+  if(action==='rascunho-restaurar'){
+    if(!isAdmin) return;
+    const lista = lerRascunhos().map(rascunhoNormalizado).sort((x,y)=> y.at - x.at);
+    const r = lista[+btn.dataset.i];
+    if(!r) return;
+    const bloco = COURSE.find(x=>x.num===(r.blockNum!=null?r.blockNum:state.block));
+    const aula = bloco && (bloco.aulas||[]).find(x=>x.num===r.aula);
+    if(!aula){ alert('Não encontrei a aula deste rascunho — ela pode ter sido excluída ou renumerada.\n\nCopie o texto e cole onde precisar.'); return; }
+    let alvoIdx = -1;
+    if(r.kind === 'section'){
+      alvoIdx = (aula.sections||[]).findIndex(s=>s.id === r.sectionId);
+      if(alvoIdx < 0){
+        alert('A seção original deste rascunho não existe mais nesta aula.\n\nCopie o texto e cole numa seção nova — repor automaticamente aqui poderia escrever por cima da seção errada.');
+        return;
+      }
+    }
+    if(!confirm('Repor este rascunho nos campos do editor?\n\nO texto que estiver nos campos agora será substituído pelo do rascunho. NADA é gravado: você confere e clica em Salvar — ou sai sem salvar, e a aula continua como está.')) return;
+    state.block = bloco.num; state.aula = aula.num;
+    editState = (r.kind === 'section')
+      ? {kind:'section', idx: alvoIdx}
+      : {kind:'newSection', draft: blankSection(r.sectionTipo || 'prose')};
+    RASCUNHO_A_REPOR = r;
+    render();
     return;
   }
   if(action==='rascunho-descartar'){
@@ -13881,7 +14191,6 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         num:newNum, title:newTitle, hidden,
         subtitle:(origAula&&origAula.subtitle)||'', sources:(origAula&&origAula.sources)||'',
         intro:(origAula&&origAula.intro)||'', sections:(origAula&&origAula.sections)||[],
-        isPractice:(origAula&&origAula.isPractice)||false,
         contentModel:(origAula&&origAula.contentModel)||undefined,
         atividadeEnabled:(origAula&&origAula.atividadeEnabled)||false,
         roteiro:(origAula&&origAula.roteiro)||'',
@@ -14119,7 +14428,6 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       roteiro: (dados.roteiro||'').trim(),
       hidden: true, // nasce oculta: voce revisa antes de o aluno ver
       sections: dados.sections.map(s=>({...s, id: genSectionId()})),
-      isPractice: dados.sections.some(s=>s.type==='activity'),
       contentModel: 'v2',
       atividadeEnabled: true,
       updatedAt: Date.now(),
@@ -14435,6 +14743,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
   if(action==='del-row'){
     const cur = collectTableFromDom();
+    if(cur.rows.length<=1) return;   // tabela sem linha nenhuma nao existe
     cur.rows.splice(+btn.dataset.ri,1);
     document.getElementById('ef-table-wrap').innerHTML = tableGridHtml(cur.headers, cur.rows);
     return;
@@ -14442,11 +14751,21 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   if(action==='del-col'){
     const cur = collectTableFromDom();
     const ci = +btn.dataset.ci;
-    if(cur.headers.length>1){
-      cur.headers.splice(ci,1);
-      cur.rows.forEach(r=>r.splice(ci,1));
-      document.getElementById('ef-table-wrap').innerHTML = tableGridHtml(cur.headers, cur.rows);
+    if(cur.headers.length<=1) return;   // tabela sem coluna nenhuma nao existe
+    // Remover coluna apaga uma celula de CADA linha de uma vez — e o unico
+    // botao do editor que joga fora varias coisas escritas num clique so. Por
+    // isso ele pergunta antes, mas so quando ha texto de verdade para perder.
+    const cheias = cur.rows.filter(r=>String(r[ci]||'').trim()).length;
+    const titulo = String(cur.headers[ci]||'').trim();
+    if(cheias || titulo){
+      const nome = titulo ? `"${titulo}"` : `de nº ${ci+1}`;
+      if(!confirm(`Remover a coluna ${nome}?\n\n` +
+                  `Isso apaga o cabeçalho e o conteúdo dessa coluna em ${cheias} linha(s) preenchida(s). ` +
+                  `Nada é gravado agora — se você cancelar a edição da seção depois, a tabela volta como estava.`)) return;
     }
+    cur.headers.splice(ci,1);
+    cur.rows.forEach(r=>r.splice(ci,1));
+    document.getElementById('ef-table-wrap').innerHTML = tableGridHtml(cur.headers, cur.rows);
     return;
   }
   if(action==='add-ld-row'){
@@ -16487,34 +16806,90 @@ function guardarRascunho(entrada){
   if(i >= 0) lista[i] = entrada; else lista.push(entrada);
   gravarRascunhos(lista);
 }
+// ===== RASCUNHOS, REFEITOS (v4.12.8) =====
+// A versão anterior guardava um bolo de texto com os IDS INTERNOS dos campos
+// no meio ("—— ef-paragraphs ——"). Servia para não perder o texto, mas era
+// impossível de ler e não dava para fazer nada com ele além de copiar na mão.
+//
+// Agora o rascunho é estruturado: guarda QUAL aula, QUAL seção, o tipo dela e
+// campo a campo, cada um com o rótulo que você vê na tela. Com isso a tela de
+// Rascunhos consegue mostrar o texto de verdade e — o que realmente importa —
+// devolver tudo para dentro do editor com um clique.
+//
+// Restaurar NUNCA grava sozinho: ele repõe o texto nos campos e deixa você
+// conferir e clicar em Salvar. Rascunho é rede de segurança, não um segundo
+// caminho de gravação por trás das suas costas.
+
+// Rótulo humano de um campo: procura a <label> mais próxima acima dele. Entre
+// o rótulo e um campo de texto formatado existe a barra de ferramentas, por
+// isso a busca anda para trás até achar, em vez de olhar só o irmão anterior.
+function rotuloDoCampo(el){
+  let n = el.previousElementSibling;
+  let saltos = 0;
+  while(n && saltos < 6){
+    if(n.tagName === 'LABEL'){
+      const t = (n.textContent||'').replace(/\s+/g,' ').trim();
+      if(t) return t.length > 60 ? t.slice(0,60)+'…' : t;
+    }
+    n = n.previousElementSibling; saltos++;
+  }
+  const pai = el.parentElement;
+  if(pai && pai.tagName === 'LABEL'){
+    const t = (pai.textContent||'').replace(/\s+/g,' ').trim();
+    if(t) return t;
+  }
+  return el.id || 'Campo';
+}
+const RASCUNHO_KINDS = {
+  section:     'Editando uma seção',
+  newSection:  'Criando uma seção',
+  aulaCode:    'Código (JSON) da aula',
+  sectionCode: 'Código (JSON) da seção',
+  newAula:     'Criando uma aula',
+  newBlock:    'Criando um bloco',
+};
 function saveLocalDraft(){
   if(!isAdmin || !editState) return;
-  // BUG CORRIGIDO: antes, isto capturava QUALQUER formulário aberto (inclusive
-  // cadastro de aluno, perfil etc.), e só era limpo quando o CONTEÚDO DA AULA
-  // era salvo — então editar e salvar um cadastro de aluno, por exemplo, deixava
-  // um rascunho "preso" que reaparecia (com a mensagem falando em "aula X") toda
-  // vez que a matéria era reaberta, mesmo já tudo salvo. Agora só protege mesmo
-  // a edição de conteúdo de aula, que é o que a mensagem de recuperação promete.
-  const kindsDeConteudoDaAula = ['section','newSection','aulaCode','sectionCode','newAula','newBlock'];
-  if(!kindsDeConteudoDaAula.includes(editState.kind)) return;
+  // Só protege edição de CONTEÚDO de aula. Cadastro de aluno, perfil e afins
+  // não geram rascunho — senão sobra rascunho "preso" falando de aula nenhuma.
+  if(!RASCUNHO_KINDS[editState.kind]) return;
   const form = document.querySelector('#content .editor-form');
   if(!form) return;
-  const parts = [];
+
+  const campos = [];
   form.querySelectorAll('input[type=text], textarea, [contenteditable=true]').forEach(el=>{
-    const rotulo = el.id || (el.previousElementSibling && el.previousElementSibling.tagName==='LABEL' ? el.previousElementSibling.textContent : '') || 'campo';
-    const val = el.isContentEditable ? el.innerText : el.value;
-    if(val && val.trim()) parts.push('—— ' + rotulo + ' ——\n' + val.trim());
+    const texto = (el.isContentEditable ? el.innerText : el.value) || '';
+    if(!texto.trim()) return;
+    campos.push({
+      id: el.id || '',
+      rotulo: rotuloDoCampo(el),
+      texto: texto.trim(),
+      // O HTML só interessa para campo formatado — é ele que devolve negrito,
+      // cor, marcadores e notas de rodapé no lugar certo ao restaurar.
+      html: el.isContentEditable ? el.innerHTML : null,
+    });
   });
-  if(!parts.length) return;
+  if(!campos.length) return;
+
   const b = COURSE.find(x=>x.num===state.block);
   const a = b && (b.aulas||[]).find(x=>x.num===state.aula);
+  const idxSec = (editState.kind === 'section') ? editState.idx
+               : (editState.kind === 'sectionCode') ? editState.idx : null;
+  const sec = (idxSec != null && a && a.sections) ? a.sections[idxSec] : null;
+
   guardarRascunho({
-    chave: `${state.block}-${state.aula}-${editState.kind}`,
+    // Uma entrada por seção editada (e não por aula), senão trabalhar em duas
+    // seções da mesma aula faria uma apagar a outra.
+    chave: `${state.block}-${state.aula}-${editState.kind}-${(sec && sec.id) || idxSec || 'novo'}`,
     at: Date.now(),
+    blockNum: state.block,
     aula: state.aula,
     aulaTitulo: (a && a.title) || '',
     kind: editState.kind,
-    text: parts.join('\n\n'),
+    sectionId: (sec && sec.id) || null,
+    sectionTipo: (sec && sec.type) || (editState.draft && editState.draft.type) || null,
+    sectionTitulo: (sec && (sec.title || sec.kicker)) || '',
+    campos,
   });
 }
 // ALTERADO (v4.12.4) — salvar a aula não apaga mais a gaveta. Ela é o histórico
@@ -16523,39 +16898,90 @@ function saveLocalDraft(){
 function clearLocalDraft(){
   try{ localStorage.removeItem(draftKey()); }catch(e){}
 }
+// Compatibilidade: rascunho gravado pelo formato antigo (um campo "text" com
+// os ids no meio) continua legível, virando um único campo.
+function rascunhoNormalizado(r){
+  if(r && Array.isArray(r.campos)) return r;
+  const texto = (r && r.text) || '';
+  return {...r, campos: texto ? [{id:'', rotulo:'Texto guardado', texto, html:null}] : []};
+}
+function rascunhoResumo(r){
+  const primeiro = (r.campos||[]).map(cp=>cp.texto).join(' · ').replace(/\s+/g,' ').trim();
+  return primeiro.length > 160 ? primeiro.slice(0,160) + '…' : primeiro;
+}
 function rascunhosScreenForm(){
-  const lista = lerRascunhos().slice().sort((x,y)=> y.at - x.at);
-  const rotuloKind = {
-    section:'Seção da aula', newSection:'Nova seção', aulaCode:'Código da aula',
-    sectionCode:'Código da seção', newAula:'Nova aula', newBlock:'Novo bloco',
-  };
+  const lista = lerRascunhos().map(rascunhoNormalizado).sort((x,y)=> y.at - x.at);
+  const explicacao = `<div class="hint">Enquanto você edita o conteúdo de uma aula, uma cópia do que está digitado é guardada aqui a cada 30 segundos — <strong>no seu próprio navegador</strong>, sem sair para a internet. Serve para recuperar texto de uma edição interrompida: aba fechada, energia caída, salvamento recusado. Por ficarem só neste computador, não aparecem em outro aparelho.</div>`;
   if(!lista.length){
     return `<div class="editor-form">
       <div class="editing-type-banner">📄 Rascunhos</div>
-      <p class="hint">Nenhum rascunho guardado nesta matéria.</p>
-      <div class="hint">Enquanto você edita o conteúdo de uma aula, uma cópia do texto é guardada aqui a cada 30 segundos, no seu próprio navegador. Serve para recuperar o que estava escrito se a aba fechar, a energia cair ou o salvamento falhar. Nada disso é enviado para a internet.</div>
+      <p class="hint">Nenhum rascunho guardado nesta matéria — o que significa que nada ficou pelo caminho.</p>
+      ${explicacao}
     </div>`;
   }
-  const cartoes = lista.map((r,i)=>`
-    <details class="rascunho-card">
+  const cartoes = lista.map((r,i)=>{
+    const podeRestaurar = (r.kind === 'section' && r.sectionId) || r.kind === 'newSection';
+    const ondeSecao = r.sectionTitulo ? ` · ${esc(r.sectionTitulo)}` : '';
+    const tipoSecao = r.sectionTipo ? ` (${esc(TYPE_LABELS[r.sectionTipo] ? String(TYPE_LABELS[r.sectionTipo]).replace(/^[^A-Za-zÀ-ÿ]+/,'') : r.sectionTipo)})` : '';
+    const campos = (r.campos||[]).map((cp,ci)=>`
+      <div class="rascunho-campo">
+        <div class="rascunho-campo-rotulo">${esc(cp.rotulo || 'Campo')}
+          <button type="button" class="rascunho-copiar-campo" data-action="rascunho-copiar-campo" data-i="${i}" data-c="${ci}" title="Copiar só este campo">⧉</button>
+        </div>
+        <div class="rascunho-campo-texto">${esc(cp.texto).replace(/\n/g,'<br>')}</div>
+      </div>`).join('');
+    return `<details class="rascunho-card">
       <summary>
-        <strong>Aula ${esc(String(r.aula||'?'))}${r.aulaTitulo?' — '+esc(r.aulaTitulo):''}</strong>
-        <span class="rascunho-meta">${esc(rotuloKind[r.kind]||r.kind||'edição')} · ${new Date(r.at).toLocaleString('pt-BR')}</span>
+        <span class="rascunho-onde"><strong>Aula ${esc(String(r.aula||'?'))}${r.aulaTitulo?' — '+esc(r.aulaTitulo):''}</strong>${ondeSecao}${tipoSecao}</span>
+        <span class="rascunho-resumo">${esc(rascunhoResumo(r))}</span>
+        <span class="rascunho-meta">${esc(RASCUNHO_KINDS[r.kind]||r.kind||'edição')} · ${new Date(r.at).toLocaleString('pt-BR')}</span>
       </summary>
-      <textarea class="rascunho-texto" readonly>${esc(r.text)}</textarea>
-      <div class="rascunho-acoes">
-        <button type="button" class="btn-secondary" data-action="rascunho-copiar" data-i="${i}">⧉ Copiar texto</button>
-        <button type="button" class="btn-secondary" data-action="rascunho-descartar" data-chave="${escAttr(r.chave||'')}">🗑 Descartar este</button>
+      <div class="rascunho-corpo">
+        ${campos || '<p class="hint">Este rascunho está vazio.</p>'}
+        <div class="rascunho-acoes">
+          ${podeRestaurar
+            ? `<button type="button" class="btn-primary" data-action="rascunho-restaurar" data-i="${i}" title="Abre o editor da seção e repõe este texto nos campos. Nada é gravado: você confere e clica em Salvar.">↩ Restaurar no editor</button>`
+            : `<span class="hint" style="margin:0;">Este rascunho é de ${esc((RASCUNHO_KINDS[r.kind]||'uma tela').toLowerCase())} — não dá para repor automaticamente. Copie o texto e cole no lugar certo.</span>`}
+          <button type="button" class="btn-secondary" data-action="rascunho-copiar" data-i="${i}">⧉ Copiar tudo</button>
+          <button type="button" class="btn-secondary" data-action="rascunho-descartar" data-chave="${escAttr(r.chave||'')}">🗑 Descartar</button>
+        </div>
       </div>
-    </details>`).join('');
+    </details>`;
+  }).join('');
   return `<div class="editor-form">
     <div class="editing-type-banner">📄 Rascunhos (${lista.length})</div>
-    <div class="hint">Cópias do que você digitou enquanto editava aulas, guardadas <strong>no seu navegador</strong> a cada 30 segundos. Elas não substituem o conteúdo salvo — servem para você recuperar texto de uma edição interrompida. Como ficam só neste computador, não aparecem em outro aparelho.</div>
+    ${explicacao}
     ${cartoes}
     <div class="editor-actions">
       <button type="button" class="btn-secondary" data-action="rascunhos-limpar-todos">🗑 Descartar todos</button>
     </div>
   </div>`;
+}
+// Guarda o rascunho a repor logo depois que o editor for desenhado. Precisa
+// dessa espera porque os campos só existem depois do render.
+let RASCUNHO_A_REPOR = null;
+function reporRascunhoNoEditor(){
+  if(!RASCUNHO_A_REPOR) return;
+  const r = RASCUNHO_A_REPOR;
+  const form = document.querySelector('#content .editor-form');
+  if(!form) return;                 // ainda não desenhou: tenta no próximo render
+  RASCUNHO_A_REPOR = null;
+  let repostos = 0, faltaram = [];
+  (r.campos||[]).forEach(cp=>{
+    const el = cp.id ? document.getElementById(cp.id) : null;
+    if(!el){ faltaram.push(cp.rotulo); return; }
+    if(el.isContentEditable){ el.innerHTML = cp.html || `<p>${esc(cp.texto)}</p>`; }
+    else { el.value = cp.texto; }
+    repostos++;
+  });
+  const aviso = document.createElement('div');
+  aviso.className = 'rascunho-reposto';
+  aviso.innerHTML = repostos
+    ? `↩ <strong>Rascunho reposto nos campos</strong> (${repostos} campo(s), de ${new Date(r.at).toLocaleString('pt-BR')}).
+       Confira o texto e clique em <strong>Salvar</strong> — enquanto não salvar, nada mudou na aula.
+       ${faltaram.length?`<br><span class="hint" style="margin:4px 0 0;">Não encontrei onde repor: ${esc(faltaram.join(', '))}. Copie esses da tela de Rascunhos.</span>`:''}`
+    : `⚠ Não consegui repor nenhum campo deste rascunho — a seção provavelmente mudou de tipo. Copie o texto na tela de Rascunhos.`;
+  form.insertBefore(aviso, form.firstChild);
 }
 setInterval(saveLocalDraft, 30000);
 
