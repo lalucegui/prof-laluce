@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.10                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.11                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -2221,6 +2221,16 @@
   .atv-fb-chip:hover{border-color:var(--navy);color:var(--navy);border-style:solid;}
   .atv-fb-chip-add{border-color:var(--gold);color:#8A5A0F;}
   .atv-fb-bank-empty{font-size:11px;color:var(--muted);font-style:italic;}
+  /* Estado do salvamento da correção (v4.12.11): marcando / salvo / falhou */
+  .atv-suja-aviso{
+    margin:12px 0 4px;padding:9px 13px;border-radius:9px;border:1px solid var(--line);
+    border-left-width:5px;font-size:12.5px;line-height:1.5;font-weight:600;
+    background:var(--surface-raised);color:var(--charcoal);
+  }
+  .atv-suja-aviso.hidden{display:none !important;}
+  .atv-suja-aviso.aviso-trabalhando{background:var(--nivel-atencao-suave);border-color:var(--nivel-atencao-linha);color:#4A3400;}
+  .atv-suja-aviso.aviso-ok{background:#EAF5EC;border-color:#8FBF9B;color:#1F5132;}
+  .atv-suja-aviso.aviso-erro{background:var(--nivel-critico-suave);border-color:var(--nivel-critico-linha);color:#7A2318;}
   /* aba por questão */
   .atv-q-head{background:#F7F7FB;border-radius:10px;padding:12px 14px;margin-bottom:12px;}
   .atv-q-head label{margin-top:0;}
@@ -3500,7 +3510,7 @@
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
 <div class="cap-toast hidden" id="capacidade-alerta" role="status" aria-live="polite"></div>
-<div class="version-tag hidden" id="version-tag">v4.12.10</div>
+<div class="version-tag hidden" id="version-tag">v4.12.11</div>
 
 
 <script>
@@ -5847,6 +5857,135 @@ async function fetchAllActivitySchedules(){
   const snap = await db.collection(`subjects/${activeSubjectId}/activity_schedules`).get();
   return snap.docs.map(d=>({id:d.id, ...d.data()}));
 }
+// ===== Proteção da correção em andamento (v4.12.11) =====
+// A correção que está na tela — certo/errado, pontos e feedback digitado —
+// vive SÓ no DOM até você clicar em Salvar. Qualquer render() reconstrói a
+// tela a partir do que está gravado e apaga tudo o que ainda não foi salvo.
+// Era exatamente isso que acontecia ao salvar um comentário no banco: ele
+// gravava o comentário e redesenhava tudo, levando junto os "certo" já
+// marcados. Daqui em diante: (1) mexer no banco de comentários não redesenha
+// mais nada, e (2) qualquer caminho que ainda precise redesenhar avisa antes.
+// A correção marcada na tela é sempre RASCUNHO: o aluno não vê absolutamente
+// nada dela até você clicar em Publicar. Sendo assim, não existe risco em
+// gravá-la sozinho — o risco está inteiro em NÃO gravar. Por isso ela passa a
+// ser salva automaticamente: alguns segundos depois de cada marcação, e sempre
+// antes de trocar de questão, de aba, de turma ou de sair da tela. O botão
+// "Salvar" continua ali, agora como confirmação — não como a única chance de
+// não perder o trabalho.
+let ATV_CORRECAO_SUJA = false;
+let ATV_AUTOSAVE_TIMER = null;
+let ATV_AUTOSAVE_EM_CURSO = false;
+
+function atvAvisoSuja(texto, tipo){
+  document.querySelectorAll('.atv-suja-aviso').forEach(el=>{
+    if(texto===null){ el.classList.add('hidden'); return; }
+    el.className = 'atv-suja-aviso' + (tipo ? ' aviso-' + tipo : '');
+    el.innerHTML = texto;
+  });
+}
+// Só as linhas em que você realmente mexeu são gravadas. Sem isso, o
+// salvamento automático criaria rascunho para a turma inteira só por a tela
+// ter sido aberta — inclusive para alunos que você nem olhou.
+function atvMarcarLinhaTocada(el){
+  const alvo = (el && el.closest) ? (el.closest('.atv-q-row') || el.closest('.atv-grading-panel')) : null;
+  if(alvo) alvo.dataset.tocado = '1';
+}
+function marcarCorrecaoSuja(el){
+  ATV_CORRECAO_SUJA = true;
+  if(el) atvMarcarLinhaTocada(el);
+  atvAvisoSuja('✎ Correção marcada — <strong>salvando sozinho em instantes</strong>. Você não precisa fazer nada.', 'trabalhando');
+  clearTimeout(ATV_AUTOSAVE_TIMER);
+  ATV_AUTOSAVE_TIMER = setTimeout(()=>{ atvSalvarCorrecaoDaTela(); }, 2500);
+}
+function limparCorrecaoSuja(){
+  ATV_CORRECAO_SUJA = false;
+  clearTimeout(ATV_AUTOSAVE_TIMER); ATV_AUTOSAVE_TIMER = null;
+  atvAvisoSuja(null);
+}
+
+// Junta o que está marcado na tela — só das linhas tocadas — nas duas telas de
+// correção: a "Por questão" (uma questão, vários alunos) e a "Por aluno"
+// (um aluno, todas as questões).
+function atvCorrecaoPendenteDaTela(){
+  const lista = [];
+  const qList = document.getElementById('atv-q-list');
+  if(qList && qList.dataset.itemId){
+    const itemId = qList.dataset.itemId;
+    qList.querySelectorAll('.atv-q-row[data-tocado="1"]').forEach(row=>{
+      const g = atvCollectItemGrading(row)[itemId];
+      if(!g) return;
+      if(g.verdict===null && g.points===null && !g.feedback) return;
+      lista.push({el: row, uid: row.dataset.uid, perItem: {[itemId]: g}, comment: undefined});
+    });
+  }
+  document.querySelectorAll('.atv-grading-panel[data-tocado="1"]').forEach(panel=>{
+    if(!panel.dataset.uid) return;
+    const campo = document.getElementById('atv-grade-comment');
+    lista.push({el: panel, uid: panel.dataset.uid, perItem: atvCollectItemGrading(panel),
+                comment: campo ? richFieldToArray(campo) : undefined});
+  });
+  return lista;
+}
+
+// Grava o rascunho SEM redesenhar a tela — é o que permite salvar no meio da
+// correção sem apagar o que está marcado logo acima.
+async function atvSalvarCorrecaoDaTela(){
+  if(ATV_AUTOSAVE_EM_CURSO) return true;
+  if(!editState || editState.kind !== 'atividadeManage'){ limparCorrecaoSuja(); return true; }
+  const pend = atvCorrecaoPendenteDaTela();
+  if(!pend.length){ limparCorrecaoSuja(); return true; }
+  ATV_AUTOSAVE_EM_CURSO = true;
+  atvAvisoSuja('⏳ Salvando a correção…', 'trabalhando');
+  try{
+    for(const p of pend){ await atvSaveDraft(p.uid, p.perItem, p.comment); }
+    pend.forEach(p=>{ if(p.el) delete p.el.dataset.tocado; });
+    ATV_CORRECAO_SUJA = false;
+    clearTimeout(ATV_AUTOSAVE_TIMER); ATV_AUTOSAVE_TIMER = null;
+    atvAvisoSuja(`✓ Correção salva como rascunho (${new Date().toLocaleTimeString('pt-BR')}). O aluno ainda não vê nada.`, 'ok');
+    return true;
+  }catch(err){
+    console.error('Não consegui salvar a correção automaticamente:', err);
+    atvAvisoSuja('⚠ <strong>Não consegui salvar</strong> — parece falha de conexão. Não feche esta tela: tente de novo pelo botão Salvar.', 'erro');
+    return false;
+  }finally{ ATV_AUTOSAVE_EM_CURSO = false; }
+}
+
+// Chamado antes de tudo que redesenha a tela. Em vez de perguntar se pode
+// jogar fora, ele SALVA. Só incomoda se a gravação falhar.
+async function atvGuardarAntesDeSair(oQueVaiFazer){
+  if(!ATV_CORRECAO_SUJA) return true;
+  clearTimeout(ATV_AUTOSAVE_TIMER);
+  if(await atvSalvarCorrecaoDaTela()) return true;
+  return confirm('Não consegui salvar a correção que está na tela — parece falha de conexão.\n\n' +
+                 oQueVaiFazer + ' agora descarta o que está marcado aqui.\n\n' +
+                 'Continuar mesmo assim?');
+}
+
+// Digitar nota ou feedback também conta como correção em andamento.
+document.addEventListener('input', (e)=>{
+  const t = e.target;
+  if(!t || !t.classList) return;
+  if(t.classList.contains('atv-item-grade-points')
+  || t.classList.contains('atv-item-grade-feedback')
+  || t.id === 'atv-grade-comment'){ marcarCorrecaoSuja(t); }
+});
+// Última rede: fechar a aba com correção ainda não gravada.
+window.addEventListener('beforeunload', (e)=>{
+  if(!ATV_CORRECAO_SUJA) return;
+  e.preventDefault(); e.returnValue = '';
+});
+// Redesenha SÓ as fileiras de comentários rápidos, deixando intacto todo o
+// resto da tela — é o que permite mexer no banco no meio de uma correção.
+function atualizarChipsDeFeedback(){
+  document.querySelectorAll('.atv-fb-bank').forEach(box=>{
+    const alvo = box.querySelector('[data-target-key]');
+    // Sem saber a qual campo esta fileira pertence, trocá-la deixaria botões
+    // apontando para lugar nenhum. Melhor deixar a fileira como está.
+    if(!alvo || !alvo.dataset.targetKey) return;
+    box.outerHTML = atvFeedbackBankHtml(alvo.dataset.targetKey);
+  });
+}
+
 // Chips de comentários rápidos reaproveitáveis, ao lado de cada campo de feedback.
 function atvFeedbackBankHtml(targetKey){
   const bank = ATV_FEEDBACK_BANK || [];
@@ -6001,6 +6140,7 @@ function atvGradingPanelHtml(sec, resp, user, draft, autoLiberado){
     <div class="atv-grading-section-label atv-grading-divider">Comentário geral da atividade (opcional)</div>
     ${richToolbarHtml('atv-grade-comment')}
     <div id="atv-grade-comment" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR">${commentHtml}</div>
+    <div class="atv-suja-aviso hidden"></div>
     <div class="hint atv-publicar-explica">Enquanto você não publicar, o aluno <strong>não vê nada</strong> — nem nota, nem feedback, nem gabarito. <strong>Salvar rascunho</strong> guarda a correção só para você; <strong>Salvar e publicar para o aluno</strong> é o botão que libera tudo de uma vez para ele.</div>
     <div class="editor-actions atv-grading-actions">
       <button class="btn-secondary" data-action="save-atv-grading" data-uid="${escAttr(user.id)}" data-publish="0">💾 Salvar rascunho (o aluno não vê)</button>
@@ -6362,8 +6502,10 @@ function atvPorQuestaoHtml(sec, ctx){
       </div>
     </div>
     <div class="atv-q-list" id="atv-q-list" data-item-id="${escAttr(item.itemId)}">${rows}</div>
+    <div class="atv-suja-aviso hidden"></div>
+    <div class="hint">Cada marcação é <strong>salva sozinha</strong> poucos segundos depois, e também ao trocar de questão, de aba ou sair. O botão abaixo serve para gravar tudo na hora, sem esperar.</div>
     <div class="editor-actions">
-      <button class="btn-primary" data-action="save-atv-question-grading" data-item-id="${escAttr(item.itemId)}">💾 Salvar correção desta questão (rascunho)</button>
+      <button class="btn-primary" data-action="save-atv-question-grading" data-item-id="${escAttr(item.itemId)}">💾 Salvar correção desta questão agora (rascunho)</button>
     </div>`;
 }
 
@@ -10831,6 +10973,10 @@ function blankSection(type){
 
 function render(){
   updateViewAsButtonLabel();
+  // Todo render reconstrói a tela a partir do que está GRAVADO — logo, depois
+  // dele não existe mais correção pendente na tela para se perder.
+  ATV_CORRECAO_SUJA = false;
+  clearTimeout(ATV_AUTOSAVE_TIMER); ATV_AUTOSAVE_TIMER = null;
   // Sem o salvamento automático (v4.12.1), qualquer redesenho da tela
   // reconstruiria os campos a partir do cache e apagaria o que o aluno digitou
   // e ainda não salvou. Então, antes de redesenhar, o que está no DOM é
@@ -11176,35 +11322,39 @@ function render(){
   }
   if(editState && editState.kind==='atividadeManage'){
     content.innerHTML = comCabecalho('atividadeManage', atividadeManageForm());
+    // Cada busca abaixo redesenha a tela quando os dados chegam. Se elas
+    // chegarem atrasadas, com o professor já corrigindo, o redesenho apagaria
+    // as marcações que ainda não foram salvas — por isso todas checam
+    // ATV_CORRECAO_SUJA antes. Dado atrasado espera; correção feita não se perde.
     if(allTurmas===null){
-      fetchTurmas().then(()=>{ if(editState && editState.kind==='atividadeManage') render(); }).catch(()=>{ allTurmas = []; });
+      fetchTurmas().then(()=>{ if(editState && editState.kind==='atividadeManage' && !ATV_CORRECAO_SUJA) render(); }).catch(()=>{ allTurmas = []; });
     }
     if(cachedUsersList===null){
-      fetchAllUsers().then(()=>{ if(editState && editState.kind==='atividadeManage') render(); });
+      fetchAllUsers().then(()=>{ if(editState && editState.kind==='atividadeManage' && !ATV_CORRECAO_SUJA) render(); });
     }
     if(ATV_MANAGE_RESPONSES===null){
       fetchActivityResponsesForSection(editState.sectionId).then(list=>{
         ATV_MANAGE_RESPONSES = list;
-        if(editState && editState.kind==='atividadeManage') render();
+        if(editState && editState.kind==='atividadeManage' && !ATV_CORRECAO_SUJA) render();
       }).catch(()=>{ ATV_MANAGE_RESPONSES = []; });
     }
     if(ATV_MANAGE_DRAFTS===null){
       fetchActivityDraftsForSection(editState.sectionId).then(map=>{
         ATV_MANAGE_DRAFTS = map;
-        if(editState && editState.kind==='atividadeManage') render();
+        if(editState && editState.kind==='atividadeManage' && !ATV_CORRECAO_SUJA) render();
       }).catch(()=>{ ATV_MANAGE_DRAFTS = {}; });
     }
     if(ATV_FEEDBACK_BANK===null){
       fetchFeedbackBank().then(items=>{
         ATV_FEEDBACK_BANK = items;
-        if(editState && editState.kind==='atividadeManage') render();
+        if(editState && editState.kind==='atividadeManage' && !ATV_CORRECAO_SUJA) render();
       }).catch(()=>{ ATV_FEEDBACK_BANK = []; });
     }
     if(editState.turmaId===null && allTurmas && allTurmas.length){ editState.turmaId = allTurmas[0].id; }
     if(editState.turmaId && !ATV_MANAGE_SCHEDULES[editState.turmaId]){
       fetchActivitySchedule(editState.sectionId, editState.turmaId).then(s=>{
         ATV_MANAGE_SCHEDULES[editState.turmaId] = s || {};
-        if(editState && editState.kind==='atividadeManage') render();
+        if(editState && editState.kind==='atividadeManage' && !ATV_CORRECAO_SUJA) render();
       });
     }
     return;
@@ -13108,6 +13258,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
   if(action==='atv-set-verdict'){
     // Não re-renderiza: só ajusta a linha (senão o professor perderia o que digitou).
+    marcarCorrecaoSuja(btn);
     const row = btn.closest('.atv-verdict-row');
     row.querySelectorAll('.atv-verdict-btn').forEach(x=>x.classList.remove('active'));
     btn.classList.add('active');
@@ -13134,6 +13285,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const ctx0 = atvManageContext();
     const p0 = atvPendencias(sec0, ctx0);
     if(p0.total===0){ alert('Nada pendente nesta turma — toda questão entregue já tem nota.'); return; }
+    if(!await atvGuardarAntesDeSair('Pular para a próxima pendência')) return;
     if(es.tab==='questao'){
       if(p0.primeiraQuestao!=null) es.questionIdx = p0.primeiraQuestao;
     } else {
@@ -13148,6 +13300,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='atv-set-tab'){
+    if(!await atvGuardarAntesDeSair('Trocar de aba')) return;
     editState.tab = btn.dataset.tab;
     editState.gradingUid = null;
     render();
@@ -13166,7 +13319,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       if(hidden) hidden.value = v;
       const pts = row.querySelector('.atv-item-grade-points');
       if(pts) pts.value = v==='certo' ? String(max) : '0';
+      row.dataset.tocado = '1';
     });
+    marcarCorrecaoSuja();
     return;
   }
   if(action==='save-atv-question-grading'){
@@ -13214,6 +13369,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='atv-reopen-student'){
+    if(!await atvGuardarAntesDeSair('Reabrir a atividade para este aluno')) return;
     const uid = btn.dataset.uid;
     if(!confirm('Reabrir a atividade para este aluno editar de novo?\n\nA entrega dele será desmarcada. Se já havia nota publicada, ela continua salva até você publicar de novo.')) return;
     const docId = `${aulaIdDe(editState.blockNum, editState.aulaNum)}_${editState.sectionId}_${uid}`;
@@ -13295,6 +13451,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     if(!ta) return;
     ta.value = ta.value.trim() ? (ta.value.trim() + ' ' + txt) : txt;
     ta.focus();
+    marcarCorrecaoSuja(ta);   // mexer no campo por atalho conta igual a digitar
     return;
   }
   if(action==='atv-delete-from-bank'){
@@ -13309,7 +13466,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         .set({items: novo, updatedAt: Date.now()}, {merge:true});
       ATV_FEEDBACK_BANK = novo;
     }catch(err){ alert('Não foi possível excluir o comentário: ' + (err && err.message ? err.message : String(err))); }
-    render();
+    atualizarChipsDeFeedback();   // NUNCA render() aqui: apagaria a correção da tela
     return;
   }
   if(action==='atv-save-to-bank'){
@@ -13323,9 +13480,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       await db.collection(`subjects/${activeSubjectId}/activity_feedback_bank`).doc('default')
         .set({items: novo, updatedAt: Date.now()}, {merge:true});
       ATV_FEEDBACK_BANK = novo;
-      alert('Comentário salvo. Agora ele aparece como atalho em todas as correções desta matéria.');
+      alert('Comentário salvo. Agora ele aparece como atalho em todas as correções desta matéria.\n\nSua correção continua na tela como estava — nada aqui foi salvo ainda.');
     }catch(err){ alert('Não foi possível salvar o comentário: ' + (err && err.message ? err.message : String(err))); }
-    render();
+    atualizarChipsDeFeedback();   // NUNCA render() aqui: apagaria a correção da tela
     return;
   }
   if(action==='diario-trocar-aula'){
@@ -14530,7 +14687,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     voltarAoPainel();
     return;
   }
-  if(action==='cancel-edit'){ editState=null; cachedUsersList=null; ATV_MANAGE_RESPONSES=null; ATV_MANAGE_SCHEDULES={}; ATV_MANAGE_DRAFTS=null; ATV_BOLETIM_DATA=null; ATV_BOLETIM_SCHEDULES=null; DIARIO_REGISTROS=null; DIARIO_TODOS=null; render(); return; }
+  if(action==='cancel-edit'){
+    if(!await atvGuardarAntesDeSair('Sair desta tela')) return;
+    editState=null; cachedUsersList=null; ATV_MANAGE_RESPONSES=null; ATV_MANAGE_SCHEDULES={}; ATV_MANAGE_DRAFTS=null; ATV_BOLETIM_DATA=null; ATV_BOLETIM_SCHEDULES=null; DIARIO_REGISTROS=null; DIARIO_TODOS=null; render(); return; }
   if(!a) return; // demais ações abaixo exigem uma aula válida no contexto
 
   if(action==='abrir-editor-ministrada'){
@@ -15108,6 +15267,10 @@ document.getElementById('content').addEventListener('change', async (e)=>{
     return;
   }
   if(e.target.id==='atv-question-select'){
+    if(!await atvGuardarAntesDeSair('Trocar de questão')){
+      e.target.value = String(editState.questionIdx || 0);   // volta o select para onde estava
+      return;
+    }
     editState.questionIdx = +e.target.value;
     render();
     return;
@@ -15128,12 +15291,16 @@ document.getElementById('content').addEventListener('change', async (e)=>{
     return;
   }
   if(e.target.id==='atv-manage-turma-select'){
+    if(!await atvGuardarAntesDeSair('Trocar de turma')){
+      e.target.value = editState.turmaId || '';   // volta o select para onde estava
+      return;
+    }
     editState.turmaId = e.target.value;
     editState.gradingUid = null;
     if(!ATV_MANAGE_SCHEDULES[editState.turmaId]){
       fetchActivitySchedule(editState.sectionId, editState.turmaId).then(s=>{
         ATV_MANAGE_SCHEDULES[editState.turmaId] = s || {};
-        if(editState && editState.kind==='atividadeManage') render();
+        if(editState && editState.kind==='atividadeManage' && !ATV_CORRECAO_SUJA) render();
       });
     }
     render();
