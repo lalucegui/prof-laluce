@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.11                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.13                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1794,6 +1794,42 @@
   .activity-card-oculto .activity-title,
   .activity-card-oculto .act-tag,
   .activity-card-oculto .activity-time{color:#5A4B7A;}
+  /* ===== Roteiro: os dois públicos, separados a olho nu (v4.12.13) ===== */
+  .act-bloco-rot{
+    margin:14px 0 2px;padding:5px 10px;border-radius:7px;
+    font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+  }
+  .act-bloco-aluno{background:rgba(47,93,51,0.10);color:#2F5D33;}
+  .act-bloco-prof{background:rgba(61,62,119,0.10);color:var(--navy);}
+  .act-bloco-vazio{
+    background:var(--nivel-atencao-suave);color:#4A3400;border:1px solid var(--nivel-atencao-linha);
+    text-transform:none;letter-spacing:0;font-weight:600;font-size:12px;line-height:1.5;
+  }
+  .act-row-prof .act-tag{color:var(--navy);}
+  .act-row-prof > div{color:#3A3A4A;}
+  .activity-vis-falta{background:var(--nivel-atencao-bg);color:var(--nivel-atencao-fg);}
+  /* Blocos do EDITOR */
+  .act-fieldset{border-radius:10px;padding:12px 14px;margin:16px 0 6px;border:1px solid var(--line);}
+  .act-fieldset-aluno{background:rgba(47,93,51,0.05);border-color:#9DBFA1;}
+  .act-fieldset-prof{background:rgba(61,62,119,0.05);border-color:#B6B7D6;}
+  .act-fieldset-rot{
+    font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px;
+  }
+  .act-fieldset-aluno .act-fieldset-rot{color:#2F5D33;}
+  .act-fieldset-prof  .act-fieldset-rot{color:var(--navy);}
+  .act-migra{
+    background:var(--nivel-atencao-suave);border:1px solid var(--nivel-atencao-linha);
+    border-radius:8px;padding:10px 12px;margin:8px 0;font-size:12.5px;line-height:1.5;color:#4A3400;
+  }
+  .act-migra .btn-secondary{margin-top:8px;}
+  .act-previa{margin-top:14px;padding:10px 12px;border-radius:9px;font-size:12.5px;line-height:1.5;border:1px dashed var(--line);}
+  .act-previa-on{background:#EAF5EC;border-color:#8FBF9B;color:#1F5132;}
+  .act-previa-off{background:var(--nivel-atencao-suave);border-color:var(--nivel-atencao-linha);color:#4A3400;}
+  .act-previa-vazia{background:var(--surface-raised);color:var(--muted);}
+  .act-previa-corpo{margin-top:8px;padding:10px 12px;background:var(--surface-raised);border-radius:8px;color:var(--charcoal);}
+  .act-previa-apagada{opacity:0.55;}
+  .act-previa-cab{font-size:11px;font-weight:800;letter-spacing:.5px;color:#2F5D33;margin-bottom:2px;}
+  .act-previa .act-tag{flex:0 0 104px;}
   .activity-done-row{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px dashed #7FA882;cursor:pointer;font-size:13.5px;font-weight:700;color:#2F5D33;}
   .activity-done-row input{width:17px;height:17px;accent-color:#2F5D33;cursor:pointer;}
   /* ===== Bloco "Atividade" (respondivel, com nota) - v3, aulas novas ===== */
@@ -2254,6 +2290,7 @@
   .atv-bol-atraso{background:#FBF3E4;color:#8A5A0F;font-weight:700;}
   /* feedback visto pelo aluno */
   .atv-item-grade-fb-head{font-weight:800;font-size:12.5px;}
+  .atv-auto-branco{color:var(--muted);font-style:italic;}
   .atv-fb-partial{border-color:#E8B36A;}
   .atividade-entregue-nota{margin-top:12px;background:#FFF7E8;border:1px solid #E4D2AC;border-radius:8px;padding:10px 12px;font-size:13px;color:#7A5A12;}
   .atv-grade-auto{font-size:12.5px;font-weight:700;margin-top:6px;padding:6px 10px;border-radius:8px;background:#F1F1F5;display:inline-block;}
@@ -3510,7 +3547,7 @@
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
 <div class="cap-toast hidden" id="capacidade-alerta" role="status" aria-live="polite"></div>
-<div class="version-tag hidden" id="version-tag">v4.12.11</div>
+<div class="version-tag hidden" id="version-tag">v4.12.13</div>
 
 
 <script>
@@ -4117,6 +4154,85 @@ let clickerSensibilidade = 5;
 function isAdminNaTela(){
   return isAdmin && !presentationMode;
 }
+
+// ===== ROTEIRO DA ATIVIDADE PRÁTICA: dois públicos, um cartão (v4.12.13) =====
+// Um roteiro de aula carrega, misturados, dois textos com destinatários
+// opostos: o ENUNCIADO (o que o aluno precisa para conseguir fazer) e a
+// CONDUÇÃO (como aplicar, o que observar, como corrigir). Existia uma única
+// chave "visível para o aluno": ligá-la entregava o pacote inteiro — objetivo
+// pedagógico, papel do professor, erros comuns, critérios. Isso é bastidor;
+// mostrar para a turma estraga a atividade antes de ela começar.
+// Agora cada campo declara de quem é. Os de condução NUNCA vão para o aluno,
+// com a chave ligada ou desligada — a chave passou a governar só o enunciado.
+const ATV_ROTEIRO_ALUNO = [
+  ['alunoResumo',  '🎯 O que vocês vão fazer'],
+  ['alunoPassos',  '🧭 Passo a passo'],
+  ['materials',    '📦 O que usar / trazer'],
+  ['alunoEntrega', '📤 O que entregar'],
+];
+const ATV_ROTEIRO_PROF = [
+  ['objective', '🎯 Objetivo pedagógico'],
+  ['method',    '🧭 Como conduzir em sala'],
+  ['results',   '✅ O que demonstra que aprendeu'],
+  ['criterios', '⚖ Critérios de correção'],
+  ['solucao',   '🔑 Resposta / solução esperada'],
+  ['obs',       '💡 Variações, dicas e erros comuns'],
+];
+function roteiroLinhas(sec, campos, extraCls){
+  return campos.map(([k, rot])=> String(sec[k]||'').trim()
+    ? `<div class="act-row${extraCls?' '+extraCls:''}"><span class="act-tag">${rot}</span><div>${esc(sec[k])}</div></div>`
+    : '').join('');
+}
+// "Materiais" é complemento, não proposta: sozinho ele renderia para o aluno
+// um cartão com "traga folhas A4" e nada mais. Por isso o que define a
+// existência do enunciado são os três campos que dizem o que fazer.
+const ATV_ROTEIRO_ALUNO_NUCLEO = ['alunoResumo','alunoPassos','alunoEntrega'];
+function roteiroTemAluno(sec){ return ATV_ROTEIRO_ALUNO_NUCLEO.some(k=> String(sec[k]||'').trim()); }
+function roteiroTemProf(sec){  return ATV_ROTEIRO_PROF.some(([k])=> String(sec[k]||'').trim()); }
+// Uma regra só, usada pela tela e pelo PDF: o aluno só vê o roteiro quando a
+// chave está ligada E existe enunciado escrito. Chave ligada com enunciado
+// vazio mostraria um cartão oco — ou, pior, tentaria preencher com o texto de
+// condução, que é justamente o que não pode vazar.
+function roteiroVisivelAoAluno(sec){
+  return sec.visibleToStudent !== false && roteiroTemAluno(sec);
+}
+// Prévia do enunciado, dentro da própria edição. Existe por um motivo simples:
+// a única forma de ter certeza do que o aluno vê é ver. Ela lê os campos como
+// estão AGORA na tela — não o que está salvo.
+function atualizarPreviaRoteiro(){
+  const caixa = document.getElementById('ef-act-previa');
+  if(!caixa) return;
+  const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const provisorio = {
+    alunoResumo:  v('ef-act-aluno-resumo'),
+    alunoPassos:  v('ef-act-aluno-passos'),
+    materials:    v('ef-act-materials'),
+    alunoEntrega: v('ef-act-aluno-entrega'),
+  };
+  const cb = document.getElementById('ef-act-visible');
+  const ligado = cb ? cb.checked : true;
+  const linhas = roteiroTemAluno(provisorio) ? roteiroLinhas(provisorio, ATV_ROTEIRO_ALUNO) : '';
+  const titulo = v('ef-act-title') || 'Atividade prática';
+  const tempo = v('ef-act-time');
+  if(!linhas){
+    caixa.className = 'act-previa act-previa-vazia';
+    caixa.innerHTML = '👁 <strong>Prévia:</strong> o aluno não vê roteiro nenhum. Falta escrever <em>o que vão fazer</em>, <em>o passo a passo</em> ou <em>o que entregar</em> — só materiais não forma um enunciado.';
+    return;
+  }
+  const corpo = `<div class="act-previa-corpo${ligado?'':' act-previa-apagada'}">
+      <div class="act-previa-cab">🛠 ${esc(titulo)}${tempo?` · ⏱ ${esc(tempo)}`:''}</div>${linhas}</div>`;
+  caixa.className = 'act-previa ' + (ligado ? 'act-previa-on' : 'act-previa-off');
+  caixa.innerHTML = (ligado
+    ? '👁 <strong>Prévia — é exatamente isto que o aluno vê:</strong>'
+    : '👁 <strong>Prévia:</strong> o enunciado está escrito, mas a chave está desligada — o aluno ainda não vê nada.') + corpo;
+}
+document.addEventListener('input', (e)=>{
+  const t = e.target;
+  if(t && t.id && /^ef-act-/.test(t.id)) atualizarPreviaRoteiro();
+});
+document.addEventListener('change', (e)=>{
+  if(e.target && e.target.id === 'ef-act-visible') atualizarPreviaRoteiro();
+});
 // 0 = rola pouquinho (10% da tela) a cada clique, 10 = rola quase a tela
 // inteira (90%) — assim dá pra ir de "quase não mexe" até "quase como era
 // antes desta configuração existir".
@@ -4746,7 +4862,7 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
   // completo da tela (também no modo "ver como aluno", que já usa isAdmin=false
   // durante a pré-visualização). Para o professor (isAdmin=true), continua
   // aparecendo normalmente, para ele poder editar.
-  if(sec.type==='activity' && sec.visibleToStudent===false && !isAdminNaTela()) return '';
+  if(sec.type==='activity' && !isAdminNaTela() && !roteiroVisivelAoAluno(sec)) return '';
   // NOVO (v4.10.4) — a "Anotação do professor" é privada por natureza: não
   // existe versão dela para o aluno. Devolver string vazia (em vez de esconder
   // por CSS) é o que faz a seção de cima encostar na de baixo como se a
@@ -4828,13 +4944,25 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       break;
     }
     case 'activity': {
-      const linhas = [
-        sec.objective ? `<div class="act-row"><span class="act-tag">🎯 Objetivo</span><div>${esc(sec.objective)}</div></div>` : '',
-        sec.method ? `<div class="act-row"><span class="act-tag">🧭 Como fazer</span><div>${esc(sec.method)}</div></div>` : '',
-        sec.materials ? `<div class="act-row"><span class="act-tag">📦 Materiais</span><div>${esc(sec.materials)}</div></div>` : '',
-        sec.results ? `<div class="act-row"><span class="act-tag">✅ O que entregar</span><div>${esc(sec.results)}</div></div>` : '',
-        sec.obs ? `<div class="act-row"><span class="act-tag">💡 Observações</span><div>${esc(sec.obs)}</div></div>` : '',
-      ].join('');
+      const souProf = isAdminNaTela();
+      const temAluno = roteiroTemAluno(sec), temProf = roteiroTemProf(sec);
+      const linhasAluno = temAluno ? roteiroLinhas(sec, ATV_ROTEIRO_ALUNO) : '';
+      const linhasProf  = roteiroLinhas(sec, ATV_ROTEIRO_PROF, 'act-row-prof');
+      let linhas;
+      if(!souProf){
+        // Aluno (e projetor, no Modo Aula): só o enunciado. O bloco de
+        // condução nem é montado — não existe caminho para ele vazar.
+        linhas = linhasAluno;
+      } else {
+        const cabecaAluno = temAluno
+          ? `<div class="act-bloco-rot act-bloco-aluno">${sec.visibleToStudent===false
+              ? '🔒 Enunciado escrito, mas a chave está desligada — o aluno não vê'
+              : '👁 Isto o aluno vê'}</div>`
+          : `<div class="act-bloco-rot act-bloco-vazio">👁 Enunciado do aluno — <strong>ainda em branco</strong>. Enquanto estiver assim, o aluno não vê roteiro nenhum, mesmo com a chave ligada.</div>`;
+        const cabecaProf = temProf
+          ? `<div class="act-bloco-rot act-bloco-prof">🔒 Só para você — nunca vai para o aluno, nem no PDF dele</div>` : '';
+        linhas = cabecaAluno + linhasAluno + cabecaProf + linhasProf;
+      }
       const aulaIdAtual = aulaIdDe(state.block, state.aula);
       const feita = (!realIsAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.actDone && STUDENT_PROGRESS.actDone[aulaIdAtual] && STUDENT_PROGRESS.actDone[aulaIdAtual][sec.id]);
       const checkAluno = (!realIsAdmin && currentUser) ? `
@@ -4846,12 +4974,19 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       // precisar abrir a edição para conferir o botão. Só o professor na
       // própria tela enxerga essa marca: no modo aula e no "ver como aluno"
       // ela some junto com o resto do que é de bastidor.
-      const soProfessor = sec.visibleToStudent === false;
-      const marcaVis = isAdminNaTela()
-        ? (soProfessor
-            ? '<span class="activity-vis-tag activity-vis-oculto" title="Este roteiro não aparece para o aluno. Para mudar, edite a seção e marque \'Visível para o aluno\'.">🔒 SÓ PARA VOCÊ</span>'
-            : '<span class="activity-vis-tag activity-vis-aberto" title="Este roteiro aparece na aula do aluno. Para mudar, edite a seção e desmarque \'Visível para o aluno\'.">👁 O ALUNO VÊ</span>')
-        : '';
+      // A marca diz o estado REAL — inclusive o caso silencioso de "chave
+      // ligada, enunciado vazio", em que o aluno não vê nada e nada avisava.
+      const soProfessor = !roteiroVisivelAoAluno(sec);
+      let marcaVis = '';
+      if(isAdminNaTela()){
+        if(sec.visibleToStudent === false){
+          marcaVis = '<span class="activity-vis-tag activity-vis-oculto" title="Nem o enunciado vai para o aluno. Edite a seção e ligue \'O aluno recebe o enunciado\' para liberar.">🔒 SÓ PARA VOCÊ</span>';
+        } else if(!temAluno){
+          marcaVis = '<span class="activity-vis-tag activity-vis-falta" title="A chave está ligada, mas os campos do enunciado estão vazios — e é só isso que o aluno receberia. Escreva o enunciado na edição da seção.">⚠ FALTA O ENUNCIADO</span>';
+        } else {
+          marcaVis = '<span class="activity-vis-tag activity-vis-aberto" title="O aluno recebe o enunciado. Os campos de condução e correção continuam só seus.">👁 O ALUNO VÊ O ENUNCIADO</span>';
+        }
+      }
       // No Modo Aula o roteiro nasce aberto: o projetor não deve exigir um
       // clique para revelar conteúdo, e ali quem olha é a turma, não você.
       const aberto = (typeof presentationMode !== 'undefined' && presentationMode) || !!ACT_ABERTA[sec.id];
@@ -5183,7 +5318,7 @@ async function autoPublicarAtividadesVencidas(){
         const perItem = {};
         let total = 0;
         sec.items.forEach(it=>{
-          const auto = autoGradeClosedItem(it, answers[it.itemId]);
+          const auto = autoGradeItem(it, answers[it.itemId]);
           const pts = auto ? auto.points : 0;
           perItem[it.itemId] = {verdict: auto ? (auto.correct?'certo':((auto.partial&&auto.partial.ok>0)?'parcial':'errado')) : 'errado',
                                 points: pts, feedback: feedbackSugerido(it, {}, auto) || null};
@@ -5210,10 +5345,23 @@ async function autoPublicarAtividadesVencidas(){
   }catch(e){ console.error('autoPublicarAtividadesVencidas falhou:', e); }
 }
 
-function autoGradeClosedItem(item, studentValue){
-  // Retorna null quando o professor não cadastrou gabarito (ou o tipo não é fechado) —
-  // nesses casos a correção continua manual. Quando retorna algo, é 100% calculado.
+// ===== O QUE PODE NASCER MARCADO (v4.12.13) =====
+// Devolve null quando o sistema NÃO tem como saber a nota — e aí a questão
+// nasce em branco, esperando o professor. Só há dois casos em que ele sabe:
+//
+//  1. O aluno não escreveu nada naquela questão. Não há o que julgar: nasce
+//     errado, valendo zero. Vale para qualquer tipo, aberta ou fechada.
+//  2. A questão é fechada E tem gabarito cadastrado. Aí a resposta ou bate ou
+//     não bate, e a conta é objetiva.
+//
+// Fora disso — toda questão ABERTA que o aluno respondeu — nada é marcado.
+// Julgar uma dissertativa é trabalho do professor, e um "errado" que aparece
+// sozinho ali é pior que inútil: é um erro com cara de decisão tomada.
+function autoGradeItem(item, studentValue){
   const maxPts = (item.points!=null && !isNaN(item.points)) ? item.points : 1;
+  if(!respostaPreenchida(studentValue)){
+    return {correct:false, points:0, maxPoints:maxPts, emBranco:true};
+  }
   if(item.type==='multipla_escolha'){
     if(!item.correctOption) return null;
     const acertou = String(studentValue||'').trim() === String(item.correctOption).trim();
@@ -5235,7 +5383,7 @@ function autoGradeClosedItem(item, studentValue){
     const pts = Math.round(maxPts*frac*100)/100;
     return {correct: ok===total, points: pts, maxPoints: maxPts, partial:{ok, total}};
   }
-  return null;
+  return null;   // aberta e respondida: só o professor decide
 }
 // Status é sempre CALCULADO a partir dos dados, nunca gravado — assim nunca fica
 // dessincronizado. Precedência: nota publicada > correção em rascunho > entregue
@@ -6083,7 +6231,9 @@ function atvVerdictControlsHtml(item, saved, auto){
   if(auto && !saved.verdict){
     verdict = auto.correct ? 'certo' : ((auto.partial && auto.partial.ok>0) ? 'parcial' : 'errado');
     pts = auto.points;
-    autoHint = `<span class="atv-auto-hint">✨ pelo gabarito${auto.partial?` — ${auto.partial.ok}/${auto.partial.total} certas`:''}</span>`;
+    autoHint = auto.emBranco
+      ? `<span class="atv-auto-hint atv-auto-branco">✋ sem resposta</span>`
+      : `<span class="atv-auto-hint">✨ pelo gabarito${auto.partial?` — ${auto.partial.ok}/${auto.partial.total} certas`:''}</span>`;
   }
   const b = (v,label,cls)=>`<button type="button" class="atv-verdict-btn ${cls}${verdict===v?' active':''}" data-action="atv-set-verdict" data-verdict="${v}" data-max="${maxPts}">${label}</button>`;
   return `<div class="atv-verdict-row">
@@ -6339,7 +6489,7 @@ function atvAutoLiberada(schedule){
 }
 // Gabarito automático de um item, respeitando a liberação pelo prazo.
 function atvAutoDoItem(item, valor, liberado){
-  return liberado ? autoGradeClosedItem(item, valor) : null;
+  return liberado ? autoGradeItem(item, valor) : null;
 }
 // Total de pontos de um aluno, considerando correção salva + gabarito automático.
 function atvComputeStudentTotal(sec, resp, draft, autoLiberado){
@@ -6355,10 +6505,13 @@ function atvComputeStudentTotal(sec, resp, draft, autoLiberado){
   return {total: Math.round(total*100)/100, any};
 }
 
-// ===== O QUE AINDA FALTA CORRIGIR (v4.12.0) =====
+// ===== O QUE AINDA FALTA CORRIGIR =====
 // Percorre alunos × questões e separa o que já está resolvido do que espera
-// por você. "Resolvido" é: nota lançada à mão, ou gabarito automático já
-// liberado. Todo o resto é pendência — e é sobre ela que a fila trabalha.
+// por você. ALTERADO (v4.12.13) — "resolvido" agora é TER VEREDITO: certo,
+// parcial ou errado, seja escolhido por você ou calculado pelo sistema (questão
+// fechada com gabarito, ou questão em branco). Antes bastava haver pontuação,
+// o que deixava passar questão com nota digitada e nenhum julgamento — e é
+// justamente essa contagem que destrava o botão Publicar.
 function atvPendencias(sec, ctx){
   const itens = sec.items || [];
   const porAluno = {}, porQuestao = {};
@@ -6374,9 +6527,9 @@ function atvPendencias(sec, ctx){
     let n = 0;
     itens.forEach((it,i)=>{
       const saved = (eff.perItem||{})[it.itemId] || {};
-      const temNota = (saved.points!=null && saved.points!=='');
+      const temVeredito = !!saved.verdict;
       const auto = atvAutoDoItem(it, (resp.answers||{})[it.itemId], ctx.autoLiberado);
-      if(temNota || auto) return;
+      if(temVeredito || auto) return;
       n++; total++;
       porQuestao[it.itemId] = (porQuestao[it.itemId]||0) + 1;
       if(primeiroAluno===null) primeiroAluno = u.id;
@@ -7481,7 +7634,7 @@ async function atvPublishForStudent(sec, uid){
       verdict = auto.correct ? 'certo' : ((auto.partial && auto.partial.ok>0) ? 'parcial' : 'errado');
     }
     // O gabarito acompanha a nota também quando você publica sem abrir o
-    // painel do aluno (ex.: "Publicar tudo"): senão o aluno receberia o zero
+    // painel do aluno (ex.: pelo botão Publicar do Painel): senão o aluno receberia o zero
     // da questão fechada sem saber qual era a resposta certa.
     perItem[it.itemId] = {verdict, points: (pts==null||isNaN(pts))?null:pts,
                           feedback: saved.feedback || feedbackSugerido(it, saved, auto) || null};
@@ -8049,21 +8202,43 @@ function atvResumoTopoHtml(sec, ctx, pend){
         ${m(media!=null?media:'—', `média (de ${maxTotal})`)}
       </div>
       <div class="atv-bulk-actions">
-        <button type="button" class="btn-secondary" data-action="atv-bulk-zero-missing" title="Lança 0 em todas as questões dos alunos que não responderam nada. Fica como rascunho.">0️⃣ Zerar quem não respondeu</button>
-        <button type="button" class="btn-primary" data-action="atv-bulk-publish" title="Publica todas as correções em rascunho desta turma de uma vez — a partir daí os alunos veem nota e feedback.">📤 Publicar tudo (${rascunhos})</button>
+        ${atvBotaoPublicarHtml(pend, rascunhos, ctx)}
       </div>
     </div>`,
     rascunhos
   };
 }
+// O botão que entrega a correção ao aluno. Ele só destranca quando NÃO resta
+// questão sem nota nesta atividade, nesta turma: publicar pela metade manda
+// para o aluno uma nota que ainda vai mudar — e nota que muda depois de
+// publicada é o tipo de coisa que destrói a confiança no sistema inteiro.
+// Aluno que não entregou nada não trava a publicação: o zero dele é lançado
+// automaticamente pelo próprio sistema quando o prazo fecha.
+function atvBotaoPublicarHtml(pend, rascunhos, ctx){
+  const turma = (allTurmas||[]).find(t=>t.id===ctx.turmaId);
+  const nomeTurma = turma ? turma.name : 'esta turma';
+  const plural = (n, um, muitos) => n === 1 ? um : muitos;
+  if(pend.total > 0){
+    const q = plural(pend.total, 'questão', 'questões');
+    return `<button type="button" class="btn-primary" disabled
+      title="Falta${pend.total===1?'':'m'} ${pend.total} ${q} sem certo, parcial ou errado. Corrija tudo desta turma antes de entregar a correção aos alunos.">🔒 Publicar — falta${pend.total===1?'':'m'} ${pend.total} ${q}</button>`;
+  }
+  if(!rascunhos){
+    return `<button type="button" class="btn-primary" disabled
+      title="Não há correção nova para entregar nesta turma.">✓ Nada novo para publicar</button>`;
+  }
+  const al = plural(rascunhos, 'aluno', 'alunos');
+  return `<button type="button" class="btn-primary" data-action="atv-bulk-publish"
+    title="Entrega a correção desta atividade aos ${rascunhos} ${al} de ${escAttr(nomeTurma)}. A partir daí eles veem nota, feedback e gabarito.">📤 Publicar para ${rascunhos} ${al} de ${esc(nomeTurma)}</button>`;
+}
 function atvFilaHtml(sec, ctx, pend){
   if(!ctx.alunos.length) return '';
   if(pend.total===0){
-    return `<div class="corr-fila"><span>✅ <strong>Nada pendente.</strong> Toda questão entregue já tem nota (sua ou do gabarito). Se ainda houver rascunho, use “Publicar tudo” acima.</span></div>`;
+    return `<div class="corr-fila"><span>✅ <strong>Tudo corrigido.</strong> Toda questão entregue já tem nota (sua ou do gabarito). Agora use o botão <strong>Publicar</strong> acima para entregar a correção aos alunos desta turma.</span></div>`;
   }
   const nomeAluno = pend.primeiroAluno ? atvNomeAluno((ctx.alunos.find(u=>u.id===pend.primeiroAluno)||{})) : '';
   return `<div class="corr-fila">
-    <span>📝 Faltam <strong>${pend.total} questão(ões)</strong> sem nota${nomeAluno?`. A próxima é de <strong>${esc(nomeAluno)}</strong>`:''}.</span>
+    <span>📝 Faltam <strong>${pend.total} questão(ões)</strong> sem nota${nomeAluno?`. A próxima é de <strong>${esc(nomeAluno)}</strong>`:''}. Enquanto faltar alguma, o botão de publicar fica travado.</span>
     <button type="button" class="btn-primary" data-action="atv-ir-pendente">▶ Ir para a próxima pendente</button>
   </div>`;
 }
@@ -9387,25 +9562,58 @@ function sectionEditorForm(sec, idx){
       ${richToolbarHtml('ef-note-body')}
       <div id="ef-note-body" class="rich-text" contenteditable="true" spellcheck="true" lang="pt-BR">${(()=>{ const paras = normalizeNoteBody(sec.note&&sec.note.body); return paras.length ? paras.map(p=>`<p>${p}</p>`).join('') : '<p></p>'; })()}</div>`;
   } else if(type==='activity'){
+    const sub = t => `<span style="text-transform:none;font-weight:400;color:var(--muted);">${t}</span>`;
+    // Roteiro antigo: o texto de condução estava lá e o aluno via tudo. Nada é
+    // apagado — ele continua inteiro no bloco de baixo. Só que agora, para o
+    // aluno, vale o enunciado escrito aqui em cima. Se ainda não houver nenhum,
+    // o botão traz o texto antigo para cá, para você enxugar em vez de redigitar.
+    const temTextoAntigo = !!String(sec.method||sec.results||sec.objective||'').trim();
+    const faltaEnunciado = !roteiroTemAluno(sec);
     fields = `
       <label>Nome da atividade</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-act-title" value="${escAttr(sec.title||'')}" placeholder="Ex.: Montando a EAP do evento de formatura">
-      <label>Objetivo <span style="text-transform:none;font-weight:400;color:var(--muted);">(o que a atividade fixa do conteúdo ministrado)</span></label>
-      <textarea id="ef-act-objective" style="min-height:60px;">${esc(sec.objective||'')}</textarea>
-      <label>Método de aplicação <span style="text-transform:none;font-weight:400;color:var(--muted);">(individual/grupos, passos da dinâmica, papel do professor)</span></label>
-      <textarea id="ef-act-method" style="min-height:90px;">${esc(sec.method||'')}</textarea>
-      <label>Tempo previsto <span style="text-transform:none;font-weight:400;color:var(--muted);">(ex.: 40 min)</span></label>
+      <label>Tempo previsto ${sub('(ex.: 40 min — o aluno também vê)')}</label>
       <input type="text" spellcheck="true" lang="pt-BR" id="ef-act-time" value="${escAttr(sec.timeMin||'')}" placeholder="40 min">
-      <label>Materiais necessários</label>
-      <textarea id="ef-act-materials" style="min-height:60px;" placeholder="Folhas A4, projetor, calculadora...">${esc(sec.materials||'')}</textarea>
-      <label>Resultados esperados <span style="text-transform:none;font-weight:400;color:var(--muted);">(o que o aluno deve produzir/entregar e o que demonstra que aprendeu)</span></label>
-      <textarea id="ef-act-results" style="min-height:70px;">${esc(sec.results||'')}</textarea>
-      <label>Observações (opcional) <span style="text-transform:none;font-weight:400;color:var(--muted);">(variações, dicas de condução, erros comuns)</span></label>
-      <textarea id="ef-act-obs" style="min-height:50px;">${esc(sec.obs||'')}</textarea>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
-        <input type="checkbox" id="ef-act-visible" ${sec.visibleToStudent===false?'':'checked'} style="width:auto;">
-        <span style="text-transform:none;font-weight:600;color:var(--charcoal);letter-spacing:normal;">Visível para o aluno</span>
-      </label>
-      <div class="hint">Desmarque para deixar este roteiro só para você (fica oculto na aula e também no modo "ver como aluno") — útil quando é um roteiro de condução que só o professor deve ler.</div>
+
+      <div class="act-fieldset act-fieldset-aluno">
+        <div class="act-fieldset-rot">👁 O ENUNCIADO — é isto, e só isto, que chega ao aluno</div>
+        <div class="hint" style="margin-top:0;">Escreva falando com a turma. O que estiver aqui aparece na aula do aluno e no PDF dele; nada do bloco de baixo aparece.</div>
+        ${(faltaEnunciado && temTextoAntigo) ? `<div class="act-migra">
+          Este roteiro foi escrito antes desta separação: o texto está todo no bloco de condução, abaixo.
+          <button type="button" class="btn-secondary" data-action="act-puxar-enunciado">↑ Trazer aquele texto para cá</button>
+          <span class="hint" style="display:block;margin:6px 0 0;">Ele é copiado (não movido) para você enxugar o que é bastidor antes de salvar. Enquanto o enunciado estiver vazio, o aluno não vê roteiro nenhum.</span>
+        </div>` : ''}
+        <label>O que vocês vão fazer ${sub('(a proposta, em duas ou três linhas)')}</label>
+        <textarea id="ef-act-aluno-resumo" style="min-height:60px;" placeholder="Em duplas, vocês vão montar a EAP do evento de formatura a partir do escopo entregue.">${esc(sec.alunoResumo||'')}</textarea>
+        <label>Passo a passo ${sub('(o que o aluno faz, na ordem)')}</label>
+        <textarea id="ef-act-aluno-passos" style="min-height:90px;" placeholder="1. Leiam o escopo...&#10;2. Listem as entregas principais...&#10;3. Quebrem cada entrega em pacotes de trabalho...">${esc(sec.alunoPassos||'')}</textarea>
+        <label>O que usar / trazer ${sub('(materiais — o aluno vê)')}</label>
+        <textarea id="ef-act-materials" style="min-height:55px;" placeholder="Folhas A4, caneta, calculadora, o texto da aula anterior...">${esc(sec.materials||'')}</textarea>
+        <label>O que entregar ${sub('(formato, prazo e como entregar)')}</label>
+        <textarea id="ef-act-aluno-entrega" style="min-height:60px;" placeholder="Uma folha por dupla, com a EAP em três níveis e os nomes dos integrantes, ao final da aula.">${esc(sec.alunoEntrega||'')}</textarea>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+          <input type="checkbox" id="ef-act-visible" ${sec.visibleToStudent===false?'':'checked'} style="width:auto;">
+          <span style="text-transform:none;font-weight:600;color:var(--charcoal);letter-spacing:normal;">O aluno recebe o enunciado</span>
+        </label>
+        <div class="hint">Desligue para segurar a atividade (preparar antes, aplicar depois). Ligado ou desligado, <strong>o bloco de condução nunca vai para o aluno</strong>.</div>
+        <div class="act-previa" id="ef-act-previa"></div>
+      </div>
+
+      <div class="act-fieldset act-fieldset-prof">
+        <div class="act-fieldset-rot">🔒 SÓ PARA VOCÊ — aplicação e correção</div>
+        <div class="hint" style="margin-top:0;">Nada deste bloco aparece para o aluno: nem na aula, nem no "ver como aluno", nem no PDF que ele gera. No seu PDF, sai marcado como material do professor.</div>
+        <label>Objetivo pedagógico ${sub('(o que a atividade fixa do conteúdo ministrado)')}</label>
+        <textarea id="ef-act-objective" style="min-height:55px;">${esc(sec.objective||'')}</textarea>
+        <label>Como conduzir em sala ${sub('(individual/grupos, tempo de cada etapa, seu papel, o que circular olhando)')}</label>
+        <textarea id="ef-act-method" style="min-height:90px;">${esc(sec.method||'')}</textarea>
+        <label>O que demonstra que aprendeu ${sub('(o sinal de que a atividade funcionou)')}</label>
+        <textarea id="ef-act-results" style="min-height:60px;">${esc(sec.results||'')}</textarea>
+        <label>Critérios de correção ${sub('(o que vale ponto, o que é suficiente, o que é insuficiente)')}</label>
+        <textarea id="ef-act-criterios" style="min-height:70px;" placeholder="Entregas principais identificadas (3 pts) · Decomposição coerente até pacote de trabalho (4 pts) · Nenhum pacote sem responsável (3 pts)">${esc(sec.criterios||'')}</textarea>
+        <label>Resposta / solução esperada ${sub('(o gabarito da atividade, para você corrigir rápido)')}</label>
+        <textarea id="ef-act-solucao" style="min-height:70px;">${esc(sec.solucao||'')}</textarea>
+        <label>Variações, dicas e erros comuns ${sub('(o que costuma dar errado e como resgatar)')}</label>
+        <textarea id="ef-act-obs" style="min-height:60px;">${esc(sec.obs||'')}</textarea>
+      </div>
     `;
   } else if(type==='table'){
     fields = `
@@ -9691,7 +9899,10 @@ const AI_FORMAT_PROMPT = `Você vai gerar o conteúdo de UMA aula universitária
     {"type":"table","kicker":"","title":"Título da tabela","headers":["Coluna 1","Coluna 2"],"rows":[["a","b"],["c","d"]]},
     {"type":"compare","title":"Título","leftTitle":"Lado A","leftItems":["item"],"rightTitle":"Lado B","rightItems":["item"]},
     {"type":"timeline","title":"Título","steps":[{"label":"Fase 1","desc":"descrição"}]},
-    {"type":"activity","title":"Nome da atividade prática","objective":"O que fixa do conteúdo","method":"Passo a passo da dinâmica (grupos, papel do professor)","timeMin":"40 min","materials":"Folhas, projetor...","results":"O que o aluno entrega e o que demonstra que aprendeu","obs":"Dicas de condução (opcional)"},
+    {"type":"activity","title":"Nome da atividade prática","timeMin":"40 min",
+     "_comentario":"DOIS PÚBLICOS. Os campos aluno* + materials são o ENUNCIADO, escritos falando COM A TURMA — é só isso que o aluno recebe. Os demais são de condução e correção, e nunca chegam ao aluno.",
+     "alunoResumo":"O que vocês vão fazer (falando com a turma)","alunoPassos":"Passo a passo que o aluno segue","materials":"O que o aluno usa/traz","alunoEntrega":"O que entregar, em que formato e quando",
+     "objective":"Objetivo pedagógico (só professor)","method":"Como conduzir em sala: grupos, tempo de cada etapa, papel do professor (só professor)","results":"O que demonstra que aprendeu (só professor)","criterios":"Critérios de correção (só professor)","solucao":"Resposta/solução esperada (só professor)","obs":"Variações, dicas e erros comuns (só professor)"},
     {"type":"atividade","title":"Nome da atividade avaliativa","statement":"Enunciado/instruções para o aluno responder DENTRO DO SISTEMA (não é o mesmo que \"activity\" acima — este tipo é respondível, com nota)","required":true,"items":[{"itemId":"i1","type":"dissertativa","prompt":"Pergunta dissertativa..."}]}
   ]
 }
@@ -10953,7 +11164,9 @@ function blankSection(type){
     // material de condução do professor; deixá-lo visível por padrão obrigava
     // a lembrar de esconder toda vez. Agora o caminho seguro é o automático:
     // se você quiser mostrar, marca "Visível para o aluno" na edição.
-    case 'activity': return {type, id, title:'', objective:'', method:'', timeMin:'', materials:'', results:'', obs:'', visibleToStudent:false};
+    case 'activity': return {type, id, title:'', timeMin:'', materials:'', visibleToStudent:false,
+      alunoResumo:'', alunoPassos:'', alunoEntrega:'',
+      objective:'', method:'', results:'', criterios:'', solucao:'', obs:''};
     case 'points': return {type, id, bullets:['']};
     case 'table': return {type, id, headers:['Coluna 1','Coluna 2'], rows:[['','']]};
     case 'figure': return {type, id, src:'', caption:'', source:''};
@@ -11563,6 +11776,7 @@ function render(){
   wireTypeDescription();
   reaplicarMarcaDeAlteracao();
   reporRascunhoNoEditor();
+  atualizarPreviaRoteiro();
   // A barra "aula ministrada" precisa do registro e da lista de turmas. Os dois
   // são leitura única por sessão e só para a equipe — o aluno nunca dispara.
   if(MINISTRADA_EDITANDO && a && MINISTRADA_EDITANDO.aulaId !== a.id) MINISTRADA_EDITANDO = null;
@@ -13337,7 +13551,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
         if(vazio) continue; // nada preenchido para este aluno — não cria rascunho à toa
         await atvSaveDraft(uid, {[itemId]: g});
       }
-      alert('Correção desta questão salva como rascunho.\n\nOs alunos ainda NÃO veem nada. Quando terminar tudo, use o Painel → "Publicar correções".');
+      alert('Correção desta questão salva como rascunho.\n\nOs alunos ainda NÃO veem nada. Quando não faltar nenhuma questão sem nota, o botão "Publicar" no Painel destrava e entrega tudo de uma vez.');
     }catch(err){
       alert('Não foi possível salvar: ' + (err && err.message ? err.message : String(err)));
     }
@@ -13386,42 +13600,41 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     render();
     return;
   }
-  if(action==='atv-bulk-zero-missing'){
-    const ctx = atvManageContext();
-    const b2 = COURSE.find(x=>x.num===editState.blockNum);
-    const a2 = b2 && b2.aulas.find(x=>x.num===editState.aulaNum);
-    const sec2 = a2 && (a2.sections||[]).find(s=>s.id===editState.sectionId);
-    if(!sec2) return;
-    const semResposta = ctx.alunos.filter(u=>{
-      const r = ctx.responsesByUid[u.id];
-      return !(r && r.answers && Object.keys(r.answers).length);
-    });
-    if(!semResposta.length){ alert('Todos os alunos desta turma responderam alguma coisa.'); return; }
-    if(!confirm(`Lançar 0 para ${semResposta.length} aluno(s) que não responderam nada?\n\nFica como rascunho — você ainda precisa publicar.`)) return;
-    try{
-      for(const u of semResposta){
-        const partial = {};
-        (sec2.items||[]).forEach(it=>{ partial[it.itemId] = {verdict:'errado', points:0, feedback:null}; });
-        await atvSaveDraft(u.id, partial);
-      }
-      alert('Zeros lançados como rascunho.');
-    }catch(err){ alert('Falhou: ' + (err && err.message ? err.message : String(err))); }
-    render();
-    return;
-  }
   if(action==='atv-bulk-publish'){
+    // Antes de qualquer coisa, grava o que ainda estiver marcado na tela —
+    // senão publicaria uma correção sem a última marcação feita.
+    if(!await atvGuardarAntesDeSair('Publicar a correção')) return;
     const ctx = atvManageContext();
     const b3 = COURSE.find(x=>x.num===editState.blockNum);
     const a3 = b3 && b3.aulas.find(x=>x.num===editState.aulaNum);
     const sec3 = a3 && (a3.sections||[]).find(s=>s.id===editState.sectionId);
     if(!sec3) return;
+    // TRAVA: nada de publicar pela metade. O botão já nasce desligado nesse
+    // caso, mas a conferência é refeita aqui — a tela pode ter envelhecido
+    // entre o desenho e o clique (uma resposta que chegou, um prazo que virou).
+    const pend3 = atvPendencias(sec3, ctx);
+    if(pend3.total > 0){
+      const nome = pend3.primeiroAluno ? atvNomeAluno(ctx.alunos.find(u=>u.id===pend3.primeiroAluno)||{}) : '';
+      alert('Ainda não dá para publicar.\n\n' +
+        `${pend3.total===1?'Falta 1 questão':`Faltam ${pend3.total} questões`} sem certo, parcial ou errado nesta atividade` + (nome?` — a próxima é de ${nome}` : '') + '.\n\n' +
+        'Publicar agora entregaria ao aluno uma nota que ainda vai mudar. Corrija todas as questões de todos os alunos desta turma e volte aqui.\n\n' +
+        'Use "Ir para a próxima pendente" para achar o que falta.');
+      render();
+      return;
+    }
     const pendentes = ctx.alunos.filter(u=>ctx.draftsByUid[u.id]);
-    if(!pendentes.length){ alert('Não há correção em rascunho para publicar nesta turma.'); return; }
-    if(!confirm(`Publicar a correção de ${pendentes.length} aluno(s)?\n\nA partir de agora eles veem a nota e o feedback.`)) return;
+    if(!pendentes.length){ alert('Não há correção nova para entregar: tudo o que estava corrigido já foi publicado.'); return; }
+    const turma3 = (allTurmas||[]).find(t=>t.id===ctx.turmaId);
+    if(!confirm(
+      'Entregar a correção aos alunos?\n\n' +
+      `Aula ${editState.aulaNum} — ${sec3.title || 'atividade'}\n` +
+      `Turma: ${turma3 ? turma3.name : '(turma atual)'}\n` +
+      `Alunos: ${pendentes.length}\n\n` +
+      'Só esta atividade, só esta turma. A partir de agora esses alunos veem nota, feedback e gabarito.')) return;
     btn.disabled = true;
     try{
       for(const u of pendentes){ await atvPublishForStudent(sec3, u.id); }
-      alert(`${pendentes.length} correção(ões) publicada(s).`);
+      alert(`Correção entregue a ${pendentes.length} aluno(s).`);
     }catch(err){ alert('Falhou: ' + (err && err.message ? err.message : String(err))); }
     render();
     return;
@@ -14887,6 +15100,18 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     render(); return;
   }
 
+  if(action==='act-puxar-enunciado'){
+    // Copia (nunca move) o texto de condução para os campos do enunciado.
+    // O professor enxuga o que é bastidor e salva — ou cancela, e nada mudou.
+    const pega = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    const poe = (id, txt) => { const el = document.getElementById(id); if(el && !el.value.trim() && txt) el.value = txt; };
+    poe('ef-act-aluno-resumo', pega('ef-act-objective'));
+    poe('ef-act-aluno-passos', pega('ef-act-method'));
+    poe('ef-act-aluno-entrega', pega('ef-act-results'));
+    atualizarPreviaRoteiro();
+    alert('Texto copiado para o enunciado.\n\nEle continua inteiro no bloco de condução, abaixo — nada foi movido nem apagado.\n\nAgora reescreva falando com a turma e apague o que for bastidor (seu papel, erros comuns, critérios). Só depois clique em Salvar.');
+    return;
+  }
   if(action==='add-row'){
     const cur = collectTableFromDom();
     cur.rows.push(new Array(cur.headers.length).fill(''));
@@ -15109,13 +15334,20 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       } else if(type==='activity'){
         newSec = { type,
           title: document.getElementById('ef-act-title').value.trim(),
-          objective: document.getElementById('ef-act-objective').value.trim(),
-          method: document.getElementById('ef-act-method').value.trim(),
           timeMin: document.getElementById('ef-act-time').value.trim(),
-          materials: document.getElementById('ef-act-materials').value.trim(),
-          results: document.getElementById('ef-act-results').value.trim(),
-          obs: document.getElementById('ef-act-obs').value.trim(),
-          visibleToStudent: document.getElementById('ef-act-visible').checked };
+          // --- o que o aluno recebe ---
+          alunoResumo:  document.getElementById('ef-act-aluno-resumo').value.trim(),
+          alunoPassos:  document.getElementById('ef-act-aluno-passos').value.trim(),
+          materials:    document.getElementById('ef-act-materials').value.trim(),
+          alunoEntrega: document.getElementById('ef-act-aluno-entrega').value.trim(),
+          visibleToStudent: document.getElementById('ef-act-visible').checked,
+          // --- só para o professor ---
+          objective:  document.getElementById('ef-act-objective').value.trim(),
+          method:     document.getElementById('ef-act-method').value.trim(),
+          results:    document.getElementById('ef-act-results').value.trim(),
+          criterios:  document.getElementById('ef-act-criterios').value.trim(),
+          solucao:    document.getElementById('ef-act-solucao').value.trim(),
+          obs:        document.getElementById('ef-act-obs').value.trim() };
       } else if(type==='table'){
         const t = collectTableFromDom();
         newSec = { type, kicker: document.getElementById('ef-kicker').value.trim()||undefined,
@@ -16066,17 +16298,22 @@ function sectionToPrintHtml(sec){
   let body = '';
   switch(sec.type){
     case 'activity': {
-      const linhas = [
-        sec.objective ? `<div class="pdf-act-row"><strong>🎯 Objetivo:</strong> ${esc(sec.objective)}</div>` : '',
-        sec.method ? `<div class="pdf-act-row"><strong>🧭 Como fazer:</strong> ${esc(sec.method)}</div>` : '',
-        sec.materials ? `<div class="pdf-act-row"><strong>📦 Materiais:</strong> ${esc(sec.materials)}</div>` : '',
-        sec.results ? `<div class="pdf-act-row"><strong>✅ O que entregar:</strong> ${esc(sec.results)}</div>` : '',
-        sec.obs ? `<div class="pdf-act-row"><strong>💡 Observações:</strong> ${esc(sec.obs)}</div>` : '',
-      ].join('');
+      // O PDF é gerado no navegador de quem clicou. Se quem clicou está vendo
+      // a tela como aluno (aluno de verdade, ou você no "Ver como aluno"), o
+      // documento sai com o enunciado e mais nada — é o material de mão do
+      // aluno. No modo editor sai completo, para você levar impresso.
+      const profPdf = isAdminNaTela();
+      const linha = ([k, rot]) => String(sec[k]||'').trim()
+        ? `<div class="pdf-act-row"><strong>${rot}:</strong> ${esc(sec[k])}</div>` : '';
+      const linhasAlunoPdf = roteiroTemAluno(sec) ? ATV_ROTEIRO_ALUNO.map(linha).join('') : '';
+      const linhasProfPdf  = profPdf ? ATV_ROTEIRO_PROF.map(linha).join('') : '';
+      const blocoProf = (profPdf && linhasProfPdf)
+        ? `<div class="pdf-act-prof"><div class="pdf-act-prof-rot">🔒 Só para o professor — não entregar ao aluno</div>${linhasProfPdf}</div>` : '';
       body = `<div class="pdf-activity">
         <div class="pdf-activity-head">🛠 ATIVIDADE PRÁTICA${sec.timeMin?` · ⏱ ${esc(sec.timeMin)}`:''}</div>
         ${sec.title?`<div class="pdf-activity-title">${esc(sec.title)}</div>`:''}
-        ${linhas}
+        ${linhasAlunoPdf}
+        ${blocoProf}
       </div>`;
       break;
     }
@@ -16215,7 +16452,10 @@ function buildAulaPrintHtml(b, a){
   const pageUrl = window.location.href.split('#')[0] + '#bloco-' + b.num + '-aula-' + a.num;
   const now = new Date();
   const nowStr = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-  const sectionsHtml = (a.sections||[]).filter(s=>s.type!=='atividade' && s.type!=='nota' && !(s.type==='activity' && s.visibleToStudent===false)).map(sectionToPrintHtml).join('');
+  // No PDF do aluno, roteiro sem enunciado liberado simplesmente não entra.
+  const sectionsHtml = (a.sections||[]).filter(s=> s.type!=='atividade' && s.type!=='nota'
+      && !(s.type==='activity' && !isAdminNaTela() && !roteiroVisivelAoAluno(s))
+    ).map(sectionToPrintHtml).join('');
   const docTitle = blocoEhAbertura(b) ? `${b.title||'Abertura'} - ${a.title}` : `Bloco ${toRoman(b.num)} - Aula ${a.num} - ${a.title}`;
 
   return `<!DOCTYPE html>
@@ -16274,6 +16514,8 @@ function buildAulaPrintHtml(b, a){
   .pdf-activity-head{font-size:10px;font-weight:800;letter-spacing:0.8px;color:#2F5D33;}
   .pdf-activity-title{font-size:14px;font-weight:800;color:#234A27;margin:6px 0 2px 0;}
   .pdf-act-row{font-size:11.5px;line-height:1.5;margin-top:6px;white-space:pre-wrap;}
+  .pdf-act-prof{margin-top:10px;padding:8px 10px;border:1px dashed #6E6FA8;border-radius:8px;background:#F2F2F8 !important;}
+  .pdf-act-prof-rot{font-size:9.5px;font-weight:800;letter-spacing:0.6px;color:#3D3E77;text-transform:uppercase;}
   .pdf-note { background:#FBF1EC !important; border-left:3px solid #F79C31; padding:10px 14px; margin-top:10px; font-size:12px; }
   .pdf-note-heading { font-weight:bold; color:#3D3E77; margin-bottom:4px; font-size:11px; font-family:'Helvetica',sans-serif; }
   .pdf-figure{margin-top:10px;}
