@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.13                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.14                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -3031,7 +3031,11 @@
     background:var(--ice-tint);border-radius:10px;padding:14px 16px;
     flex:1;min-width:140px;text-align:center;
   }
-  .chain-box:first-child{background:var(--navy);color:#fff;}
+  /* REMOVIDO (v4.12.14) — havia aqui um ".chain-box:first-child" que pintava o
+     primeiro elo de azul-escuro com texto branco, por cima de qualquer cor
+     escolhida no seletor. O editor mostrava a cor padrão, a tela mostrava
+     azul, e não havia como conciliar os dois: a regra do CSS ganhava sempre.
+     Agora todo elo usa a cor que está gravada nele — e só ela. */
   .chain-box h5{font-family:'Source Serif 4',serif;font-size:14px;margin:0 0 6px 0;}
   .chain-box p{font-size:11.5px;line-height:1.4;margin:0;}
   .chain-arrow{display:flex;align-items:center;justify-content:center;padding:0 10px;color:var(--gold);font-size:20px;font-weight:700;}
@@ -3547,7 +3551,7 @@
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
 <div class="cap-toast hidden" id="capacidade-alerta" role="status" aria-live="polite"></div>
-<div class="version-tag hidden" id="version-tag">v4.12.13</div>
+<div class="version-tag hidden" id="version-tag">v4.12.14</div>
 
 
 <script>
@@ -4320,6 +4324,20 @@ function globalAulaNumber(){
 }
 
 function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+// Cor de texto legível sobre um fundo qualquer (v4.12.14). Recebe a cor que o
+// professor escolheu no seletor e devolve preto ou branco, pelo que der para
+// ler. Devolve '' quando não é uma cor em hexadecimal (ex.: var(--surface-card)),
+// e aí o texto herda a cor do tema — que é o certo, porque nesse caso o fundo
+// também é do tema.
+function textoSobre(cor){
+  const m = /^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.exec(String(cor||'').trim());
+  if(!m) return '';
+  let h = m[1];
+  if(h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  const lum = (0.299*r + 0.587*g + 0.114*b) / 255;   // luminância perceptual
+  return lum > 0.6 ? '#2B2B2B' : '#FFFFFF';
+}
 // ===== Bloco de ABERTURA (aulas fora da numeração dos blocos) =====
 // Um bloco com isIntro:true e num 0 aparece antes do Bloco I e é desenhado sem
 // a moldura "Bloco X" — serve para a aula de apresentação da disciplina.
@@ -5062,15 +5080,22 @@ function sectionHtml(sec, idx, dockedItems, contentModel, allSections){
       `).join('')}</div>${sec.caption?`<div class="tl-caption">${esc(sec.caption)}</div>`:''}`;
       break;
     case 'axes':
-      body = `<div class="axes-grid${(sec.align && sec.align!=='justify')?` axes-align-${sec.align}`:''}">${(sec.axes||[]).map(a=>`
-        <div class="axis-card" style="background:${a.color||'var(--surface-card)'};"><h4>${esc(a.title)}</h4><p>${esc(a.desc)}</p></div>
-      `).join('')}</div>${sec.example?`<div class="axes-example">${esc(sec.example)}</div>`:''}`;
+      body = `<div class="axes-grid${(sec.align && sec.align!=='justify')?` axes-align-${sec.align}`:''}">${(sec.axes||[]).map(a=>{
+        const cor = String(a.color||'').trim();
+        const fg = textoSobre(cor);
+        return `<div class="axis-card" style="background:${cor?esc(cor):'var(--surface-card)'}${fg?`;color:${fg}`:''};"><h4>${esc(a.title)}</h4><p>${esc(a.desc)}</p></div>`;
+      }).join('')}</div>${sec.example?`<div class="axes-example">${esc(sec.example)}</div>`:''}`;
       break;
     case 'hierarchy':
-      body = `<div class="chain">${(sec.chain||[]).map((c,i)=>`
-        ${i>0?'<div class="chain-arrow">→</div>':''}
-        <div class="chain-box"${c.color?` style="background:${c.color};color:${i===0?'#2B2B2B':''};"`:''}><h5>${esc(c.label)}</h5><p>${esc(c.desc||'')}</p></div>
-      `).join('')}</div>${sec.note?`<div class="chain-note">${esc(sec.note)}</div>`:''}`;
+      body = `<div class="chain">${(sec.chain||[]).map((c,i)=>{
+        // Sem exceção para o primeiro: cada elo mostra a cor dele, e o texto
+        // acompanha — escuro sobre claro, claro sobre escuro.
+        const cor = String(c.color||'').trim();
+        const fg = textoSobre(cor);
+        const estilo = cor ? ` style="background:${esc(cor)}${fg?`;color:${fg}`:''};"` : '';
+        return `${i>0?'<div class="chain-arrow">→</div>':''}
+        <div class="chain-box"${estilo}><h5>${esc(c.label)}</h5><p>${esc(c.desc||'')}</p></div>`;
+      }).join('')}</div>${sec.note?`<div class="chain-note">${esc(sec.note)}</div>`:''}`;
       break;
     case 'chips':
       body = `<div class="chips-grid">${(sec.chips||[]).map(c=>`
@@ -16380,7 +16405,11 @@ function sectionToPrintHtml(sec){
       body = `<ol class="pdf-bullets">${(sec.steps||[]).map(s=>`<li><strong>${esc(s.label)}</strong>${s.desc?' — '+esc(s.desc):''}</li>`).join('')}</ol>`;
       break;
     case 'axes':
-      body = `<div class="pdf-grid${(sec.align && sec.align!=='justify')?` pdf-align-${sec.align}`:''}">${(sec.axes||[]).map(a=>`<div class="pdf-grid-card" style="background:${a.color||'#F7F7F9'};"><h4>${esc(a.title)}</h4><p>${esc(a.desc||'')}</p></div>`).join('')}</div>`;
+      body = `<div class="pdf-grid${(sec.align && sec.align!=='justify')?` pdf-align-${sec.align}`:''}">${(sec.axes||[]).map(a=>{
+        const cor = String(a.color||'').trim() || '#F7F7F9';
+        const fg = textoSobre(cor);
+        return `<div class="pdf-grid-card" style="background:${esc(cor)}${fg?`;color:${fg}`:''};"><h4>${esc(a.title)}</h4><p>${esc(a.desc||'')}</p></div>`;
+      }).join('')}</div>`;
       break;
     case 'hierarchy':
       body = `<p>${(sec.chain||[]).map(c=>esc(c.label)).join(' → ')}</p>` +
