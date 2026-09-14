@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.14                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.15                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -3551,7 +3551,7 @@
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
 <div class="cap-toast hidden" id="capacidade-alerta" role="status" aria-live="polite"></div>
-<div class="version-tag hidden" id="version-tag">v4.12.14</div>
+<div class="version-tag hidden" id="version-tag">v4.12.15</div>
 
 
 <script>
@@ -9877,8 +9877,12 @@ ESTRUTURA DO ARQUIVO
 - Array de BLOCOS: { "num", "title", "hidden", "aulas": [...] }
 - Cada AULA: { "num", "title", "subtitle", "sources", "intro", "roteiro",
   "hidden", "updatedAt", "contentModel", "sections": [...] }
-- Tipos válidos de seção: prose, table, figure, video, activity, grid,
-  compare, timeline, axes, hierarchy, chips, points.
+- Tipos válidos de seção: prose, table, figure, video, activity, atividade,
+  grid, compare, timeline, axes, hierarchy, chips, points, spacer, nota.
+  "spacer" é só um respiro visual entre seções: { "type":"spacer",
+  "size":"sm" } (sm, md, lg ou xl) — use com moderação, e PRESERVE os que já
+  existirem. "nota" é um lembrete particular do professor que o aluno nunca
+  vê: PRESERVE os que já existirem, mas não invente novos.
 
 REGRAS INEGOCIÁVEIS
 1. "hidden": true significa que o bloco/aula está OCULTO dos alunos (em
@@ -9924,6 +9928,7 @@ const AI_FORMAT_PROMPT = `Você vai gerar o conteúdo de UMA aula universitária
     {"type":"table","kicker":"","title":"Título da tabela","headers":["Coluna 1","Coluna 2"],"rows":[["a","b"],["c","d"]]},
     {"type":"compare","title":"Título","leftTitle":"Lado A","leftItems":["item"],"rightTitle":"Lado B","rightItems":["item"]},
     {"type":"timeline","title":"Título","steps":[{"label":"Fase 1","desc":"descrição"}]},
+    {"type":"spacer","size":"sm"},
     {"type":"activity","title":"Nome da atividade prática","timeMin":"40 min",
      "_comentario":"DOIS PÚBLICOS. Os campos aluno* + materials são o ENUNCIADO, escritos falando COM A TURMA — é só isso que o aluno recebe. Os demais são de condução e correção, e nunca chegam ao aluno.",
      "alunoResumo":"O que vocês vão fazer (falando com a turma)","alunoPassos":"Passo a passo que o aluno segue","materials":"O que o aluno usa/traz","alunoEntrega":"O que entregar, em que formato e quando",
@@ -9955,9 +9960,21 @@ function parseAulaJsonOrAlert(raw){
     }
   }
   if(!Array.isArray(dados.sections) || !dados.sections.length){ alert('O JSON veio sem "sections" (as seções da aula).'); return null; }
-  const tiposValidos = ['prose','table','figure','video','activity','atividade','grid','compare','timeline','axes','hierarchy','chips','points'];
+  // CORRIGIDO (v4.12.15) — esta lista era escrita à mão e ficou para trás: não
+  // conhecia "spacer" nem "nota", que o próprio sistema cria e EXPORTA. O
+  // resultado era um beco sem saída — você exportava a aula como JSON, pedia à
+  // IA para melhorá-la, e o importador recusava o que ele mesmo tinha gerado.
+  // Agora a lista sai de TYPE_LABELS, que é onde os tipos de seção realmente
+  // existem. Tipo novo passa a ser importável no mesmo instante em que nasce,
+  // sem depender de alguém lembrar de atualizar dois lugares.
+  const tiposValidos = Object.keys(TYPE_LABELS);
   const desconhecidos = dados.sections.filter(s=>!s || !tiposValidos.includes(s.type));
-  if(desconhecidos.length){ alert('O JSON tem ' + desconhecidos.length + ' seção(ões) de tipo desconhecido. Tipos aceitos: ' + tiposValidos.join(', ') + '.'); return null; }
+  if(desconhecidos.length){
+    const nomes = [...new Set(desconhecidos.map(s=> (s && s.type) ? String(s.type) : '(seção sem tipo)'))];
+    alert('O JSON tem ' + desconhecidos.length + ' seção(ões) de tipo desconhecido: ' + nomes.join(', ') +
+          '.\n\nTipos aceitos: ' + tiposValidos.join(', ') + '.\n\nNada foi alterado na aula.');
+    return null;
+  }
   // Checagens de formato por tipo de seção — pega os erros mais comuns da IA
   // (nome de campo trocado, tipo errado) ANTES de aplicar, com mensagem clara
   // dizendo em qual seção está o problema.
