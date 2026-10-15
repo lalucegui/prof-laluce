@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.15                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.16                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -1172,6 +1172,7 @@
   }
   body.admin-mode .nav-aula-edit-btn{display:flex !important;}
   body.admin-mode .nav-aula-row:hover .nav-aula-edit-btn{visibility:visible; opacity:1;}
+  .nav-aula-drag-fixa{cursor:default !important;opacity:.55;font-size:11px;}
   .nav-aula-drag-handle{
     display:none !important;
     flex:0 0 auto;
@@ -3551,7 +3552,7 @@
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
 <div class="cap-toast hidden" id="capacidade-alerta" role="status" aria-live="polite"></div>
-<div class="version-tag hidden" id="version-tag">v4.12.15</div>
+<div class="version-tag hidden" id="version-tag">v4.12.16</div>
 
 
 <script>
@@ -4350,6 +4351,60 @@ function aulaEhAbertura(a){ return !!(a && a.num === 0); }
 function rotuloAula(a){ return aulaEhAbertura(a) ? 'Apresentação da disciplina' : `Aula ${a.num}`; }
 function numeroAula(a){ return aulaEhAbertura(a) ? '★' : a.num; }
 
+// ===== A ÚNICA REGRA DE NUMERAÇÃO (v4.12.16) =====
+// BUG CORRIGIDO — existiam TRÊS cópias da renumeração (arrastar no menu,
+// duplicar aula e o botão "Renumerar"), e as três decidiam quem é a
+// apresentação pelo BLOCO onde ela mora (o bloco de abertura). A tela, por
+// outro lado, decide pelo NÚMERO (aula 0). Quando os dois sinais discordavam
+// — a apresentação morando num bloco comum, como acontecia nos cursos
+// montados antes de existir o bloco de abertura —, qualquer renumeração dava
+// a ela o número 1 e empurrava o curso inteiro uma casa para frente. No
+// arrastar, isso ainda era salvo na hora, sem perguntar nada.
+// Agora a regra é uma só e respeita os dois sinais: a apresentação é a aula
+// do bloco de abertura ou, na falta dele, a aula que já é a 0. Ela fica com 0;
+// todas as outras recebem 1, 2, 3… na ordem em que aparecem.
+function lerNumeroDeAula(raw){
+  // 0 (ou ★) é a apresentação — o único número fora da sequência.
+  const t = String(raw == null ? '' : raw).trim();
+  if(t === '0' || t === '★') return 0;
+  return parsePositiveIntStrict(t);
+}
+function apresentacaoDoCurso(){
+  const blocos = [...COURSE].sort((x,y)=>x.num-y.num);
+  const intro = blocos.find(b=>blocoEhAbertura(b));
+  if(intro && (intro.aulas||[]).length) return intro.aulas[0];
+  for(const b of blocos){
+    const a0 = (b.aulas||[]).find(a=>a.num===0);
+    if(a0) return a0;
+  }
+  return null;
+}
+function garantirBlocoAbertura(){
+  let intro = COURSE.find(b=>blocoEhAbertura(b));
+  if(!intro){
+    intro = {num:0, title:'Abertura', isIntro:true, hidden:false, aulaRange:'', sources:'', aulas:[]};
+    COURSE.push(intro);
+    COURSE.sort((x,y)=>x.num-y.num);
+  }
+  return intro;
+}
+// Calcula, SEM aplicar, o número que cada aula vai receber.
+function planoDeNumeracao(){
+  const apres = apresentacaoDoCurso();
+  const plano = [];
+  let n = 1;
+  [...COURSE].sort((x,y)=>x.num-y.num).forEach(b=>{
+    (b.aulas||[]).forEach(a=>{
+      plano.push({aula:a, bloco:b, de:a.num, para:(a===apres) ? 0 : n++, titulo:a.title});
+    });
+  });
+  return plano;
+}
+function aplicarNumeracao(plano){
+  (plano || planoDeNumeracao()).forEach(p=>{ p.aula.num = p.para; });
+  COURSE.forEach(b=>(b.aulas||[]).sort((x,y)=>x.num-y.num));
+}
+
 // Usado tanto pelo botão manual "Renumerar aulas em sequência" quanto pela
 // oferta automática depois de salvar o Organizar curso — mesma lógica,
 // mesmo detector de colisão, para as duas portas de entrada nunca divergirem.
@@ -4358,37 +4413,31 @@ function numeroAula(a){ return aulaEhAbertura(a) ? '★' : a.num; }
 // misturar dado de uma aula com o de outra: resposta de atividade, diário e
 // anotação do aluno se agarram ao id, não ao número. Esta função hoje só
 // mostra a prévia do que muda — não existe mais o que "arriscar".
-async function conferirEAplicarRenumeracao(origemPosSalvar){
-  const mapaCompleto = [];
-  let proximo = 1;
-  COURSE.forEach(b=>{
-    (b.aulas||[]).forEach(a=>{
-      const alvo = blocoEhAbertura(b) ? 0 : proximo++;
-      mapaCompleto.push({de:a.num, para:alvo, titulo:a.title, abertura:blocoEhAbertura(b)});
-    });
-  });
-  const plano = mapaCompleto.filter(p=>p.de !== p.para);
+async function conferirEAplicarRenumeracao(origemPosSalvar, msgSemMudanca){
+  const planoCompleto = planoDeNumeracao();
+  const plano = planoCompleto.filter(p=>p.de !== p.para);
   if(!plano.length){
-    alert(origemPosSalvar ? 'Organização salva com sucesso.' : 'A numeração já está em sequência — nada a mudar.');
+    // msgSemMudanca === '' -> quem chamou já avisou do salvamento; não repete.
+    const msg = origemPosSalvar ? (msgSemMudanca === undefined ? 'Organização salva com sucesso.' : msgSemMudanca)
+                                : 'A numeração já está em sequência — nada a mudar.';
+    if(msg) alert(msg);
     return;
   }
 
   const limite = origemPosSalvar ? 10 : 12;
   const amostra = plano.slice(0, limite)
-    .map(p=>`   ${p.abertura ? 'Apresentação' : 'Aula ' + p.de} → ${p.para === 0 ? 'fora da numeração' : 'Aula ' + p.para}  (${p.titulo})`)
+    .map(p=>`   ${p.de === 0 ? 'Apresentação' : 'Aula ' + p.de} → ${p.para === 0 ? 'Apresentação (fora da numeração)' : 'Aula ' + p.para}  (${p.titulo})`)
     .join('\n');
   const resto = plano.length > limite ? `\n   …e mais ${plano.length - limite}.` : '';
   const aviso = `\n\nIsso muda só a POSIÇÃO de exibição — respostas de atividade, diário e anotações de aluno continuam corretamente vinculados à mesma aula depois da mudança.`;
 
   const titulo = origemPosSalvar
-    ? `Organização salva.\n\nA numeração ficou fora de sequência em ${plano.length} aula(s) — é o que costuma acontecer ao mover ou excluir aulas.\n\nQuer renumerar em cascata agora?`
+    ? `Alterações salvas.\n\nA numeração ficou fora de sequência em ${plano.length} aula(s) — é o que costuma acontecer ao mover, excluir ou trocar a aula de apresentação.\n\nQuer renumerar em cascata agora?`
     : `Renumerar ${plano.length} aula(s)?`;
 
   if(!confirm(`${titulo}\n\n${amostra}${resto}${aviso}\n\nConfirma?`)) return;
 
-  let n2 = 1;
-  COURSE.forEach(b=>{ (b.aulas||[]).forEach(a=>{ a.num = blocoEhAbertura(b) ? 0 : n2++; }); });
-  COURSE.forEach(b=>b.aulas.sort((x,y)=>x.num-y.num));
+  aplicarNumeracao(planoCompleto);
   const primeira = flatAulaList(true)[0];
   if(primeira){ state.block = primeira.blockNum; state.aula = primeira.aulaNum; }
   editState = null;
@@ -4406,7 +4455,9 @@ function blocoRotuloTexto(b){
 }
 function blocoEyebrow(b, a){
   if(!b) return '';
-  return blocoEhAbertura(b) ? esc(b.title||'Abertura') : `Bloco ${toRoman(b.num)} · Aula ${a.num}`;
+  if(blocoEhAbertura(b)) return esc(b.title||'Abertura');
+  // Curso antigo, com a apresentação morando dentro do Bloco I: não chamar de "Aula 0".
+  return aulaEhAbertura(a) ? `Bloco ${toRoman(b.num)} · Apresentação da disciplina` : `Bloco ${toRoman(b.num)} · Aula ${a.num}`;
 }
 function existeBlocoAbertura(){ return COURSE.some(b=>blocoEhAbertura(b)); }
 function toRoman(num){
@@ -4607,7 +4658,7 @@ function renderSideNav(){
       <div class="nav-aulas">
         ${b.aulas.filter(a=>isAdmin || !a.hidden).map(a=>`
           <div class="nav-aula-row ${a.num===state.aula?'active':''} ${a.hidden?'is-hidden':''} ${(isAdmin&&sectionGridMode)?'nav-aula-grid-on':''}" data-nav-aula-block="${b.num}" data-nav-aula-num="${a.num}">
-            <button class="edit-chip nav-aula-drag-handle" draggable="true" data-drag-nav-aula-num="${a.num}" title="Arrastar para reordenar (renumera automaticamente)" style="cursor:grab;">⣿</button>
+            ${aulaEhAbertura(a) ? '<span class="edit-chip nav-aula-drag-handle nav-aula-drag-fixa" title="A apresentação da disciplina fica sempre no início — para trocá-la, use Organizar curso">★</span>' : `<button class="edit-chip nav-aula-drag-handle" draggable="true" data-drag-nav-aula-num="${a.num}" title="Arrastar para reordenar (renumera automaticamente)" style="cursor:grab;">⣿</button>`}
             <input type="checkbox" class="nav-aula-visible-cb" data-vis-block="${b.num}" data-vis-aula="${a.num}" ${a.hidden?'':'checked'} title="Visível para os alunos">
             <button class="nav-aula" data-block="${b.num}" data-aula="${a.num}">
               <span class="num">${numeroAula(a)}</span><span class="label">${esc(a.title)}${(a.sections&&a.sections.some(s=>s.type==='atividade'))?' <span class="nav-aula-practice-badge" title="Esta aula tem atividade respondível — gera nota e tem prazo">📝</span>':''}${(!isAdmin && STUDENT_PROGRESS && STUDENT_PROGRESS.seen && STUDENT_PROGRESS.seen[a.id])?' <span class="nav-aula-seen" title="Você já viu esta aula">✓</span>':''}${(isAdmin && aulaJaMinistrada(a.id))?` <span class="nav-aula-dada" title="Aula já ministrada${nomesTurmasDaAula(a.id)?' — '+escAttr(nomesTurmasDaAula(a.id)):''}">✓</span>`:''}${a.hidden?' <em>(oculta)</em>':''}</span>
@@ -5293,28 +5344,152 @@ async function autoZerarNaoEntregues(){
 //
 // Desfazer significa despublicar, não apagar: o documento continua lá, sem
 // nota e sem marca, e o aluno volta a poder escrever.
+// ===== REABRIR UMA ATIVIDADE QUE JÁ TINHA ENCERRADO (v4.12.16) =====
+// O que deve acontecer quando você adia um prazo que já tinha fechado:
+//
+//  • Quem NÃO respondeu nada ganha a segunda chance de verdade — como se
+//    nunca tivesse aberto a atividade. Sai o zero automático, sai o
+//    "entregue" (há aluno que clica em Entregar com tudo em branco) e sai o
+//    rascunho de zero que você tenha deixado para ele. Era isso que ficava
+//    para trás: a revogação antiga só tirava a publicação, e o aluno
+//    continuava trancado pelo "entregue", ou via "Corrigida" numa atividade
+//    que nunca respondeu.
+//  • Quem JÁ respondeu alguma coisa não responde de novo: o que tinha no
+//    encerramento vira a entrega dele, com a hora da última resposta. Nada
+//    do que ele escreveu é tocado — só a atividade fecha para edição.
+//    (Se a matéria aceita entrega fora do prazo, ninguém é fechado: a janela
+//    dele nunca tinha sido trancada.)
+//
+// Regra de segurança deste bloco inteiro: NENHUMA linha mexe em "answers".
+function planoDeReabertura(alunos, respostasPorUid, draftsPorUid, congelarEntregues){
+  const resetar = [], congelar = [], intocados = [];
+  (alunos||[]).forEach(u=>{
+    const r = respostasPorUid[u.id] || null;
+    const d = draftsPorUid[u.id] || null;
+    if(!r){
+      // Nunca abriu a atividade. Só pode haver um rascunho de zero solto.
+      if(d) resetar.push({u, r:null, d});
+      return;
+    }
+    if(!atvTemRespostaValida(r)){
+      if(r.grading || r.submittedAt || d) resetar.push({u, r, d});
+      return;
+    }
+    const jaFechado = !!r.submittedAt || !!(r.grading && r.grading.published);
+    if(!jaFechado && congelarEntregues) congelar.push({u, r});
+    else intocados.push({u, r});
+  });
+  return {resetar, congelar, intocados};
+}
+async function executarReabertura(plano, fechouEm){
+  const col  = db.collection(`subjects/${activeSubjectId}/activity_responses`);
+  const colD = db.collection(`subjects/${activeSubjectId}/activity_grading_drafts`);
+  const apagar = firebase.firestore.FieldValue.delete();
+  let feitos = 0; const falhas = [];
+  for(const x of plano.resetar){
+    try{
+      // update() com dois campos e nada mais: "answers" nem aparece aqui.
+      if(x.r && x.r.id) await col.doc(x.r.id).update({grading: apagar, submittedAt: null});
+      if(x.d && x.d.id) await colD.doc(x.d.id).delete();
+      feitos++;
+    }catch(e){ console.error('Reabertura: falhou ao liberar', x.u && x.u.id, e); falhas.push(nomeDeUsuario(x.u)); }
+  }
+  for(const x of plano.congelar){
+    try{
+      const momento = x.r.answersAt || x.r.updatedAt || fechouEm || Date.now();
+      await col.doc(x.r.id).update({submittedAt: momento});
+      feitos++;
+    }catch(e){ console.error('Reabertura: falhou ao fechar a entrega de', x.u && x.u.id, e); falhas.push(nomeDeUsuario(x.u)); }
+  }
+  return {feitos, falhas};
+}
+
+// Rascunho deixado pelo antigo botão "Zerar quem não respondeu": TODAS as
+// questões da atividade, todas "errado", zero ponto, sem feedback nem
+// comentário. É uma assinatura bem específica — e é ela que permite apagar
+// esse rascunho sem risco de levar junto uma correção de verdade.
+function ehRascunhoDeZeroEmMassa(d, sec){
+  if(!d || !d.perItem || !sec) return false;
+  if(d.commentParas && d.commentParas.length) return false;
+  const itens = (sec.items||[]).map(it=>it.itemId);
+  if(!itens.length || Object.keys(d.perItem).length !== itens.length) return false;
+  return itens.every(id=>{
+    const e = d.perItem[id];
+    return e && e.verdict === 'errado' && Number(e.points) === 0 && !e.feedback;
+  });
+}
+// ALTERADO (v4.12.16) — roda toda vez que você abre a matéria, como rede de
+// segurança. A versão anterior só virava a chave "publicado" para desligado e
+// deixava todo o resto no lugar: as questões continuavam marcadas "errado",
+// valendo zero, com o texto de "não entregue". Duas consequências reais:
+// o aluno que entregou em branco seguia trancado pelo "entregue", e quem
+// respondeu depois da reabertura aparecia na SUA tela de correção com tudo
+// já marcado como errado — pronto para ser publicado como zero. Agora o que
+// é resto do sistema sai inteiro. Nada que o aluno escreveu é tocado.
 async function revogarZerosDeAtividadeReaberta(){
   if(!isAdmin || !activeSubjectId) return;
   try{
-    const schedules = await fetchAllActivitySchedules();
-    const now = Date.now();
-    // Só interessam os prazos que NÃO estão encerrados agora.
-    const abertos = schedules.filter(s=> !s.closesAt || s.closesAt > now);
-    if(!abertos.length) return;
-    for(const agenda of abertos){
-      let responses;
-      try{ responses = await fetchActivityResponsesForSection(agenda.sectionId); }catch(e){ continue; }
-      const zerados = responses.filter(r=> r.turmaId===agenda.turmaId
-                                        && r.grading && r.grading.published && r.grading.naoEntregue);
-      for(const r of zerados){
-        if(!r.id) continue;
-        try{
-          await db.collection(`subjects/${activeSubjectId}/activity_responses`).doc(r.id)
-            .set({grading: {published:false, naoEntregue:false, score:null, autoPublished:false}}, {merge:true});
-        }catch(e){ console.error('Não consegui revogar o zero de', r.studentUid, e); }
+    const [schedules, respostas] = await Promise.all([fetchAllActivitySchedules(), fetchAllActivityResponses()]);
+    if(cachedUsersList===null){ try{ await fetchAllUsers(); }catch(e){} }
+    const turmaAtual = {};
+    (cachedUsersList||[]).forEach(u=>{ turmaAtual[u.id] = u.turmaId; });
+    const agora = Date.now();
+    const prazoAberto = {};
+    schedules.forEach(sc=>{ prazoAberto[`${sc.sectionId}_${sc.turmaId}`] = (!sc.closesAt || sc.closesAt > agora); });
+    const col = db.collection(`subjects/${activeSubjectId}/activity_responses`);
+    const apagar = firebase.firestore.FieldValue.delete();
+    let mexeu = 0;
+    const respostaPorChave = {};
+    for(const r of respostas){
+      if(r.sectionId && r.studentUid) respostaPorChave[`${r.sectionId}_${r.studentUid}`] = r;
+      if(!r.id) continue;
+      const g = r.grading;
+      // A turma de AGORA do aluno vale tanto quanto a gravada na resposta —
+      // a revogação antiga só olhava a gravada, e quem tinha trocado de turma
+      // (ou tinha o campo vazio) ficava trancado para sempre.
+      const turmas = [turmaAtual[r.studentUid], r.turmaId].filter(Boolean);
+      const aberta = turmas.some(t=> prazoAberto[`${r.sectionId}_${t}`] === true);
+      const vazio = !atvTemRespostaValida(r);
+      if(!g){
+        // (1b) "Entregou" com a folha em branco, num prazo aberto. Pela régua
+        // da matéria isso não é entrega (só conta quem respondeu algo), mas o
+        // clique trancava a atividade e o aluno via "📨 Entregue" sem ter
+        // escrito nada — e, se o prazo foi adiado antes de o zero automático
+        // rodar, não havia nada para desfazer e ele ficava preso.
+        if(aberta && vazio && r.submittedAt){
+          try{ await col.doc(r.id).update({submittedAt: null}); mexeu++; }
+          catch(e){ console.error('Não liberei a entrega em branco de', r.id, e); }
+        }
+        continue;
       }
-      if(zerados.length){ ATV_BOLETIM_DATA = null; }
+      const doSistema = g.gradedBy === 'sistema';
+      try{
+        if(aberta && vazio && (g.naoEntregue === true || doSistema)){
+          // (1) zero automático de quem não respondeu nada, num prazo que voltou a abrir
+          await col.doc(r.id).update({grading: apagar, submittedAt: null});
+          mexeu++;
+        } else if(doSistema && g.published !== true){
+          // (2) resto de correção do sistema que perdeu a publicação
+          await col.doc(r.id).update({grading: apagar});
+          mexeu++;
+        }
+      }catch(e){ console.error('Faxina de reabertura falhou para', r.id, e); }
     }
+    // (3) rascunho de "zero em massa" de aluno que respondeu DEPOIS dele
+    try{
+      const secIndex = {};
+      COURSE.forEach(b=>(b.aulas||[]).forEach(a=>(a.sections||[]).forEach(sec=>{ if(sec.type==='atividade') secIndex[sec.id] = sec; })));
+      const snapD = await db.collection(`subjects/${activeSubjectId}/activity_grading_drafts`).get();
+      for(const doc of snapD.docs){
+        const d = doc.data();
+        const r = respostaPorChave[`${d.sectionId}_${d.studentUid}`];
+        if(!r || !atvTemRespostaValida(r)) continue;
+        if(!r.answersAt || !d.updatedAt || !(d.updatedAt < r.answersAt)) continue;
+        if(!ehRascunhoDeZeroEmMassa(d, secIndex[d.sectionId])) continue;
+        try{ await doc.ref.delete(); mexeu++; }catch(e){ console.error('Não apaguei o rascunho', doc.id, e); }
+      }
+    }catch(e){ console.error('Faxina de rascunhos falhou:', e); }
+    if(mexeu){ ATV_BOLETIM_DATA = null; ATV_MANAGE_RESPONSES = null; ATV_MANAGE_DRAFTS = null; }
   }catch(e){ console.error('revogarZerosDeAtividadeReaberta falhou:', e); }
 }
 
@@ -5673,7 +5848,9 @@ function renderAtividadeStudentForm(sec, response, schedule){
   // de resposta e com o motivo escrito em cima, sem rodeios.
   const janela = atvJanelaPrazo(schedule);
   const fmtPrazo = ts => new Date(ts).toLocaleString('pt-BR');
-  const statusLabel = publicada ? '✅ Corrigida — veja a nota e os comentários abaixo'
+  // (v4.12.16) Zero automático por não entrega não é "correção": o aluno que
+  // nunca respondeu lia "✅ Corrigida" e concluía que constava como respondido.
+  const statusLabel = publicada ? ((response.grading && response.grading.naoEntregue) ? '🚫 Não entregue no prazo' : '✅ Corrigida — veja a nota e os comentários abaixo')
     : (janela==='depois' ? '🔒 Fora do prazo para respostas'
     : (janela==='antes' ? '🔒 Ainda não abriu para respostas'
     : (status==='entregue' ? '📨 Entregue — aguardando correção do professor'
@@ -9831,14 +10008,14 @@ function sectionEditorForm(sec, idx){
 
 function aulaHeaderEditorForm(a){
   const currentBlockNum = findBlockForAula(a.num);
-  const blockOpts = COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===currentBlockNum?'selected':''}>${blocoRotulo(bb)}</option>`).join('');
+  const blockOpts = COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===currentBlockNum?'selected':''}>${blocoEhAbertura(bb)?'★ Antes do Bloco I (apresentação)':blocoRotulo(bb)}</option>`).join('');
   return `<div class="editor-form" data-kind="aulaHeader">
     <label>Bloco a que esta aula pertence</label>
     <select id="ef-a-block">${blockOpts}</select>
     <div class="hint">Trocar o bloco não reordena números automaticamente — se a numeração ficar "fora de sequência", isso é esperado; ajuste manualmente se quiser.</div>
     <label>Título da aula</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-a-title" value="${escAttr(a.title||'')}">
     <label>Subtítulo</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-a-subtitle" value="${escAttr(a.subtitle||'')}">
-    <label>Número da aula (define a ordem e a numeração exibida)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-a-num" value="${a.num}">
+    <label>Número da aula (define a ordem e a numeração exibida) <span style="text-transform:none;font-weight:400;color:var(--muted);">— 0 = apresentação da disciplina, fora da numeração</span></label><input type="text" spellcheck="true" lang="pt-BR" id="ef-a-num" value="${a.num}">
     <label>Fontes</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-a-sources" value="${escAttr(a.sources||'')}">
     <label>Parágrafo de introdução (opcional)</label>
     ${richToolbarHtml('ef-a-intro')}
@@ -10012,12 +10189,47 @@ function parseAulaJsonOrAlert(raw){
 }
 
 
+// (v4.12.16) Bloco + número de uma aula NOVA — usado por "+ Adicionar aula" e
+// por "Importar aula (JSON)". Antes os dois só aceitavam número a partir de 1,
+// então o próprio botão "★ Aula de abertura — clique para criar" sugeria 0 e
+// em seguida recusava o 0 que tinha sugerido.
+function validarBlocoENumeroDaNovaAula(){
+  const blockNum = +document.getElementById('ef-new-a-block').value;
+  let targetBlock = COURSE.find(x=>x.num===blockNum);
+  if(!targetBlock){ alert('Escolha um bloco para a aula.'); return null; }
+  const bruto = document.getElementById('ef-new-a-num').value;
+  let newNum = lerNumeroDeAula(bruto);
+  // O espaço antes do Bloco I é sempre da aula 0 — o número digitado não importa.
+  if(blocoEhAbertura(targetBlock)) newNum = 0;
+  if(newNum === null){
+    alert('Número da aula inválido — use um número inteiro a partir de 1, ou 0 para a aula de apresentação (sem letras, pontos ou romanos).');
+    return null;
+  }
+  if(newNum === 0){
+    const jaExiste = apresentacaoDoCurso();
+    if(jaExiste){
+      alert(`Este curso já tem uma aula de apresentação: "${jaExiste.title}".\n\nSó pode existir uma. Para trocar, use Organizar curso (digite 0 na que deve ser a apresentação e um número na outra).`);
+      return null;
+    }
+    if(!blocoEhAbertura(targetBlock)){
+      if(!confirm('Número 0 = aula de APRESENTAÇÃO da disciplina: ela fica antes do Bloco I e fora da numeração (o curso continua começando na aula 1).\n\nCriar esta aula como a apresentação?')) return null;
+      targetBlock = garantirBlocoAbertura();
+    }
+    return {targetBlock, newNum: 0};
+  }
+  if(COURSE.some(bb=>bb.aulas.some(aa=>aa.num===newNum))){
+    alert(`Já existe uma aula com o número ${newNum}. Escolha outro número.`);
+    return null;
+  }
+  return {targetBlock, newNum};
+}
+
 function newAulaForm(blockNum, suggestedNum){
-  const blockOpts = COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===blockNum?'selected':''}>${blocoRotulo(bb)}</option>`).join('');
+  const blockOpts = COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===blockNum?'selected':''}>${blocoEhAbertura(bb)?'★ Antes do Bloco I (apresentação)':blocoRotulo(bb)}</option>`).join('');
   return `<div class="editor-form" data-kind="newAula">
     <label>Bloco</label>
     <select id="ef-new-a-block">${blockOpts}</select>
-    <label>Número da aula</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-a-num" value="${suggestedNum}">
+    <label>Número da aula <span style="text-transform:none;font-weight:400;color:var(--muted);">(0 = apresentação da disciplina, fora da numeração)</span></label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-a-num" value="${suggestedNum}">
     <label>Título da aula</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-a-title" placeholder="Título da nova aula" value="">
     <label>Subtítulo (opcional)</label><input type="text" spellcheck="true" lang="pt-BR" id="ef-new-a-subtitle" value="">
     <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
@@ -10765,7 +10977,7 @@ function turmasEstatisticasHtml(){
 function orgScreenForm(){
   // A opcao "antes do Bloco I" so aparece quando ainda NAO existe abertura —
   // se ja existe, ela ja consta na lista normal de blocos logo acima.
-  const blockOptsFor = (curBn)=>COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===curBn?'selected':''}>${blocoRotulo(bb)}</option>`).join('')
+  const blockOptsFor = (curBn)=>COURSE.map(bb=>`<option value="${bb.num}" ${bb.num===curBn?'selected':''}>${blocoEhAbertura(bb)?'★ Antes do Bloco I (apresentação)':blocoRotulo(bb)}</option>`).join('')
     + (existeBlocoAbertura() ? '' : `<option value="__abertura__">★ Antes do Bloco I (aula de abertura)</option>`);
   const blockRows = COURSE.map(b=>`
     <div class="org-block-card" data-org-block="${b.num}">
@@ -10777,8 +10989,8 @@ function orgScreenForm(){
       </div>
       <div class="org-aula-rows">
         ${b.aulas.map(a=>`
-          <div class="org-aula-row" data-org-aula="${a.num}" data-org-aula-block="${b.num}">
-            <input type="text" class="org-aula-num" value="${blocoEhAbertura(b)?'★':a.num}" ${blocoEhAbertura(b)?'readonly title="A apresentação da disciplina fica FORA da numeração — o curso começa na aula 1"':'title="Número da aula"'}>
+          <div class="org-aula-row" data-org-aula="${a.num}" data-org-aula-block="${b.num}" data-org-aula-id="${escAttr(a.id||'')}">
+            <input type="text" class="org-aula-num" value="${aulaEhAbertura(a)?'0':a.num}" title="${aulaEhAbertura(a)?'0 = apresentação da disciplina, fora da numeração (o curso começa na aula 1)':'Número da aula — digite 0 para torná-la a apresentação da disciplina'}">
             <select class="org-aula-block">${blockOptsFor(b.num)}</select>
             <input type="text" class="org-aula-title" value="${escAttr(a.title)}" title="Título da aula">
             <label class="org-hidden-label"><input type="checkbox" class="org-aula-hidden" ${a.hidden?'':'checked'}> Visível</label>
@@ -10822,7 +11034,7 @@ function orgScreenForm(){
     </div>
     <label>Descrição do cabeçalho (linha pequena abaixo do título)</label>
     <input type="text" spellcheck="true" lang="pt-BR" id="org-subject-description" value="${escAttr(currentSubject.description||'')}" placeholder="Ex.: Administração de Empresas · 8º Semestre · Faculdade da Fundação Educacional de Araçatuba">
-    <div class="hint">Para colocar uma aula ANTES do Bloco I (aula de apresentação da disciplina), escolha "★ Antes do Bloco I" no seletor de bloco daquela aula. Mude números, títulos, blocos e visibilidade à vontade. Nada é salvo até você clicar em "Salvar todas as alterações" no final. Excluir aqui também é definitivo (use um backup se quiser voltar atrás).</div>
+    <div class="hint"><strong>Aula de apresentação (aula 0):</strong> digite <strong>0</strong> no número da aula que deve ser a apresentação da disciplina — ela vai para antes do Bloco I, fora da numeração, e ao salvar o sistema oferece renumerar as demais (1, 2, 3…). Só pode haver uma. Mude números, títulos, blocos e visibilidade à vontade. Nada é salvo até você clicar em "Salvar todas as alterações" no final. Excluir aqui também é definitivo (use um backup se quiser voltar atrás).</div>
     <div class="org-blocks-list">${blockRows}</div>
     <label style="margin-top:22px;">Exportar o curso</label>
     <div class="hint">Baixa um arquivo .txt com o código (JSON) de TODAS as aulas desta matéria — pronto para colar numa IA junto com o prompt de formatação e pedir ajustes, revisões ou aulas novas com o contexto do curso inteiro. As imagens não vão no arquivo (ficam referenciadas pelos campos storageKey, que a IA deve preservar).</div>
@@ -12161,6 +12373,20 @@ document.addEventListener('drop', async (e)=>{
   const targetAulaNum = +target.dataset.navAulaNum;
   const before = target.dataset.pendingBefore === '1';
   if(targetAulaNum === draggingNavAulaNum){ draggingNavAulaNum = null; return; }
+  // (v4.12.16) Duas portas que bagunçavam a numeração inteira, fechadas:
+  // a apresentação não sai do lugar por arrastar, e nenhuma aula entra no
+  // bloco de abertura por arrastar — ele guarda uma aula só, a apresentação.
+  const blocoAlvo = COURSE.find(bb=>bb.num===targetBlockNum);
+  if(draggingNavAulaNum === 0){
+    draggingNavAulaNum = null;
+    alert('A apresentação da disciplina fica sempre no início, fora da numeração.\n\nPara trocar qual aula é a apresentação, use Organizar curso.');
+    return;
+  }
+  if(blocoEhAbertura(blocoAlvo) || targetAulaNum === 0){
+    draggingNavAulaNum = null;
+    alert('Esse espaço é só da apresentação da disciplina — nenhuma outra aula entra ali.\n\nPara pôr esta aula no começo do curso, solte-a sobre a primeira aula do Bloco I.');
+    return;
+  }
 
   // Remove a aula arrastada de onde estava
   const fromBlock = COURSE.find(bb=>bb.aulas.some(aa=>aa.num===draggingNavAulaNum));
@@ -12175,11 +12401,9 @@ document.addEventListener('drop', async (e)=>{
 
   // Renumera TODAS as aulas do curso em sequência, seguindo a ordem final —
   // a aula que "entrou no lugar" herda aquele número, e todas as demais, dali
-  // para frente, deslizam uma posição, exatamente como pedido.
-  let n = 1;
-  [...COURSE].sort((a,b)=>a.num-b.num).forEach(bb=>{
-    bb.aulas.forEach(aa=>{ aa.num = blocoEhAbertura(bb) ? 0 : n++; });
-  });
+  // para frente, deslizam uma posição, exatamente como pedido. Mesma regra de
+  // todo o sistema: a apresentação continua 0.
+  aplicarNumeracao(planoDeNumeracao());
 
   state.block = toBlock.num;
   state.aula = movedAula.num;
@@ -13263,11 +13487,11 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     const dados = parseAulaJsonOrAlert(document.getElementById('ef-import-json').value);
     if(!dados) return;
     // Numero, bloco e visibilidade vem do formulario acima
-    const blockNum = +document.getElementById('ef-new-a-block').value;
-    const targetBlock = COURSE.find(x=>x.num===blockNum);
-    const newNum = parsePositiveIntStrict(document.getElementById('ef-new-a-num').value);
-    if(newNum===null){ alert('Confira o campo "Número da aula" acima — precisa ser um número inteiro positivo.'); return; }
-    if(COURSE.some(bb=>bb.aulas.some(aa=>aa.num===newNum))){ alert(`Já existe uma aula com o número ${newNum}. Ajuste o campo "Número da aula" acima.`); return; }
+    const alvoNova = validarBlocoENumeroDaNovaAula();
+    if(!alvoNova) return;
+    const targetBlock = alvoNova.targetBlock;
+    const blockNum = targetBlock.num;
+    const newNum = alvoNova.newNum;
     // Cinto de segurança: mesmo depois da validação, se algo inesperado
     // quebrar aqui, mostra erro em vez de travar a tela silenciosamente.
     let novaAula;
@@ -13303,16 +13527,13 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     return;
   }
   if(action==='confirm-new-aula'){
-    const blockNum = +document.getElementById('ef-new-a-block').value;
-    const targetBlock = COURSE.find(x=>x.num===blockNum);
-    const newNum = parsePositiveIntStrict(document.getElementById('ef-new-a-num').value);
     const newTitle = document.getElementById('ef-new-a-title').value.trim();
-    if(newNum===null){ alert('Número da aula inválido — use apenas números inteiros positivos (1, 2, 3...), sem letras, pontos ou algarismos romanos.'); return; }
     if(!newTitle){ alert('Digite um título para a aula.'); return; }
-    if(COURSE.some(bb=>bb.aulas.some(aa=>aa.num===newNum))){
-      alert(`Já existe uma aula com o número ${newNum}. Escolha outro número.`);
-      return;
-    }
+    const alvoNova = validarBlocoENumeroDaNovaAula();
+    if(!alvoNova) return;
+    const targetBlock = alvoNova.targetBlock;
+    const blockNum = targetBlock.num;
+    const newNum = alvoNova.newNum;
     const initialProse = blankSection('prose');
     const tplRow = document.getElementById('ef-new-a-template-row');
     const tplCheck = document.getElementById('ef-new-a-use-template');
@@ -13493,6 +13714,41 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       return;
     }
     const sectionId = editState.sectionId;
+    // ===== (v4.12.16) Reabrir um prazo que já tinha encerrado =====
+    // Só conta como reabertura quando o prazo ANTERIOR já tinha passado e o
+    // novo ainda está por vir. Adiar um prazo que ainda nem fechou não mexe
+    // em ninguém — quem está no meio da atividade continua no meio dela.
+    let anterior;
+    try{ anterior = await fetchActivitySchedule(sectionId, turmaId); }catch(e){ anterior = undefined; }
+    const agoraR = Date.now();
+    const eraEncerrado = !!(anterior && anterior.closesAt && anterior.closesAt <= agoraR);
+    const continuaAberto = (closesAt === null) || (closesAt > agoraR);
+    let planoReab = null;
+    if(eraEncerrado && continuaAberto){
+      try{
+        if(cachedUsersList===null) await fetchAllUsers();
+        const alunosT = (cachedUsersList||[]).filter(u=>!roleIsStaff(u.role) && !u.archived && u.turmaId===turmaId);
+        const uids = new Set(alunosT.map(u=>u.id));
+        const [resps, drafts] = await Promise.all([fetchActivityResponsesForSection(sectionId), fetchActivityDraftsForSection(sectionId)]);
+        const porUid = {};
+        resps.forEach(r=>{ if(uids.has(r.studentUid)) porUid[r.studentUid] = r; });
+        planoReab = planoDeReabertura(alunosT, porUid, drafts||{}, !aceitaForaDoPrazo());
+      }catch(err){
+        alert('Não consegui ler as respostas desta turma para preparar a reabertura — por segurança, nada foi salvo. Tente de novo.\n\nDetalhe técnico: ' + (err && err.message ? err.message : String(err)));
+        return;
+      }
+      const lista = arr => arr.slice(0,8).map(x=>'   • ' + nomeDeUsuario(x.u)).join('\n') + (arr.length>8 ? `\n   …e mais ${arr.length-8}.` : '');
+      const fd = ts => new Date(ts).toLocaleString('pt-BR');
+      let msg = `Você está REABRINDO uma atividade que já tinha encerrado (fechou em ${fd(anterior.closesAt)}).\n\n`;
+      msg += planoReab.resetar.length
+        ? `▸ ${planoReab.resetar.length} aluno(s) que NÃO responderam nada voltam a poder responder, como se nunca tivessem aberto a atividade (sai o zero automático e o "entregue" em branco):\n${lista(planoReab.resetar)}\n\n`
+        : '▸ Nenhum aluno sem resposta precisava ser liberado.\n\n';
+      if(planoReab.congelar.length){
+        msg += `▸ ${planoReab.congelar.length} aluno(s) que JÁ tinham respondido não respondem de novo: o que escreveram até o encerramento vira a entrega deles — nenhuma resposta é alterada:\n${lista(planoReab.congelar)}\n\n`;
+      }
+      msg += '▸ Quem já tinha entregado, ou já tem nota publicada, continua exatamente como está.\n\nConfirmar e salvar o novo prazo?';
+      if(!confirm(msg)) return;
+    }
     try{
       // A regra de atraso viaja JUNTO com o prazo — e o dado que as regras do
       // Firestore consultam na hora de aceitar ou recusar a resposta.
@@ -13507,7 +13763,16 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       // atividade continuava respondivel. Agora o cache daquela atividade cai
       // junto com o salvamento.
       delete ACTIVITY_DATA_CACHE[sectionId];
-      alert('Prazo salvo para esta turma.');
+      if(planoReab && (planoReab.resetar.length || planoReab.congelar.length)){
+        const res = await executarReabertura(planoReab, anterior.closesAt);
+        ATV_MANAGE_RESPONSES = null; ATV_MANAGE_DRAFTS = null; ATV_BOLETIM_DATA = null;
+        alert('Prazo salvo e atividade reaberta para esta turma.' +
+          (planoReab.resetar.length ? `\n\n${planoReab.resetar.length} aluno(s) liberados para responder.` : '') +
+          (planoReab.congelar.length ? `\n${planoReab.congelar.length} aluno(s) mantidos com a entrega que já tinham.` : '') +
+          (res.falhas.length ? `\n\n⚠ Não consegui concluir para: ${res.falhas.join(', ')} (provável falha de conexão). Recarregue a página: ao abrir a matéria, a conferência automática termina de liberar quem não tinha respondido nada.` : ''));
+      } else {
+        alert('Prazo salvo para esta turma.');
+      }
     }catch(err){ alert('Não foi possível salvar o prazo: ' + (err && err.message ? err.message : String(err))); }
     render();
     return;
@@ -14549,19 +14814,48 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       newCourse.push(newBlock);
       blockByOldNum[oldNum] = newBlock; // fallback, caso o select não tenha sido mudado
     }
-    // Alguma aula foi marcada como "antes do Bloco I"? Entao o contêiner de
-    // abertura e criado aqui, na hora de salvar. O professor nunca precisou
-    // saber que existe um "bloco de abertura" por tras — ele so disse onde
-    // queria a aula.
-    const querAbertura = [...document.querySelectorAll('.org-aula-block')]
-      .some(sel => sel.value === '__abertura__');
-    let blocoAberturaNovo = null;
-    if(querAbertura && !newCourse.some(b=>b.isIntro)){
+    // ALTERADO (v4.12.16) — a apresentação da disciplina passa a poder ser
+    // indicada do jeito mais natural: digitando 0 no número da aula. Antes o
+    // único caminho era o seletor de bloco, e digitar 0 dava "precisa ser um
+    // número inteiro positivo" — quem perdia a aula 0 não tinha como voltar.
+    // Primeira passada: decide o que cada linha é, e barra o que for ambíguo,
+    // ANTES de montar qualquer coisa.
+    const aulaRows = [...document.querySelectorAll('.org-aula-row')];
+    const decisoes = [];
+    for(const row of aulaRows){
+      const numOriginal = +row.dataset.orgAula;
+      const valorSel = row.querySelector('.org-aula-block').value;
+      const selIntro = (valorSel === '__abertura__') ||
+        (() => { const bd = COURSE.find(x=>x.num===+valorSel); return !!(bd && bd.isIntro); })();
+      const numDigitado = lerNumeroDeAula(row.querySelector('.org-aula-num').value);
+      const titulo = row.querySelector('.org-aula-title').value.trim();
+      let ehApresentacao = false;
+      if(numDigitado === 0){
+        ehApresentacao = true;                       // digitou 0: é a apresentação
+      } else if(selIntro){
+        if(numDigitado === numOriginal){
+          ehApresentacao = true;                     // só trocou o bloco para "antes do Bloco I"
+        } else {
+          alert(`A aula "${titulo || numOriginal}" está indo para o espaço da apresentação (antes do Bloco I), mas com o número ${row.querySelector('.org-aula-num').value.trim() || '(vazio)'}.\n\nEsse espaço guarda só a apresentação, que é sempre a aula 0. Ou digite 0 nela, ou escolha um bloco comum.`);
+          return;
+        }
+      }
+      decisoes.push({row, numOriginal, valorSel, numDigitado, titulo, ehApresentacao});
+    }
+    const apresentacoes = decisoes.filter(d=>d.ehApresentacao);
+    if(apresentacoes.length > 1){
+      alert('Só pode existir UMA aula de apresentação (aula 0), e estas estão marcadas como apresentação:\n\n' +
+            apresentacoes.map(d=>'   • ' + (d.titulo || ('aula ' + d.numOriginal))).join('\n') +
+            '\n\nDeixe 0 em uma só e dê às outras um número a partir de 1, num bloco comum.');
+      return;
+    }
+    // O contêiner de abertura é criado aqui, se preciso. O professor nunca
+    // precisou saber que ele existe — só disse qual aula é a apresentação.
+    let blocoAberturaNovo = newCourse.find(b=>b.isIntro) || null;
+    if(apresentacoes.length && !blocoAberturaNovo){
       blocoAberturaNovo = {num:0, title:'Abertura', isIntro:true, hidden:false,
                            aulaRange:'', sources:'', aulas:[]};
       newCourse.push(blocoAberturaNovo);
-    } else if(querAbertura){
-      blocoAberturaNovo = newCourse.find(b=>b.isIntro);
     }
 
     // Mapa de numero-de-bloco-NOVO por numero-de-bloco escolhido no select (que usa os numeros ORIGINAIS como value)
@@ -14572,25 +14866,28 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       const newNum = (origB && origB.isIntro) ? 0 : fromRoman(card.querySelector('.org-block-num').value);
       newBlockByOldSelectValue[oldNum] = newCourse.find(x=>x.num===newNum);
     });
-    // Agora distribui as aulas para os blocos (novos) escolhidos
-    const aulaRows = [...document.querySelectorAll('.org-aula-row')];
-    for(const row of aulaRows){
-      const oldAulaNum = +row.dataset.orgAula;
+    // Segunda passada: distribui as aulas para os blocos (novos) escolhidos
+    for(const d of decisoes){
+      const row = d.row;
+      const oldAulaNum = d.numOriginal;
       const oldBlockNum = +row.dataset.orgAulaBlock;
       const origBlock = COURSE.find(x=>x.num===oldBlockNum);
-      const origAula = origBlock ? origBlock.aulas.find(x=>x.num===oldAulaNum) : null;
-      const valorSel0 = row.querySelector('.org-aula-block').value;
-      const vaiParaAbertura = (valorSel0 === '__abertura__') ||
-        (() => { const bd = COURSE.find(x=>x.num===+valorSel0); return !!(bd && bd.isIntro); })();
-      // A apresentacao da disciplina nao entra na sequencia: fica com num 0,
-      // deixando o numero 1 livre para a primeira aula de verdade.
-      const newNum = vaiParaAbertura ? 0 : parsePositiveIntStrict(row.querySelector('.org-aula-num').value);
-      const newTitle = row.querySelector('.org-aula-title').value.trim();
-      const valorSelecionado = row.querySelector('.org-aula-block').value;
-      const targetBlock = (valorSelecionado === '__abertura__')
+      // Acha a aula pelo id fixo, não pelo número: se por algum motivo duas aulas
+      // estiverem com o mesmo número (era o que o bug da aula 0 podia produzir),
+      // procurar pelo número devolvia a primeira duas vezes — e o conteúdo da
+      // segunda seria substituído pelo da primeira ao salvar.
+      const idOriginal = row.dataset.orgAulaId || '';
+      const origAula = origBlock
+        ? ((idOriginal && origBlock.aulas.find(x=>x.id===idOriginal)) || origBlock.aulas.find(x=>x.num===oldAulaNum))
+        : null;
+      // A apresentação fica com num 0 e mora no bloco de abertura, deixando o
+      // número 1 livre para a primeira aula de verdade.
+      const newNum = d.ehApresentacao ? 0 : d.numDigitado;
+      const newTitle = d.titulo;
+      const targetBlock = d.ehApresentacao
         ? blocoAberturaNovo
-        : newBlockByOldSelectValue[+valorSelecionado];
-      if(newNum===null || !newTitle){ alert('Toda aula precisa de um número inteiro positivo (sem letras, pontos ou romanos) e um título.'); return; }
+        : (d.valorSel === '__abertura__' ? null : newBlockByOldSelectValue[+d.valorSel]);
+      if(newNum===null || !newTitle){ alert('Toda aula precisa de um título e de um número inteiro — a partir de 1, ou 0 para a aula de apresentação (sem letras, pontos ou romanos).'); return; }
       if(newNum !== 0 && seenAulaNums.has(newNum)){ alert(`Número de aula repetido: ${newNum}. Corrija antes de salvar, ou use "Renumerar em sequência".`); return; }
       if(!targetBlock){ alert('Uma aula está apontando para um bloco que foi excluído. Corrija antes de salvar.'); return; }
       seenAulaNums.add(newNum);
@@ -15236,16 +15533,41 @@ document.getElementById('content').addEventListener('click', async (e)=>{
   }
 
   if(action==='save-aula-header'){
-    const newNum = parsePositiveIntStrict(document.getElementById('ef-a-num').value);
+    // BUG CORRIGIDO (v4.12.16) — este campo só aceitava número a partir de 1.
+    // Duas consequências: a própria apresentação (que é a 0) não conseguia ter
+    // o título ou a introdução salvos por aqui, e quem perdia a aula 0 não
+    // tinha como devolvê-la — digitar 0 dava "use números inteiros positivos".
+    const newNum = lerNumeroDeAula(document.getElementById('ef-a-num').value);
     if(newNum===null){
-      alert('Número da aula inválido — use apenas números inteiros positivos (1, 2, 3...), sem letras, pontos ou algarismos romanos.');
+      alert('Número da aula inválido — use um número inteiro a partir de 1, ou 0 para a aula de apresentação (sem letras, pontos ou romanos).');
       return;
     }
-    if(newNum !== a.num && COURSE.some(bb=>bb.aulas.some(aa=>aa.num===newNum))){
+    let newBlockNum = +document.getElementById('ef-a-block').value;
+    const blocoEscolhido = COURSE.find(x=>x.num===newBlockNum);
+    let viraApresentacao = false;
+    if(newNum === 0){
+      const outra = apresentacaoDoCurso();
+      if(outra && outra !== a){
+        alert(`Este curso já tem uma aula de apresentação: "${outra.title}".\n\nSó pode existir uma. Dê primeiro um número a partir de 1 para aquela (ou troque as duas de uma vez em Organizar curso).`);
+        return;
+      }
+      viraApresentacao = true;
+      newBlockNum = garantirBlocoAbertura().num;   // a apresentação mora antes do Bloco I
+    } else if(blocoEhAbertura(blocoEscolhido)){
+      alert('O espaço antes do Bloco I é só da aula de apresentação, que é sempre a 0.\n\nOu digite 0 no número, ou escolha um bloco comum para esta aula.');
+      return;
+    } else if(newNum !== a.num && COURSE.some(bb=>bb.aulas.some(aa=>aa.num===newNum))){
       alert(`Já existe uma aula com o número ${newNum}. Escolha outro número.`);
       return;
     }
-    const newBlockNum = +document.getElementById('ef-a-block').value;
+    if(viraApresentacao && blocoEhAbertura(COURSE.find(x=>x.num===newBlockNum)) && b.num !== newBlockNum){
+      const intro = COURSE.find(x=>x.num===newBlockNum);
+      if((intro.aulas||[]).length){
+        alert('O espaço antes do Bloco I já tem uma aula. Use Organizar curso para trocar qual é a apresentação.');
+        return;
+      }
+    }
+    const eraApresentacao = aulaEhAbertura(a);
     a.title = document.getElementById('ef-a-title').value.trim() || a.title;
     a.subtitle = document.getElementById('ef-a-subtitle').value.trim();
     a.sources = document.getElementById('ef-a-sources').value.trim();
@@ -15259,8 +15581,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     a.hidden = document.getElementById('ef-a-hidden').checked;
     a.num = newNum;
     if(newBlockNum !== b.num){
-      const oldIdx = b.aulas.findIndex(x=>x.num===a.num);
-      b.aulas.splice(oldIdx,1);
+      // Pela posição do objeto, não pelo número (que acabou de mudar).
+      const oldIdx = b.aulas.indexOf(a);
+      if(oldIdx >= 0) b.aulas.splice(oldIdx,1);
       const newBlock = COURSE.find(x=>x.num===newBlockNum);
       newBlock.aulas.push(a);
       newBlock.aulas.sort((x,y)=>x.num-y.num);
@@ -15271,6 +15594,9 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     touchCurrentAula();
     await saveCourseToStorage();
     render();
+    // Virou (ou deixou de ser) a apresentação: as demais ficaram com um buraco
+    // na sequência. Mostra o que mudaria e pergunta — nada é renumerado calado.
+    if(viraApresentacao !== eraApresentacao) await conferirEAplicarRenumeracao(true, '');
     return;
   }
 
@@ -15289,14 +15615,21 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     // resposta do aluno etc. são indexados por ele). Sem isto, a seção da
     // cópia "roubava" as respostas/cache da seção original.
     (clone.sections||[]).forEach(sec=>{ sec.id = genSectionId(); });
-    const idxInBlock = b.aulas.findIndex(x=>x.num===a.num);
-    b.aulas.splice(idxInBlock+1, 0, clone);
-    // Renumera todas as aulas do curso em sequência, na ordem final — mesma
-    // regra do arrastar-e-soltar: a abertura (num 0) nunca entra na contagem.
-    let n = 1;
-    [...COURSE].sort((x,y)=>x.num-y.num).forEach(bb=>{
-      bb.aulas.forEach(aa=>{ aa.num = blocoEhAbertura(bb) ? 0 : n++; });
-    });
+    // (v4.12.16) A cópia da apresentação não pode ficar ao lado dela, no bloco
+    // de abertura: viraria uma segunda "aula 0". Ela entra como a primeira
+    // aula do primeiro bloco comum, e as seguintes avançam uma posição.
+    if(aulaEhAbertura(a) || blocoEhAbertura(b)){
+      const primeiroComum = [...COURSE].sort((x,y)=>x.num-y.num).find(bb=>!blocoEhAbertura(bb));
+      if(!primeiroComum){ alert('Crie primeiro um bloco (Bloco I) para receber a cópia da apresentação.'); return; }
+      if(!confirm('A cópia da apresentação vai entrar como a primeira aula do ' + blocoRotuloTexto(primeiroComum) + ' (Aula 1), e todas as seguintes avançam uma posição.\n\nContinuar?')) return;
+      primeiroComum.aulas.unshift(clone);
+    } else {
+      const idxInBlock = b.aulas.findIndex(x=>x.num===a.num);
+      b.aulas.splice(idxInBlock+1, 0, clone);
+    }
+    // Renumera todas as aulas do curso em sequência, na ordem final — a mesma
+    // regra única do resto do sistema (a apresentação continua 0).
+    aplicarNumeracao(planoDeNumeracao());
     state.aula = clone.num;
     editState = null;
     const ok = await saveCourseToStorage();
