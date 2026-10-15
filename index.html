@@ -1,5 +1,5 @@
 <!-- ============================================ -->
-<!-- VERSAO DESTE ARQUIVO: v4.12.16                   -->
+<!-- VERSAO DESTE ARQUIVO: v4.12.17                   -->
 <!-- (confira este numero antes de subir no GitHub) -->
 <!-- ============================================ -->
 <!DOCTYPE html>
@@ -3552,7 +3552,7 @@
   <button type="button" id="presenter-control-end-btn">Encerrar apresentação</button>
 </div>
 <div class="cap-toast hidden" id="capacidade-alerta" role="status" aria-live="polite"></div>
-<div class="version-tag hidden" id="version-tag">v4.12.16</div>
+<div class="version-tag hidden" id="version-tag">v4.12.17</div>
 
 
 <script>
@@ -3649,6 +3649,7 @@ async function loadCourseFromStorage(){
     if(res && res.value){
       COURSE = JSON.parse(res.value);
       garantirIdsDeAula();
+      normalizarBlocoDeAbertura();
       migrarListasParaTexto();
       migrarModeloDeConteudo();
       COURSE_LOADED_AT = res.updatedAt || 0;
@@ -4342,7 +4343,13 @@ function textoSobre(cor){
 // ===== Bloco de ABERTURA (aulas fora da numeração dos blocos) =====
 // Um bloco com isIntro:true e num 0 aparece antes do Bloco I e é desenhado sem
 // a moldura "Bloco X" — serve para a aula de apresentação da disciplina.
-function blocoEhAbertura(b){ return !!(b && b.isIntro); }
+// ALTERADO (v4.12.17) — o bloco de número 0 é a abertura mesmo sem a etiqueta
+// isIntro. Bloco comum é numerado em romano (I, II, III…) e nunca pode ser 0;
+// então um bloco 0 só pode ser este. Antes, um bloco 0 sem etiqueta (vindo de
+// backup restaurado, ou de curso montado antes de a etiqueta existir) era
+// tratado como bloco comum — e o "Organizar curso" se recusava a salvar,
+// porque 0 não é um número romano.
+function blocoEhAbertura(b){ return !!(b && (b.isIntro || b.num === 0)); }
 // A apresentacao da disciplina fica FORA da numeracao (num 0). Estas duas
 // funcoes sao o unico lugar que decide como uma aula e chamada na tela —
 // antes cada uma montava "Aula ${a.num}" na mao, e a apresentacao aparecia
@@ -4379,7 +4386,49 @@ function apresentacaoDoCurso(){
   }
   return null;
 }
+// ===== BLOCO DE ABERTURA: um só, sempre marcado (v4.12.17) =====
+// Deixa o espaço antes do Bloco I num estado único: UM bloco, com número 0 e a
+// etiqueta isIntro, guardando UMA aula (a apresentação). Roda ao carregar o
+// curso e ao restaurar backup. Só reorganiza na memória — nada é gravado até
+// você salvar alguma coisa, e nenhum conteúdo de aula é tocado.
+function normalizarBlocoDeAbertura(){
+  if(!Array.isArray(COURSE)) return false;
+  const aberturas = COURSE.filter(b=> b && (b.isIntro || b.num === 0));
+  if(!aberturas.length) return false;
+  let mudou = false;
+  // (a) Um só: fica o que guarda a aula 0; senão o que tem aulas; senão o
+  //     primeiro. Os outros passam as aulas para ele e deixam de existir.
+  const fica = aberturas.find(b=>(b.aulas||[]).some(a=>a.num===0))
+            || aberturas.find(b=>(b.aulas||[]).length)
+            || aberturas[0];
+  aberturas.forEach(b=>{
+    if(b === fica) return;
+    fica.aulas = (fica.aulas||[]).concat(b.aulas||[]);
+    const i = COURSE.indexOf(b);
+    if(i >= 0) COURSE.splice(i, 1);
+    mudou = true;
+  });
+  if(!fica.isIntro){ fica.isIntro = true; mudou = true; }
+  if(fica.num !== 0){ fica.num = 0; mudou = true; }
+  // (b) Uma aula só ali. O menu desenha apenas uma aula nesse espaço — uma
+  //     segunda sumiria de vista. Ela volta para o começo do primeiro bloco
+  //     comum; a renumeração (que sempre pergunta) acerta os números depois.
+  fica.aulas = fica.aulas || [];
+  if(fica.aulas.length > 1){
+    const apres = fica.aulas.find(a=>a.num===0) || fica.aulas[0];
+    const extras = fica.aulas.filter(a=>a !== apres);
+    const primeiroComum = [...COURSE].sort((x,y)=>x.num-y.num).find(b=>b !== fica && !blocoEhAbertura(b));
+    if(primeiroComum){
+      fica.aulas = [apres];
+      primeiroComum.aulas = extras.concat(primeiroComum.aulas||[]);
+      mudou = true;
+    }
+  }
+  COURSE.sort((x,y)=>x.num-y.num);
+  return mudou;
+}
 function garantirBlocoAbertura(){
+  normalizarBlocoDeAbertura();
   let intro = COURSE.find(b=>blocoEhAbertura(b));
   if(!intro){
     intro = {num:0, title:'Abertura', isIntro:true, hidden:false, aulaRange:'', sources:'', aulas:[]};
@@ -10051,7 +10100,10 @@ Após a linha "===== INÍCIO DO CURSO (JSON) =====" está o conteúdo completo
 de uma matéria universitária, no formato do sistema de aulas do professor.
 
 ESTRUTURA DO ARQUIVO
-- Array de BLOCOS: { "num", "title", "hidden", "aulas": [...] }
+- Array de BLOCOS: { "num", "title", "hidden", "aulas": [...] }. O bloco de
+  número 0 (com "isIntro": true) é o espaço da APRESENTAÇÃO da disciplina,
+  antes do Bloco I: ele guarda uma aula só, a de número 0. PRESERVE esse
+  bloco e esses campos exatamente como vieram.
 - Cada AULA: { "num", "title", "subtitle", "sources", "intro", "roteiro",
   "hidden", "updatedAt", "contentModel", "sections": [...] }
 - Tipos válidos de seção: prose, table, figure, video, activity, atividade,
@@ -11631,6 +11683,7 @@ function render(){
             }
             COURSE = lido.blocos;
             garantirIdsDeAula();
+            normalizarBlocoDeAbertura();   // backup pode trazer o bloco 0 sem a etiqueta de abertura
             // Backup antigo pode trazer de volta o tipo aposentado — converte
             // aqui também, senão restaurar um arquivo ressuscitaria a "Lista
             // com marcadores" e ainda gravaria isso no banco.
@@ -14801,11 +14854,18 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     for(const card of blockCards){
       const oldNum = +card.dataset.orgBlock;
       const origBlock = COURSE.find(x=>x.num===oldNum);
-      const ehAbertura = !!(origBlock && origBlock.isIntro);
+      const ehAbertura = blocoEhAbertura(origBlock);
       const newNum = ehAbertura ? 0 : fromRoman(card.querySelector('.org-block-num').value);
       const newTitle = card.querySelector('.org-block-title').value.trim();
-      if(newNum===null || !newTitle){ alert('Todo bloco precisa de um número romano válido (ex.: IV, VII) e um título.'); return; }
-      if(seenBlockNums.has(newNum)){ alert(`Número de bloco repetido: ${newNum}. Corrija antes de salvar.`); return; }
+      // A mensagem agora diz QUAL bloco travou e com o quê — a anterior só
+      // dizia a regra, e não havia como achar o culpado numa lista longa.
+      if(!newTitle){ alert('Um dos blocos está sem título. Todo bloco precisa de um título — nada foi salvo.'); return; }
+      if(newNum===null){
+        const digitado = card.querySelector('.org-block-num').value.trim();
+        alert(`O bloco "${newTitle}" está com o número "${digitado || '(vazio)'}", que não é um algarismo romano válido (ex.: I, IV, VII).\n\nCorrija o número dele e salve de novo — nada foi salvo.`);
+        return;
+      }
+      if(seenBlockNums.has(newNum)){ alert(`Dois blocos estão com o número ${toRoman(newNum)} ("${newTitle}" é um deles). Corrija antes de salvar — nada foi salvo.`); return; }
       seenBlockNums.add(newNum);
       const hidden = !card.querySelector('.org-block-hidden').checked;
       const newBlock = { num:newNum, title:newTitle, hidden,
@@ -14826,7 +14886,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
       const numOriginal = +row.dataset.orgAula;
       const valorSel = row.querySelector('.org-aula-block').value;
       const selIntro = (valorSel === '__abertura__') ||
-        (() => { const bd = COURSE.find(x=>x.num===+valorSel); return !!(bd && bd.isIntro); })();
+        (() => { const bd = COURSE.find(x=>x.num===+valorSel); return blocoEhAbertura(bd); })();
       const numDigitado = lerNumeroDeAula(row.querySelector('.org-aula-num').value);
       const titulo = row.querySelector('.org-aula-title').value.trim();
       let ehApresentacao = false;
@@ -14851,7 +14911,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     }
     // O contêiner de abertura é criado aqui, se preciso. O professor nunca
     // precisou saber que ele existe — só disse qual aula é a apresentação.
-    let blocoAberturaNovo = newCourse.find(b=>b.isIntro) || null;
+    let blocoAberturaNovo = newCourse.find(b=>blocoEhAbertura(b)) || null;
     if(apresentacoes.length && !blocoAberturaNovo){
       blocoAberturaNovo = {num:0, title:'Abertura', isIntro:true, hidden:false,
                            aulaRange:'', sources:'', aulas:[]};
@@ -14863,7 +14923,7 @@ document.getElementById('content').addEventListener('click', async (e)=>{
     blockCards.forEach(card=>{
       const oldNum = +card.dataset.orgBlock;
       const origB = COURSE.find(x=>x.num===oldNum);
-      const newNum = (origB && origB.isIntro) ? 0 : fromRoman(card.querySelector('.org-block-num').value);
+      const newNum = blocoEhAbertura(origB) ? 0 : fromRoman(card.querySelector('.org-block-num').value);
       newBlockByOldSelectValue[oldNum] = newCourse.find(x=>x.num===newNum);
     });
     // Segunda passada: distribui as aulas para os blocos (novos) escolhidos
